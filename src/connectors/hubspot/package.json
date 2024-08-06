@@ -1,0 +1,27 @@
+{
+  "id": "hubspot",
+  "name": "HubSpot",
+  "author": "HenriChabrand",
+  "version": "1.0.0",
+  "authentication": {
+    "type": "oauth2",
+    "authorize_url": "https://app.hubspot.com/oauth/authorize",
+    "access_token_url": "https://api.hubapi.com/oauth/v1/token",
+    "configs": [],
+    "scopes": []
+  },
+  "proxy": {
+    "base_url": "https://api.hubapi.com",
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "scripts": {
+    "build": "morph build",
+    "dev": "morph develop"
+  },
+  "dependencies": {
+    "@run-morph/models": "^1.0.9",
+    "@run-morph/sdk": "^1.1.0"
+  }
+}

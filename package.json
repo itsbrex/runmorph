@@ -1,0 +1,55 @@
+{
+  "name": "@runmorph/connect",
+  "version": "0.0.1",
+  "description": "A template for creating npm packages using TypeScript and VSCode",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "exports": {
+    ".": "./lib/index.js",
+    "./connectors/*": "./lib/connectors/*/index.js",
+    "./adapters/*": "./lib/adapters/*.js"
+  },
+  "typesVersions": {
+    "*": {
+      "*": [
+        "./lib/*"
+      ],
+      "connectors/*": [
+        "./lib/connectors/*/index.d.ts"
+      ],
+      "adapters/*": [
+        "./lib/adapters/*.d.ts"
+      ]
+    }
+  },
+  "private": true,
+  "files": [
+    "lib/**/*"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf ./lib/",
+    "workspace:build": "turbo run build",
+    "workspace:clean": "turbo run clean",
+    "workspace:dev": "turbo run dev"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "yarn@1.22.21",
+  "workspaces": [
+    "adapters/*",
+    "connectors/*",
+    "core"
+  ],
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "eslint-config-turbo": "^2.0.6"
+  },
+  "devDependencies": {
+    "turbo": "latest",
+    "eslint-plugin-turbo": "^2.0.6",
+    "typescript": "^4.2.4"
+  }
+}
