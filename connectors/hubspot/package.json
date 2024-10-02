@@ -4,8 +4,8 @@
   "version": "0.0.1",
   "main": "dist/index.js",
   "scripts": {
-    "build": "npx morph build",
-    "dev": "npx morph develop",
+    "build": "node ../../node_modules/@runmorph/cdk/lib/cli.js build",
+    "dev": "node ../../node_modules/@runmorph/cdk/lib/cli.js develop",
     "clean": "rm -rf ./dist",
     "validate": "run-p validate:*",
     "validate:format": "prettier --list-different \"**/*.{ts,tsx,md}\" --ignore-path ../../.gitignore",
