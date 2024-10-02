@@ -1,0 +1,93 @@
+name: Publish
+description: Publish to NPM
+
+inputs:
+  npm-token:
+    description: "NPM token for authentication"
+    required: true
+  github-token:
+    description: "GitHub token for creating releases"
+    required: true
+  version:
+    description: "Version to publish (e.g., patch, minor, major, or specific version)"
+    required: true
+    default: "patch"
+  workspace-name:
+    description: "Name of the workspace to publish"
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Setup
+      uses: ./.github/actions/common
+
+    - name: Build package
+      run: yarn workspace ${{ inputs.workspace-name }} build
+      shell: bash
+
+    - name: Run tests
+      run: yarn workspace ${{ inputs.workspace-name }} test
+      shell: bash
+
+    - name: Update version
+      run: |
+        cd packages/${{ inputs.workspace-name }}
+        if [[ "${{ inputs.version }}" =~ ^(patch|minor|major)$ ]]; then
+          npm version ${{ inputs.version }} -m "Bump ${{ inputs.workspace-name }} version to %s"
+        else
+          npm version ${{ inputs.version }} --allow-same-version -m "Set ${{ inputs.workspace-name }} version to %s"
+        fi
+      shell: bash
+
+    - name: Generate changelog
+      run: |
+        cd packages/${{ inputs.workspace-name }}
+        npx conventional-changelog-cli -p angular -i CHANGELOG.md -s
+      shell: bash
+
+    - name: Commit changelog
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add packages/${{ inputs.workspace-name }}/CHANGELOG.md
+        git commit -m "Update ${{ inputs.workspace-name }} CHANGELOG.md" || echo "No changes to commit"
+      shell: bash
+
+    - name: Push changes
+      run: git push
+      shell: bash
+
+    - name: Publish to NPM
+      run: |
+        cd packages/${{ inputs.workspace-name }}
+        npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
+      shell: bash
+
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      with:
+        tag_name: ${{ inputs.workspace-name }}-v${{ steps.package-version.outputs.version }}
+        release_name: ${{ inputs.workspace-name }} Release v${{ steps.package-version.outputs.version }}
+        body_path: packages/${{ inputs.workspace-name }}/CHANGELOG.md
+        draft: false
+        prerelease: false
+
+    - name: Generate documentation
+      run: yarn workspace ${{ inputs.workspace-name }} docs
+      shell: bash
+
+    - name: Deploy documentation
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ inputs.github-token }}
+        publish_dir: ./packages/${{ inputs.workspace-name }}/docs

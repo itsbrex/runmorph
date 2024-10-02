@@ -1,0 +1,48 @@
+/*export type ConnectorData<I extends string> = {
+  id: I;
+  name: string;
+  description: string;
+  authorization: AuthorizationTypeOAuth & {
+    scopes: string[];
+    settings: Array<SettingField>;
+  };
+  proxy: {
+    baseUrl: string;
+
+    defaultQueryParams?: Record<string, string>;
+  };
+};
+
+export type ConnectorConfiguration<I extends string> = {
+  authorization?: {
+    clientId: string;
+    clientSecret: string;
+  };
+};
+
+export type AuthorizationTypeOAuth = {
+  type: "oauth2";
+  authorizeUrl: string;
+  accessTokenUrl: string;
+};
+
+export type SettingField = {
+  key: string;
+  type: "text" | "select" | "multiselect" | "number";
+  required: boolean;
+  description: string;
+  default?: string;
+  options?: Array<{
+    key: string;
+    value: string;
+  }>;
+};
+
+export class Connector<I extends string> {
+  id: I;
+  data: ConnectorData<I>;
+  constructor(params: ConnectorData<I>) {
+    this.id = params.id;
+    this.data = params;
+  }
+}*/

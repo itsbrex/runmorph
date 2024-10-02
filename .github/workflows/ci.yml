@@ -1,0 +1,27 @@
+name: 🦉 Validate & Test
+on:
+  pull_request:
+    types: [opened, synchronize]
+  workflow_call:
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    env:
+      TURBO_CACHE_DIR: .turbo
+      MORPH_ENCRYPTION_KEY: ci-encryption-key
+      MORPH_SESSION_DURATION: 1h
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/morph
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/actions/common
+
+      - name: Run build
+        run: yarn build
+
+      - name: Run validation
+        run: yarn validate

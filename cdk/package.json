@@ -1,0 +1,30 @@
+{
+  "name": "@runmorph/cdk",
+  "version": "0.0.1",
+  "description": "CDK package for Runmorph",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "bin": {
+    "morph": "./lib/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build",
+    "debug": "node --inspect-brk ./lib/cli.js",
+    "clean": "rm -rf ./dist",
+    "validate": "run-p validate:*",
+    "validate:format": "prettier --list-different \"**/*.{ts,tsx,md}\" --ignore-path ../.gitignore",
+    "validate:lint": "eslint --max-warnings=0 src/",
+    "validate:typecheck": "tsc --noEmit",
+    "fix": "run-p fix:*",
+    "fix:lint": "eslint --fix src/",
+    "fix:format": "prettier --write \"**/*.{ts,tsx,md}\" --ignore-path ../.gitignore"
+  },
+  "devDependencies": {
+    "typescript": "^4.2.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

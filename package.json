@@ -1,55 +1,39 @@
 {
   "name": "@runmorph/connect",
-  "version": "0.0.1",
-  "description": "A template for creating npm packages using TypeScript and VSCode",
-  "main": "./lib/index.js",
-  "types": "./lib/index.d.ts",
-  "exports": {
-    ".": "./lib/index.js",
-    "./connectors/*": "./lib/connectors/*/index.js",
-    "./adapters/*": "./lib/adapters/*.js"
-  },
-  "typesVersions": {
-    "*": {
-      "*": [
-        "./lib/*"
-      ],
-      "connectors/*": [
-        "./lib/connectors/*/index.d.ts"
-      ],
-      "adapters/*": [
-        "./lib/adapters/*.d.ts"
-      ]
-    }
-  },
   "private": true,
-  "files": [
-    "lib/**/*"
-  ],
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "clean": "rm -rf ./lib/",
-    "workspace:build": "turbo run build",
-    "workspace:clean": "turbo run clean",
-    "workspace:dev": "turbo run dev"
+    "build": "turbo run build",
+    "clean": "turbo run clean",
+    "dev": "turbo run dev",
+    "validate": "run-s validate:*",
+    "validate:format": "turbo run validate:format",
+    "validate:lint": "turbo run validate:lint",
+    "validate:typecheck": "turbo run validate:typecheck",
+    "fix": "run-s fix:*",
+    "fix:lint": "turbo run fix:lint",
+    "fix:format": "turbo run fix:format"
   },
   "engines": {
     "node": ">=18"
   },
   "packageManager": "yarn@1.22.21",
   "workspaces": [
+    "packages/*",
     "adapters/*",
     "connectors/*",
-    "core"
+    "frameworks/*",
+    "core",
+    "cdk"
   ],
   "dependencies": {
     "dotenv": "^16.4.5",
     "eslint-config-turbo": "^2.0.6"
   },
   "devDependencies": {
+    "dotenv-cli": "^7.4.2",
+    "eslint": "^8.52.0",
+    "prettier": "^3.2.5",
     "turbo": "latest",
-    "eslint-plugin-turbo": "^2.0.6",
-    "typescript": "^4.2.4"
+    "npm-run-all": "^4.1.5"
   }
 }

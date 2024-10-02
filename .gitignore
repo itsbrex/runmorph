@@ -1,3 +1,21 @@
+.DS_Store
+node_modules
+.turbo
+*.log
+*.tsbuildinfo
+.next
+dist
+dist-ssr
+out
+*.local
+.env
+.cache
+server/dist
+public/dist
+tests
+postgres-data
+
+
 # Logs
 logs
 *.log

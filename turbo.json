@@ -1,10 +1,15 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": ["**/.env"],
-  "globalEnv": [],
+  "globalEnv": [
+    "MORPH_ENCRYPTION_KEY",
+    "MORPH_SESSION_DURATION",
+    "DATABASE_URL"
+  ],
   "tasks": {
     "build": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "cache": false
     },
     "clean": {
       "cache": false
@@ -13,6 +18,21 @@
       "dependsOn": ["^build"],
       "cache": false,
       "persistent": true
+    },
+    "validate:format": {
+      "dependsOn": ["build"]
+    },
+    "validate:lint": {
+      "dependsOn": ["build"]
+    },
+    "validate:typecheck": {
+      "dependsOn": ["build"]
+    },
+    "fix:format": {
+      "dependsOn": ["build"]
+    },
+    "fix:lint": {
+      "dependsOn": ["build"]
     }
   }
 }

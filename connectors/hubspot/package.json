@@ -1,0 +1,24 @@
+{
+  "name": "@runmorph/connector-hubspot",
+  "author": "HenriChabrand",
+  "version": "0.0.1",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "morph build",
+    "dev": "morph develop",
+    "clean": "rm -rf ./dist",
+    "validate": "run-p validate:*",
+    "validate:format": "prettier --list-different \"**/*.{ts,tsx,md}\" --ignore-path ../../.gitignore",
+    "validate:lint": "eslint --max-warnings=0 src/",
+    "validate:typecheck": "tsc --noEmit",
+    "fix": "run-p fix:*",
+    "fix:lint": "eslint --fix src/",
+    "fix:format": "prettier --write \"**/*.{ts,tsx,md}\" --ignore-path ../../.gitignore"
+  },
+  "devDependencies": {
+    "@runmorph/cdk": "*"
+  },
+  "peerDependencies": {
+    "@runmorph/cdk": "*"
+  }
+}

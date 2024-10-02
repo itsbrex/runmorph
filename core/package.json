@@ -1,0 +1,35 @@
+{
+  "name": "@runmorph/core",
+  "version": "0.0.1",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./models": "./dist/models/index.js",
+    "./models/*": "./dist/models/*.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "clean": "rm -rf ./dist",
+    "validate": "run-p validate:*",
+    "validate:format": "prettier --list-different \"**/*.{ts,tsx,md}\" --ignore-path ../.gitignore",
+    "validate:lint": "eslint --max-warnings=0 src/",
+    "validate:typecheck": "tsc --noEmit",
+    "fix": "run-p fix:*",
+    "fix:lint": "eslint --fix src/",
+    "fix:format": "prettier --write \"**/*.{ts,tsx,md}\" --ignore-path ../.gitignore"
+  },
+  "dependencies": {
+    "axios": "^0.21.1",
+    "jsonwebtoken": "^9.0.2",
+    "uuid": "^10.0.0",
+    "zod": "^3.23.8",
+    "@runmorph/cdk": "*"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/uuid": "^10.0.0"
+  }
+}

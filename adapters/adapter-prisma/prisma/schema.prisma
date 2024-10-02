@@ -1,0 +1,25 @@
+datasource db {
+  provider = "postgresql"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Connection {
+
+  connectorId         String @map("connector_id")
+  ownerId             String @map("owner_id")
+  status              String @default("pending")
+
+  operations          String[]
+  authorizationType String  @map("authorization_type")
+  authorizationData String? @map("authorization_data")
+
+  createdAt           String
+  updatedAt           String
+
+  @@id([connectorId, ownerId])
+  @@map("connections") 
+}

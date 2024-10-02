@@ -1,0 +1,47 @@
+name: Changes Checker
+description: Checks if a Turborepo workspace has changed
+inputs:
+  workspace_name:
+    required: true
+    description: |-
+      Name of Turborepo workspace
+  from_ref:
+    required: true
+    description: |-
+      Github Ref to detect changes from
+  to_ref:
+    required: true
+    description: |-
+      Github ref to detect changes to
+  force:
+    required: false
+    default: false
+    description: |-
+      Used to force this action to return true
+
+outputs:
+  changed:
+    description: |-
+      'true' or 'false' value indicating whether the workspace changed
+    value: ${{ steps.turbo_check_changed.outputs.changed }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup
+      uses: ./.github/actions/common
+
+    - id: turbo_check_changed
+      shell: bash
+      run: |
+        if [[ "${{ inputs.force }}" == 'true' ]]; then
+          echo "FORCED!"
+          echo "changed=true" >> $GITHUB_OUTPUT
+        else
+          TURBO_DRY_RUN=$(TURBO_TELEMETRY_DISABLED=1 TURBO_CACHE_DIR=.turbo yarn -s turbo build --filter="${{ inputs.workspace_name }}...[${{ inputs.from_ref }}...${{ inputs.to_ref }}]" --dry-run=json --verbosity 5)
+          echo $TURBO_DRY_RUN
+          echo $TURBO_DRY_RUN | jq
+          HAS_CHANGED=$(echo $TURBO_DRY_RUN | jq '.packages|any(. == "${{ inputs.workspace_name }}")')
+          echo "changed=${HAS_CHANGED}"
+          echo "changed=${HAS_CHANGED}" >> $GITHUB_OUTPUT
+        fi

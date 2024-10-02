@@ -1,0 +1,41 @@
+{
+  "name": "@runmorph/adapter-prisma",
+  "version": "1.0.0",
+  "author": "Henri Chabrand",
+  "main": "dist/index.js",
+  "license": "ISC",
+  "keywords": [
+    "runmorph",
+    "oauth",
+    "prisma"
+  ],
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "prisma generate && tsc",
+    "dev": "prisma generate && tsc -w",
+    "clean": "rm ./prisma/dev.db* || echo 'File deleted'",
+    "studio": "prisma studio",
+    "validate": "run-p validate:*",
+    "validate:format": "prettier --list-different \"**/*.{ts,tsx,md}\" --ignore-path ../../.gitignore",
+    "validate:lint": "eslint --max-warnings=0 src/",
+    "validate:typecheck": "tsc --noEmit",
+    "fix": "run-p fix:*",
+    "fix:lint": "eslint --fix src/",
+    "fix:format": "prettier --write \"**/*.{ts,tsx,md}\" --ignore-path ../../.gitignore"
+  },
+  "dependencies": {
+    "@runmorph/core": "*"
+  },
+  "peerDependencies": {
+    "@prisma/client": ">=2.26.0 || >=3 || >=4 || >=5"
+  },
+  "devDependencies": {
+    "@prisma/client": "^5.9.1",
+    "@prisma/extension-accelerate": "^0.6.3",
+    "mongodb": "^4.17.0",
+    "prisma": "^5.9.1"
+  }
+}

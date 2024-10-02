@@ -1,0 +1,14 @@
+{
+  "name": "@repo/eslint-config",
+  "version": "0.0.0",
+  "private": true,
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.15.0",
+    "@vercel/style-guide": "^5.2.0",
+    "eslint-config-turbo": "^1.12.4",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-jest": "^28.6.0",
+    "eslint-plugin-only-warn": "^1.1.0",
+    "eslint-plugin-turbo": "^2.0.6"
+  }
+}

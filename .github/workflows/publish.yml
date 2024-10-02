@@ -1,0 +1,36 @@
+name: Publish Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish (patch, minor, major, or specific version)"
+        required: true
+        default: "patch"
+      workspace_name:
+        description: "Name of the workspace to publish"
+        required: true
+  workflow_call:
+    inputs:
+      workspace_name:
+        required: true
+        type: string
+      service_name:
+        required: true
+        type: string
+      version:
+        required: false
+        type: string
+        default: "patch"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/publish
+        with:
+          npm-token: ${{ secrets.NPM_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          version: ${{ inputs.version }}
+          workspace-name: ${{ inputs.workspace_name }}
