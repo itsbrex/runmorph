@@ -1,6 +1,6 @@
 {
   "name": "@runmorph/cdk",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Moprh Connector Development Kit - A powerful toolkit for building and managing unified thrid-party connectors",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
