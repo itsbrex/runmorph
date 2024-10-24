@@ -1,11 +1,12 @@
 {
   "name": "@runmorph/connector-hubspot",
   "author": "HenriChabrand",
-  "version": "0.0.1",
+  "version": "0.0.10",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "build": "node ../../node_modules/@runmorph/cdk/lib/cli.js build",
-    "dev": "node ../../node_modules/@runmorph/cdk/lib/cli.js develop",
+    "build": "morph build",
+    "dev": "morph develop",
     "clean": "rm -rf ./dist",
     "validate": "run-p validate:*",
     "validate:format": "prettier --list-different \"**/*.{ts,tsx,md}\" --ignore-path ../../.gitignore",
@@ -13,12 +14,16 @@
     "validate:typecheck": "tsc --noEmit",
     "fix": "run-p fix:*",
     "fix:lint": "eslint --fix src/",
-    "fix:format": "prettier --write \"**/*.{ts,tsx,md}\" --ignore-path ../../.gitignore"
+    "fix:format": "prettier --write \"**/*.{ts,tsx,md}\" --ignore-path ../../.gitignore",
+    "prepublishOnly": "yarn run build",
+    "_publish": "yarn run build && yarn publish --access public"
   },
   "devDependencies": {
-    "@runmorph/cdk": "*"
+    "@runmorph/cdk": "^0.0.16",
+    "@runmorph/resource-models": "^0.0.2"
   },
   "peerDependencies": {
-    "@runmorph/cdk": "*"
+    "@runmorph/cdk": "^0.0.16",
+    "@runmorph/resource-models": "^0.0.2"
   }
 }
