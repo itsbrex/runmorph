@@ -1034,7 +1034,7 @@
   resolved "https://registry.yarnpkg.com/@rtsao/scc/-/scc-1.1.0.tgz#927dd2fae9bc3361403ac2c7a00c32ddce9ad7e8"
   integrity sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g==
 
-"@runmorph/adapter-memory@^0.0.1":
+"@runmorph/adapter-memory@0.0.1", "@runmorph/adapter-memory@^0.0.1":
   version "0.0.1"
   resolved "https://registry.yarnpkg.com/@runmorph/adapter-memory/-/adapter-memory-0.0.1.tgz#3c620a0eec7459f807015c3b4e67b021d981506a"
   integrity sha512-SAOf63QLaB0RDNaTK7TyUlXf4SCiDCecLOYh25vH1ZfqRZVI2YMLWKNADlTx+CYFZrOG5qBEsKwEIpHdMmM+yA==
@@ -1055,15 +1055,15 @@
     fs "^0.0.1-security"
     path "^0.12.7"
 
+"@runmorph/connector-hubspot@0.0.16":
+  version "0.0.16"
+  resolved "https://registry.yarnpkg.com/@runmorph/connector-hubspot/-/connector-hubspot-0.0.16.tgz#633d38962536fd422b322e19a064ebbd51fd67f2"
+  integrity sha512-hzw0CxBlLxorGtubOuvzqIyTIyfhrlfki2psat/jMkALTniL0FJxLAJ01LUk2/7u6pEMGw5TzNTk7x4EWumUVA==
+
 "@runmorph/connector-hubspot@^0.0.15":
   version "0.0.15"
   resolved "https://registry.yarnpkg.com/@runmorph/connector-hubspot/-/connector-hubspot-0.0.15.tgz#17f03517cf894bcd595db03e0b5d134dd1d50d58"
   integrity sha512-kKQRe7TWVrFycQ4vNNgz7rgLY8o5+w9kY+Q/SZgKnD8ZYtCoqJ7yMkJlnkRVf6O0yyOMoD+FtPY/lxtaxHtrRA==
-
-"@runmorph/connector-hubspot@^0.0.16":
-  version "0.0.16"
-  resolved "https://registry.yarnpkg.com/@runmorph/connector-hubspot/-/connector-hubspot-0.0.16.tgz#633d38962536fd422b322e19a064ebbd51fd67f2"
-  integrity sha512-hzw0CxBlLxorGtubOuvzqIyTIyfhrlfki2psat/jMkALTniL0FJxLAJ01LUk2/7u6pEMGw5TzNTk7x4EWumUVA==
 
 "@runmorph/core@^0.0.16":
   version "0.0.16"
