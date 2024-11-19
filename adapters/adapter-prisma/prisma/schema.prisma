@@ -11,14 +11,15 @@ model Connection {
 
   connectorId         String @map("connector_id")
   ownerId             String @map("owner_id")
-  status              String @default("pending")
+  status              String 
 
   operations          String[]
-  authorizationType String  @map("authorization_type")
-  authorizationData String? @map("authorization_data")
+  authorizationType   String  @map("authorization_type")
+  authorizationData   String? @map("authorization_data")
 
-  createdAt           String
-  updatedAt           String
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at")
+
 
   @@id([connectorId, ownerId])
   @@map("connections") 

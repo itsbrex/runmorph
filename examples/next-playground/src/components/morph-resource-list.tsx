@@ -5,8 +5,17 @@ import {
   resourceModelIds,
   type ResourceModelId,
 } from "@runmorph/framework-next";
+import Image from "next/image";
 import { useState } from "react";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -25,7 +34,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { connectorListing } from "@/connector-listing";
-
 // Import only the type of morph to avoid client error
 import type { morph } from "@/morph";
 
@@ -46,20 +54,24 @@ export function ResourceList({ connections }: ResourceListProps): JSX.Element {
   >();
   const [selectedResource, setSelectedResource] =
     useState<ResourceModelId>("genericContact");
-  const [resources, setResources] = useState<MorphResource<any>[]>([]);
+  const [resources, setResources] = useState<
+    MorphResource<typeof selectedResource>[]
+  >([]);
   const [error, setError] = useState<string | null>(null);
   const [columns, setColumns] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Move fetch logic to a separate function
-  const fetchResources = async () => {
+  const fetchResources = async (): Promise<void> => {
     if (!selectedConnection) return;
 
-    const connection = connections.find(
-      (c) => c.connectorId === selectedConnection
-    );
-    if (!connection) return;
-
+    setIsLoading(true);
     try {
+      const connection = connections.find(
+        (c) => c.connectorId === selectedConnection
+      );
+      if (!connection) return;
+
       setError(null);
       const morphConnection = morphClient.connections({
         sessionToken: connection.sessionToken,
@@ -88,6 +100,8 @@ export function ResourceList({ connections }: ResourceListProps): JSX.Element {
         error instanceof Error ? error.message : "An unknown error occurred"
       );
       setResources([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -111,7 +125,20 @@ export function ResourceList({ connections }: ResourceListProps): JSX.Element {
                       value={connection.connectorId}
                     >
                       <div className="flex items-center gap-2">
-                        {connection.connectorId}
+                        <Image
+                          src={
+                            connectorListing.find(
+                              (c) => c.id === connection.connectorId
+                            )?.logo || "/morph-light.svg"
+                          }
+                          alt={`icon`}
+                          width={20}
+                          height={20}
+                          className="mr-2"
+                        />
+                        {connectorListing.find(
+                          (c) => c.id === connection.connectorId
+                        )?.name || connection.connectorId}
                       </div>
                     </SelectItem>
                   );
@@ -141,9 +168,9 @@ export function ResourceList({ connections }: ResourceListProps): JSX.Element {
             </Select>
             <Button
               onClick={fetchResources}
-              disabled={!selectedConnection || !selectedResource}
+              disabled={!selectedConnection || !selectedResource || isLoading}
             >
-              Fetch Resources
+              {isLoading ? "Listing Resources..." : "List Resources"}
             </Button>
           </div>
 
@@ -157,6 +184,7 @@ export function ResourceList({ connections }: ResourceListProps): JSX.Element {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>ID</TableHead>
               {columns.map((column) => (
                 <TableHead key={column}>
                   {column.charAt(0).toUpperCase() + column.slice(1)}
@@ -181,16 +209,25 @@ export function ResourceList({ connections }: ResourceListProps): JSX.Element {
             ) : (
               resources.slice(0, 5).map((resource, index) => (
                 <TableRow key={index}>
+                  <TableCell>{resource.id}</TableCell>
                   {columns.map((column) => (
                     <TableCell key={column}>
-                      {Array.isArray(resource.fields[column]) &&
-                      typeof resource.fields[column][0] === "object"
-                        ? resource.fields[column]
-                            .map((item) => item.id)
-                            .join(", ")
-                        : typeof resource.fields[column] === "object"
-                          ? resource.fields[column].id
-                          : String(resource.fields[column])}
+                      {/*eslint-disable-next-line @typescript-eslint/no-explicit-any*/}
+                      {Array.isArray((resource.fields as any)[column]) &&
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      typeof (resource.fields as any)[column][0] === "object"
+                        ? "[" +
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          (resource.fields as any)[column]
+                            .map((item: { id: string }) => item.id)
+                            .join(", ") +
+                          "]"
+                        : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          typeof (resource.fields as any)[column] === "object"
+                          ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            (resource.fields as any)[column].id
+                          : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            String((resource.fields as any)[column])}
                     </TableCell>
                   ))}
                   <TableCell>
@@ -204,6 +241,21 @@ export function ResourceList({ connections }: ResourceListProps): JSX.Element {
             )}
           </TableBody>
         </Table>
+
+        <Accordion type="single" collapsible>
+          <AccordionItem value="raw-data">
+            <AccordionTrigger>Raw Response</AccordionTrigger>
+            <AccordionContent>
+              <SyntaxHighlighter
+                language="json"
+                style={vscDarkPlus}
+                customStyle={{ margin: 0 }}
+              >
+                {JSON.stringify(resources || error, null, 2)}
+              </SyntaxHighlighter>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </CardContent>
     </Card>
   );

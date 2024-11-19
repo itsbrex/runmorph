@@ -1,6 +1,6 @@
 {
   "name": "@runmorph/adapter-prisma",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "author": "Henri Chabrand",
   "main": "dist/index.js",
   "license": "ISC",
@@ -26,13 +26,12 @@
     "fix:lint": "eslint --fix src/",
     "fix:format": "prettier --write \"**/*.{ts,tsx,md}\" --ignore-path ../../.gitignore"
   },
-  "dependencies": {
-    "@runmorph/core": "*"
-  },
   "peerDependencies": {
+    "@runmorph/core": "^0.0.14",
     "@prisma/client": ">=2.26.0 || >=3 || >=4 || >=5"
   },
   "devDependencies": {
+    "@runmorph/core": "^0.0.14",
     "@prisma/client": "^5.9.1",
     "@prisma/extension-accelerate": "^0.6.3",
     "mongodb": "^4.17.0",

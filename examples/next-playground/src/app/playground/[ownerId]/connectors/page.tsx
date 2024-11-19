@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/breadcrumb";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { connectorListing } from "@/connector-listing";
-
 /**
  * Import the morph instance to use it for generating session tokens on the server side.
  */
@@ -71,7 +70,7 @@ export default async function Playground({
   params,
 }: {
   params: Promise<PlaygroundParams>;
-}) {
+}): Promise<JSX.Element> {
   const { ownerId } = await params;
 
   // Fake owner id; to be replaced by authenticated user / organization id
@@ -117,22 +116,24 @@ export default async function Playground({
             </Alert>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 py-4">
-              {connectorListing.map(async (c) => (
-                <ConnectorCard
-                  key={c.id}
-                  id={c.id}
-                  name={c.name}
-                  description={c.description}
-                  logo={c.logo}
-                >
-                  <ConnectionButton
-                    sessionToken={await createMorphSession({
-                      ownerId: OWNER_ID,
-                      connectorId: c.id,
-                    })}
-                  />
-                </ConnectorCard>
-              ))}
+              {await Promise.all(
+                connectorListing.map(async (c) => (
+                  <ConnectorCard
+                    key={c.id}
+                    id={c.id}
+                    name={c.name}
+                    description={c.description}
+                    logo={c.logo}
+                  >
+                    <ConnectionButton
+                      sessionToken={await createMorphSession({
+                        ownerId: OWNER_ID,
+                        connectorId: c.id,
+                      })}
+                    />
+                  </ConnectorCard>
+                ))
+              )}
             </div>
           </section>
           <section>

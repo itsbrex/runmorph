@@ -1,117 +1,209 @@
-# typescript-npm-package-template
+# `@runmorph/core`
 
-> Template to kickstart creating a Node.js module using TypeScript and VSCode
+A powerful free and open-source TypeScript SDK for building unified integrations with any SaaS platforms (CRM, ATS, Helpdesk, ProjectTracker, ...). This SDK provides a consistent interface for managing connections, resources, and API interactions across multiple platforms.
 
-Inspired by [node-module-boilerplate](https://github.com/sindresorhus/node-module-boilerplate)
+https://github.com/user-attachments/assets/dae75fcb-aea0-4f2a-98d6-7096a30a3fe9
 
 ## Features
 
-- [Semantic Release](https://github.com/semantic-release/semantic-release)
-- [Issue Templates](https://github.com/ryansonshine/typescript-npm-package-template/tree/main/.github/ISSUE_TEMPLATE)
-- [GitHub Actions](https://github.com/ryansonshine/typescript-npm-package-template/tree/main/.github/workflows)
-- [Codecov](https://about.codecov.io/)
-- [VSCode Launch Configurations](https://github.com/ryansonshine/typescript-npm-package-template/blob/main/.vscode/launch.json)
-- [TypeScript](https://www.typescriptlang.org/)
-- [Husky](https://github.com/typicode/husky)
-- [Lint Staged](https://github.com/okonet/lint-staged)
-- [Commitizen](https://github.com/search?q=commitizen)
-- [Jest](https://jestjs.io/)
-- [ESLint](https://eslint.org/)
-- [Prettier](https://prettier.io/)
+- 🔌 Unified connector interface for any platforms
+- 🔐 Built-in authentication handling (only OAuth2 for now)
+- 📦 Modular architecture with pluggable connectors
+- 🔄 Standardized CRUD operations for resources
+- 🌐 Proxy capabilities for direct API access
+- 📝 Type-safe operations with full TypeScript support
+- 🗄️ Database adapter system for connection management
 
-## Getting started
+>     ⚠️ **Private during the alpha phase**: This will be a fully free and open-source project. However, as we are fine-tuning the final aspects of the SDK, the package is currently accessible in a private repository. But you can gain access! [Simply join our Morph Community on Slack](https://join.slack.com/t/morphcommunity/shared_invite/zt-2tc1vo0n7-8lUPL8~D7wwjC4UmbujAUA) to get access before it goes public.
 
-### Set up your repository
+> **⭐ Hit that star to stay in the loop!**
 
-**Click the "Use this template" button.**
-
-Alternatively, create a new directory and then run:
+## Installation
 
 ```bash
-curl -fsSL https://github.com/ryansonshine/typescript-npm-package-template/archive/main.tar.gz | tar -xz --strip-components=1
+yarn add @runmorph/core @runmorph/connector-hubspot @runmorph/connector-salesforce
 ```
 
-Replace `FULL_NAME`, `GITHUB_USER`, and `REPO_NAME` in the script below with your own details to personalize your new package:
+## Quick Start
 
-```bash
-FULL_NAME="John Smith"
-GITHUB_USER="johnsmith"
-REPO_NAME="my-cool-package"
-sed -i.mybak "s/\([\/\"]\)(ryansonshine)/$GITHUB_USER/g; s/typescript-npm-package-template\|my-package-name/$REPO_NAME/g; s/Ryan Sonshine/$FULL_NAME/g" package.json package-lock.json README.md
-rm *.mybak
+```typescript
+// ./morph.ts
+import { Morph, PrismaAdapter } from "@runmorph/core";
+import HubSpotConnector from "@runmorph/connector-hubspot";
+import SalesforceConnector from "@runmorph/connector-salesforce";
+
+import { prisma } from "../server";
+
+// Initialize the Morph client
+const morph = Morph({
+  connectors: [
+    HubSpotConnector({
+      clientId: process.env.MORPH_CONNECTOR_HUBSPOT_CLIENT_ID,
+      clientSecret: process.env.MORPH_CONNECTOR_HUBSPOT_CLIENT_SECRET,
+    }),
+    SalesforceConnector({
+      clientId: process.env.MORPH_CONNECTOR_SALESFORCE_CLIENT_ID,
+      clientSecret: process.env.MORPH_CONNECTOR_SALESFORCE_CLIENT_SECRET,
+    }),
+  ],
+  database: {
+    adapter: PrismaAdapter(prisma),
+  },
+});
 ```
 
-### Add NPM Token
+## Core Concepts
 
-Add your npm token to your GitHub repository secrets as `NPM_TOKEN`.
+### Connections
 
-### Add Codecov integration
+Manage authentication and connection state with integrated platforms:
 
-Enable the Codecov GitHub App [here](https://github.com/apps/codecov).
+```typescript
+// Create a connection instance
+const connection = morph.connection({
+  connectorId: "hubspot",
+  ownerId: "user-123",
+});
 
-**Remove everything from here and above**
+// Create the connection with desired resource operations scope
+const { data, error } = await connection.create({
+  operations: [
+    "genericUser::list",
+    "crmOpportunity::list",
+    "crmOpportunity::update",
+  ],
+});
 
----
+// Authorize a connection
+const { data, error } = await connection.authorize();
 
-# my-package-name
-
-[![npm package][npm-img]][npm-url]
-[![Build Status][build-img]][build-url]
-[![Downloads][downloads-img]][downloads-url]
-[![Issues][issues-img]][issues-url]
-[![Code Coverage][codecov-img]][codecov-url]
-[![Commitizen Friendly][commitizen-img]][commitizen-url]
-[![Semantic Release][semantic-release-img]][semantic-release-url]
-
-> My awesome module
-
-## Install
-
-```bash
-npm install my-package-name
+/* data
+{
+  "object": "connectionAuthorization",
+  "connectorId": "hubspot",
+  "ownerId": "user-123",
+  "status": "awaitingAuthorization",
+  "authorizationUrl": "https://app.hubspot.com/oauth/authorize?client_id=xxx&redirect_uri=xxx&state=xxx&response_type=xxx&scope=xxx"
+}*/
 ```
 
-## Usage
+### Resources
 
-```ts
-import { myPackage } from 'my-package-name';
+Interact with platform-specific resources using a standardized resource model:
 
-myPackage('hello');
-//=> 'hello from my package'
+```typescript
+// Access a specific resource model
+const contacts = connection.resources("contact");
+
+// List resources
+const { data, next, error } = await contacts.list({
+  limit: 10,
+  cursor: "next-page-cursor",
+});
+
+// Retrieve a specific resource
+const { data, error } = await contacts.retrieve("contact-123", {
+  expand: ["company"], // return the whole company resource
+  fields: ["email", "firstName"],
+});
+
+// Create a resource
+const { data, error } = await contacts.create({
+  firstName: "John",
+  lastName: "Doe",
+  email: "john.doe@corp.co",
+});
+
+// Update a resource
+
+const { data, error } = await contacts.update("contact-123", {
+  firstName: "Jane",
+});
 ```
 
-## API
+### Proxy
 
-### myPackage(input, options?)
+Make direct API calls to the platform while maintaining authentication:
 
-#### input
+```typescript
+// Check the connector used for a given connection
+const hubspotConnection = connection.isConnector("hubspot");
+if (!hubspotConnection) return;
 
-Type: `string`
+// Now you know for sure it's a HubSpot connection – you can call HubSpot API endpoint directly
+const { data } = await hubspotConnection.proxy({
+  path: "/v3/objects/contacts",
+  method: "GET",
+  query: { limit: 10 },
+});
+```
 
-Lorem ipsum.
+## Database Adapter
 
-#### options
+Implement your own database adapter by conforming to the `Adapter` interface:
 
-Type: `object`
+```typescript
+interface Adapter {
+  createConnection: (data: ConnectionData) => Promise<AdapterConnection>;
+  retrieveConnection: (id: ConnectionId) => Promise<AdapterConnection | null>;
+  updateConnection: (
+    id: ConnectionId,
+    data: Partial<ConnectionData>
+  ) => Promise<AdapterConnection>;
+  deleteConnection: (id: ConnectionId) => Promise<void>;
+}
+```
 
-##### postfix
+## Supported Platforms
 
-Type: `string`
-Default: `rainbows`
+- HubSpot
+- Pipedrive
+- Salesforce
+- More platforms coming soon
 
-Lorem ipsum.
+You can build your own connector with `@runmorph/cdk` (aka Connector Development Kit)
 
-[build-img]:https://github.com/ryansonshine/typescript-npm-package-template/actions/workflows/release.yml/badge.svg
-[build-url]:https://github.com/ryansonshine/typescript-npm-package-template/actions/workflows/release.yml
-[downloads-img]:https://img.shields.io/npm/dt/typescript-npm-package-template
-[downloads-url]:https://www.npmtrends.com/typescript-npm-package-template
-[npm-img]:https://img.shields.io/npm/v/typescript-npm-package-template
-[npm-url]:https://www.npmjs.com/package/typescript-npm-package-template
-[issues-img]:https://img.shields.io/github/issues/ryansonshine/typescript-npm-package-template
-[issues-url]:https://github.com/ryansonshine/typescript-npm-package-template/issues
-[codecov-img]:https://codecov.io/gh/ryansonshine/typescript-npm-package-template/branch/main/graph/badge.svg
-[codecov-url]:https://codecov.io/gh/ryansonshine/typescript-npm-package-template
-[semantic-release-img]:https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg
-[semantic-release-url]:https://github.com/semantic-release/semantic-release
-[commitizen-img]:https://img.shields.io/badge/commitizen-friendly-brightgreen.svg
-[commitizen-url]:http://commitizen.github.io/cz-cli/
+## Error Handling
+
+The SDK uses a consistent error handling pattern:
+
+```typescript
+const { data, error } = await connection.retrieve();
+
+if (error) {
+  console.error(`Error: ${error.code} - ${error.message}`);
+  return;
+}
+
+// Process successful response
+console.log(data);
+```
+
+## Logging
+
+Configure logging behavior using the built-in logger system:
+
+```typescript
+import { ConsoleLogger, LogLevel } from "@runmorph/cdk";
+
+morph.setLogger(new ConsoleLogger(LogLevel.INFO, customFormatter));
+```
+
+## TypeScript Support
+
+The SDK is written in TypeScript and provides full type safety.
+Meaning you will only be able to access resources models available in the connectors you've loaded and get proper TypeError when trying to acces a method not supported.
+
+```typescript
+type MorphClient<TAdapter extends Adapter, TConnectors extends Connector[]> = {
+  // Type-safe client methods
+};
+```
+
+## Contributing
+
+We welcome contributions! Please see [join the discussion on our Morph Community Slack](https://join.slack.com/t/morphcommunity/shared_invite/zt-2tc1vo0n7-8lUPL8~D7wwjC4UmbujAUA).
+
+## License
+
+MIT

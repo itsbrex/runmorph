@@ -1,0 +1,37 @@
+{
+  "name": "@runmorph/framework-next",
+  "version": "0.0.5",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build",
+    "debug": "node --inspect-brk ./dist/cli.js",
+    "clean": "rm -rf ./dist",
+    "validate": "run-p validate:*",
+    "validate:format": "prettier --list-different \"**/*.{ts,tsx,md}\" --ignore-path ../.gitignore",
+    "validate:lint": "eslint --max-warnings=0 src/",
+    "validate:typecheck": "tsc --noEmit",
+    "fix": "run-p fix:*",
+    "fix:lint": "eslint --fix src/",
+    "fix:format": "prettier --write \"**/*.{ts,tsx,md}\" --ignore-path ../.gitignore",
+    "publish": "yarn run build && yarn publish --access public"
+  },
+  "dependencies": {
+    "@runmorph/core": "^0.0.16"
+  },
+  "peerDependencies": {
+    "next": "^14.0.0 || ^15.0.0",
+    "react": "^18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "next": "^14.0.0",
+    "typescript": "^5.0.0"
+  }
+}

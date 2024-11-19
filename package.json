@@ -1,5 +1,5 @@
 {
-  "name": "@runmorph/connect",
+  "name": "runmorph",
   "private": true,
   "scripts": {
     "build": "turbo run build",
@@ -14,16 +14,14 @@
     "fix:format": "turbo run fix:format"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=16.0.0",
+    "yarn": ">=1.0.0"
   },
-  "packageManager": "yarn@1.22.21",
+  "packageManager": "yarn@1.22.22",
   "workspaces": [
     "packages/*",
-    "adapters/*",
-    "connectors/*",
     "frameworks/*",
-    "core",
-    "cdk"
+    "examples/*"
   ],
   "dependencies": {
     "dotenv": "^16.4.5",

@@ -1,10 +1,4 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
-  transpilePackages: [
-    "@morphcloud/cdk",
-    "@morphcloud/core",
-    "@morphcloud/connectors-hubspot",
-  ],
-};
+const nextConfig = {};
 
 module.exports = nextConfig;

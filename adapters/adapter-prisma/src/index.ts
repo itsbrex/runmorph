@@ -8,7 +8,7 @@ import type { Adapter } from "@runmorph/core";
  * @returns An Adapter object with methods for connection operations
  */
 export function PrismaAdapter(
-  prisma: PrismaClient | ReturnType<PrismaClient["$extends"]>,
+  prisma: PrismaClient | ReturnType<PrismaClient["$extends"]>
 ): Adapter {
   const p = prisma as PrismaClient;
 
@@ -20,11 +20,7 @@ export function PrismaAdapter(
      */
     createConnection: (data) => {
       return p.connection.create({
-        data: {
-          ...data,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
+        data,
       });
     },
 
@@ -58,7 +54,7 @@ export function PrismaAdapter(
             ownerId,
           },
         },
-        data: { ...data, updatedAt: new Date().toISOString() },
+        data,
       });
     },
 

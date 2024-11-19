@@ -1,0 +1,36 @@
+{
+  "name": "@runmorph/adapter-memory",
+  "version": "0.0.1",
+  "author": "Henri Chabrand",
+  "main": "dist/index.js",
+  "license": "ISC",
+  "keywords": [
+    "runmorph",
+    "adapter",
+    "memory",
+    "development"
+  ],
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "validate": "run-p validate:*",
+    "validate:format": "prettier --list-different \"**/*.{ts,tsx,md}\" --ignore-path ../../.gitignore",
+    "validate:lint": "eslint --max-warnings=0 src/",
+    "validate:typecheck": "tsc --noEmit",
+    "fix": "run-p fix:*",
+    "fix:lint": "eslint --fix src/",
+    "fix:format": "prettier --write \"**/*.{ts,tsx,md}\" --ignore-path ../../.gitignore"
+  },
+  "peerDependencies": {
+    "@runmorph/core": "^0.0.15"
+  },
+  "devDependencies": {
+    "@runmorph/core": "^0.0.15",
+    "@types/node": "^20.11.17",
+    "typescript": "^5.3.3"
+  }
+}

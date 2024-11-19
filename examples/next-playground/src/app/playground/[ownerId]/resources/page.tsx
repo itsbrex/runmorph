@@ -1,12 +1,6 @@
 "use server";
+import { Info } from "lucide-react";
 
-import { AlertTriangle, Info } from "lucide-react";
-import { headers } from "next/headers";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
-
-import { ConnectorCard } from "@/components/connector-card";
-import { ConnectionButton } from "@/components/morph-connection-button";
 import { ResourceList } from "@/components/morph-resource-list";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -18,7 +12,6 @@ import {
 } from "@/components/ui/breadcrumb";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { connectorListing } from "@/connector-listing";
-
 /**
  * Import the morph instance to use it for generating session tokens on the server side.
  */
@@ -52,14 +45,11 @@ export default async function Playground({
   params,
 }: {
   params: Promise<PlaygroundParams>;
-}) {
+}): Promise<JSX.Element> {
   const { ownerId } = await params;
 
   // Fake owner id; to be replaced by authenticated user / organization id
   const OWNER_ID = ownerId || "fake-user-id";
-
-  // Get the hostname dynamically
-  const host = (await headers()).get("host") || "localhost:3000";
 
   return (
     <>

@@ -10,12 +10,11 @@ export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
-}>) {
+}>): JSX.Element {
   return (
     <html lang="en">
-      <body className={`antialiased`}>
-        {" "}
-        <div className="min-h-screen flex flex-col">{children} </div>
+      <body className="antialiased">
+        <div className="min-h-screen flex flex-col">{children}</div>
       </body>
     </html>
   );

@@ -4,7 +4,7 @@ node_modules
 *.log
 *.tsbuildinfo
 .next
-dist
+dist/
 dist-ssr
 out
 *.local
@@ -15,6 +15,11 @@ public/dist
 tests
 postgres-data
 
+# MVP
+resource-models
+playground
+packages
+core
 
 # Logs
 logs
@@ -132,6 +137,3 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
-
-# Compiled code
-lib/

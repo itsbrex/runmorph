@@ -1,10 +1,10 @@
 import { Connector } from "@runmorph/cdk";
 
-export default new Connector({
+const connector = new Connector<"hubspot">({
   id: "hubspot",
-  name: "Hubspot",
+  name: "HubSpot",
   auth: {
-    type: "oauth2",
+    type: "oauth2::authorizationCode",
     authorizeUrl: "https://app.hubspot.com/oauth/authorize",
     accessTokenUrl: "https://api.hubapi.com/oauth/v1/token",
   },
@@ -12,3 +12,5 @@ export default new Connector({
     baseUrl: "https://api.hubapi.com",
   },
 });
+
+export default connector;
