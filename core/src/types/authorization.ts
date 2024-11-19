@@ -1,7 +1,7 @@
-import { Connector } from "@runmorph/cdk";
+import { ConnectorBundle, ResourceModelOperations } from "@runmorph/cdk";
 
 export type GenerateAuthorizationUrlParams = {
-  connector: Connector<string>;
+  connector: ConnectorBundle<string, ResourceModelOperations>;
   ownerId: string;
   scopes?: string[];
   redirectUrl?: string;
@@ -14,12 +14,12 @@ export type CreateAuthorizationParams = {
 };
 
 export type ExchangeCodeForTokenParams = {
-  connector: Connector<string>;
+  connector: ConnectorBundle<string, ResourceModelOperations>;
   code: string;
 };
 
 export type RefreshAccessTokenParams = {
-  connector: Connector<string>;
+  connector: ConnectorBundle<string, ResourceModelOperations>;
   refreshToken: string;
 };
 

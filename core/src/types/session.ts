@@ -1,14 +1,30 @@
-import { ConnectionUpdateParams, ConnectionIds } from "./connection";
+import type {
+  ConnectionCreateParams,
+  ConnectorBundle,
+  ResourceModelOperations,
+  ConnectionIds,
+} from "@runmorph/cdk";
 
-export type SessionCreateParams = {
-  connection: ConnectionIds<string> & ConnectionUpdateParams;
+type SessionConnectionParams<
+  C extends ConnectorBundle<I, ResourceModelOperations>[],
+  I extends string,
+> = ConnectionIds<I> & ConnectionCreateParams<C>;
+
+export type SessionCreateParams<
+  C extends ConnectorBundle<I, ResourceModelOperations>[],
+  I extends string,
+> = {
+  connection: SessionConnectionParams<C, I>;
 } & {
   expiresIn?: number;
 };
 
-export type SessionData = {
+export type SessionData<
+  C extends ConnectorBundle<I, ResourceModelOperations>[],
+  I extends string,
+> = {
   object: "session";
-  connection: ConnectionIds<string> & ConnectionUpdateParams;
+  connection: SessionConnectionParams<C, I>;
   sessionToken: string;
   expiresAt: string;
 };

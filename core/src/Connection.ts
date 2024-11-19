@@ -1,25 +1,35 @@
-import { Connector } from "@runmorph/cdk";
-import axios, { AxiosRequestConfig } from "axios";
-
-import { MorphError } from "./Error";
-import { MorphClient } from "./Morph";
-import { Resource } from "./Resource";
+import {
+  connectionStatus,
+  ConnectorBundle,
+  ResourceModelOperations,
+} from "@runmorph/cdk";
 import type {
   ConnectionCreateParams,
   ConnectionAuthorizationData,
   ConnectionUpdateParams,
   ConnectionData,
   ConnectionIds,
-  EitherOr,
+  ConnectionProxyParams,
+  ConnectionAuthorizationStoredData,
+  ConnectorEntityIds,
   Awaitable,
   EitherDataOrError,
+  ErrorOrVoid,
+  EitherTypeOrError,
+  MorphError,
+  ConnectionStatus,
+  Logger,
+} from "@runmorph/cdk";
+import type { ResourceModelId } from "@runmorph/resource-models";
+import axios, { AxiosRequestConfig } from "axios";
+
+import { MorphClient } from "./Morph";
+import { ResourceClient } from "./Resource";
+import type {
   AuthorizeParams,
   Adapter,
   AdapterConnection,
-  ErrorOrVoid,
-  ConnectionProxyParams,
   CreateAuthorizationParams,
-  ConnectionAuthorizationStoredData,
 } from "./types";
 import { decryptJson, encryptJson } from "./utils/encryption";
 import {
@@ -29,14 +39,14 @@ import {
 } from "./utils/oauth";
 
 function validateAuthorizationSettings(
-  connector: Connector<string>,
+  connector: ConnectorBundle<string, ResourceModelOperations>,
   settings: Record<string, string>,
-  strict: boolean = true,
-): EitherOr<[{ settings: Record<string, string> }, { error: MorphError }]> {
+  strict: boolean = true
+): EitherTypeOrError<{ settings: Record<string, string> }> {
   const finalSettings = { ...settings };
   const missingSettings: string[] = [];
 
-  for (const setting of connector.auth.getSettingFields()) {
+  for (const setting of connector.connector.auth.getSettingFields()) {
     if (!finalSettings[setting.key]) {
       if (setting.default !== undefined) {
         finalSettings[setting.key] = setting.default;
@@ -48,12 +58,12 @@ function validateAuthorizationSettings(
 
   if (strict && missingSettings.length > 0) {
     return {
-      error: new MorphError({
-        code: "MORPH_CONNECTION_MISSING_REQUIRED_AUTHORIZATION_SETTINGS",
+      error: {
+        code: "MORPH::CONNECTION::MISSING_REQUIRED_AUTHORIZATION_SETTINGS",
         message: `Missing required authorization settings: ${missingSettings.join(
-          ", ",
+          ", "
         )}`,
-      }),
+      },
     };
   }
 
@@ -61,32 +71,35 @@ function validateAuthorizationSettings(
 }
 
 function connectionAdapterToConnectionData(
-  adapterConnection: AdapterConnection,
+  adapterConnection: AdapterConnection
 ): ConnectionData {
   return {
     object: "connection",
     connectorId: adapterConnection.connectorId,
     ownerId: adapterConnection.ownerId,
-    status: adapterConnection.status,
+    status: connectionStatus.includes(
+      adapterConnection.status as ConnectionStatus
+    )
+      ? (adapterConnection.status as ConnectionStatus)
+      : "unauthorized",
     operations: adapterConnection.operations,
-    createdAt: adapterConnection.createdAt,
-    updatedAt: adapterConnection.updatedAt,
+    createdAt: adapterConnection.createdAt.toISOString(),
+    updatedAt: adapterConnection.updatedAt.toISOString(),
   };
 }
 
 type ConnectionClientBase<
   A extends Adapter,
-  C extends Connector<I>[],
-  I extends string,
+  C extends ConnectorBundle<string, ResourceModelOperations>[],
 > = {
-  morph: MorphClient<A, C, I>;
+  morph: MorphClient<A, C>;
 };
 
 type ConnectionClientConnection<
   A extends Adapter,
-  C extends Connector<I>[],
-  I extends string,
-> = ConnectionClientBase<A, C, I> & {
+  C extends ConnectorBundle<string, ResourceModelOperations>[],
+  I extends C[number]["id"],
+> = ConnectionClientBase<A, C> & {
   type: "connection";
   connectorId: I;
   ownerId: string;
@@ -95,9 +108,8 @@ type ConnectionClientConnection<
 
 type ConnectionClientSession<
   A extends Adapter,
-  C extends Connector<I>[],
-  I extends string,
-> = ConnectionClientBase<A, C, I> & {
+  C extends ConnectorBundle<string, ResourceModelOperations>[],
+> = ConnectionClientBase<A, C> & {
   type: "connectionSession";
   sessionToken: string;
   connectorId?: never;
@@ -106,28 +118,40 @@ type ConnectionClientSession<
 
 type ConnectionClientType<
   A extends Adapter,
-  C extends Connector<I>[],
-  I extends string,
-> = ConnectionClientConnection<A, C, I> | ConnectionClientSession<A, C, I>;
+  C extends ConnectorBundle<string, ResourceModelOperations>[],
+  I extends C[number]["id"],
+> = ConnectionClientConnection<A, C, I> | ConnectionClientSession<A, C>;
 
 export class ConnectionClient<
   A extends Adapter,
-  C extends Connector<I>[],
-  I extends string,
+  C extends ConnectorBundle<string, ResourceModelOperations>[],
+  I extends C[number]["id"],
 > {
-  private config: ConnectionClientType<A, C, I>;
+  config: ConnectionClientType<A, C, I>;
+  connectorId: I;
+  ownerId: string;
+  resourceModelIds: ConnectorEntityIds<C, I>;
+  logger?: Logger;
+  //TODO POC to improve
+  authHeader?: string;
 
   constructor(
-    morph: MorphClient<A, C, I>,
-    params: ConnectionIds<I> | { sessionToken: string },
+    morph: MorphClient<A, C>,
+    params: ConnectionIds<I> | { sessionToken: string }
   ) {
+    this.logger = morph.𝙢_.logger;
     if ("sessionToken" in params) {
       this.config = {
         type: "connectionSession",
         morph,
         sessionToken: params.sessionToken,
       };
+      const ids = this._getConnectionIds();
+      this.connectorId = ids.data!.connectorId;
+      this.ownerId = ids.data!.ownerId;
     } else {
+      this.connectorId = params.connectorId;
+      this.ownerId = params.ownerId;
       this.config = {
         type: "connection",
         morph,
@@ -135,166 +159,227 @@ export class ConnectionClient<
         ownerId: params.ownerId,
       };
     }
+
+    this.resourceModelIds = Object.keys(
+      morph.𝙢_.connectors[this.connectorId].resourceModelOperations
+    ) as unknown as ConnectorEntityIds<C, I>;
   }
 
   async create(
-    params: ConnectionCreateParams,
+    params?: ConnectionCreateParams<C>
   ): Promise<EitherDataOrError<ConnectionData>> {
-    const { data: ids, error } = await this._getConnectionIds();
-    if (error) return { error };
+    const { data: ids, error } = this._getConnectionIds();
+    if (error) {
+      return { error };
+    }
     return this._create(ids.connectorId, ids.ownerId, params);
   }
 
   async update(
-    params: ConnectionUpdateParams,
+    params?: ConnectionUpdateParams<C>
   ): Promise<EitherDataOrError<ConnectionData>> {
-    const { data: ids, error } = await this._getConnectionIds();
+    const { data: ids, error } = this._getConnectionIds();
     if (error) return { error };
     return this._update(ids.connectorId, ids.ownerId, params);
   }
 
   async updateOrCreate(
-    params: ConnectionCreateParams,
+    params?: ConnectionCreateParams<C>
   ): Promise<EitherDataOrError<ConnectionData>> {
-    const { data: ids, error } = await this._getConnectionIds();
+    const { data: ids, error } = this._getConnectionIds();
     if (error) return { error };
     return this._updateOrCreate(ids.connectorId, ids.ownerId, params);
   }
 
   async retrieve(): Promise<EitherDataOrError<ConnectionData>> {
-    const { data: ids, error } = await this._getConnectionIds();
+    const { data: ids, error } = this._getConnectionIds();
     if (error) return { error };
     return this._retrieve(ids.connectorId, ids.ownerId);
   }
 
   async delete(): Promise<ErrorOrVoid> {
-    const { data: ids, error } = await this._getConnectionIds();
+    const { data: ids, error } = this._getConnectionIds();
     if (error) return { error };
     return this._delete(ids.connectorId, ids.ownerId);
   }
 
   async authorize(
-    params: CreateAuthorizationParams,
+    params?: CreateAuthorizationParams
   ): Promise<EitherDataOrError<ConnectionAuthorizationData>> {
-    const { data: ids, error } = await this._getConnectionIds();
-    if (error) return { error };
-    return this._authorize(ids.connectorId, ids.ownerId, params);
+    return this._authorize(this.connectorId, this.ownerId, params);
   }
 
-  async proxy(
-    params: ConnectionProxyParams,
-  ): Promise<EitherDataOrError<unknown>> {
-    const { data: ids, error } = await this._getConnectionIds();
+  async proxy<T = unknown>(
+    params: ConnectionProxyParams
+  ): Promise<EitherDataOrError<T>> {
+    console.log("proxy – params", params);
+    const { data: ids, error } = this._getConnectionIds();
+    console.log("proxy – ids", ids);
     if (error) return { error };
-    return this._proxy(ids.connectorId, ids.ownerId, params);
+    return this._proxy<T>(ids.connectorId, ids.ownerId, params);
+  }
+
+  resources<LocalResourceModelId extends ConnectorEntityIds<C, I>>(
+    resourceModelId: LocalResourceModelId
+  ): ResourceClient<A, C, I, LocalResourceModelId> {
+    return this._resources(resourceModelId);
+  }
+
+  isConnector<ConnectorIds extends I>(
+    ...connectorIds: ConnectorIds[]
+  ): ConnectionClient<A, C, ConnectorIds> | null {
+    if (connectorIds.includes(this.connectorId as ConnectorIds)) {
+      return this as unknown as ConnectionClient<A, C, ConnectorIds>;
+    } else {
+      return null;
+    }
+  }
+
+  isOwner(...ownerIds: string[]): ConnectionClient<A, C, I> | null {
+    if (ownerIds.includes(this.ownerId)) {
+      return this as unknown as ConnectionClient<A, C, I>;
+    } else {
+      return null;
+    }
   }
 
   private async _create(
-    connectorId: I,
+    connectorId: C[number]["id"],
     ownerId: string,
-    params: ConnectionCreateParams,
+    params?: ConnectionCreateParams<C>
   ): Promise<EitherDataOrError<ConnectionData>> {
+    this.logger?.debug("Creating connection", { params, connectorId, ownerId });
+
     const { data: connectorData, error: connectorError } =
-      await this.config.morph.connector().retrieve(connectorId);
-    if (connectorError) return { error: connectorError };
+      await this.config.morph.connectors().retrieve(connectorId);
+    if (connectorError) {
+      this.logger?.error("Failed to retrieve connector", {
+        error: connectorError,
+      });
+      return { error: connectorError };
+    }
 
     try {
       const connectionAdapter =
-        await this.config.morph.database.adapter.createConnection({
+        await this.config.morph.𝙢_.database.adapter.createConnection({
           connectorId: connectorId,
           ownerId: ownerId,
           status: "unauthorized",
-          operations: params.operations || [],
-          authorizationType: connectorData.auth.type,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          operations: params?.operations || [],
+          authorizationType: connectorData.connector.auth.type,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         });
 
+      this.logger?.info("Connection created successfully", {
+        connectorId,
+        ownerId,
+      });
       return { data: connectionAdapterToConnectionData(connectionAdapter) };
     } catch (e) {
+      this.logger?.error("Failed to create connection", { error: e });
       return {
-        error: new MorphError({
-          code: "MORPH_CONNECTION_CREATION_FAILED",
+        error: {
+          code: "MORPH::CONNECTION::CREATION_FAILED",
           message: `Details : ${JSON.stringify(e)}`,
-        }),
+        },
       };
     }
   }
 
   private async _update(
-    connectorId: I,
+    connectorId: C[number]["id"],
     ownerId: string,
-    params: ConnectionUpdateParams,
+    params?: ConnectionUpdateParams<C>
   ): Promise<EitherDataOrError<ConnectionData>> {
+    this.logger?.debug("Updating connection", { params, connectorId, ownerId });
+
     const { data: currentConnection, error: retrieveError } =
       await this.retrieve();
-    if (retrieveError) return { error: retrieveError };
+    if (retrieveError) {
+      this.logger?.error("Failed to retrieve connection for update", {
+        error: retrieveError,
+      });
+      return { error: retrieveError };
+    }
 
     let updatedOperations = currentConnection.operations;
-
-    if (params.operations) {
+    if (params?.operations) {
       updatedOperations = params.operations;
     }
 
     try {
       const updatedConnectionAdapter =
-        await this.config.morph.database.adapter.updateConnection(
-          {
-            connectorId: connectorId,
-            ownerId: ownerId,
-          },
-          {
-            operations: updatedOperations,
-            updatedAt: new Date().toISOString(),
-          },
+        await this.config.morph.𝙢_.database.adapter.updateConnection(
+          { connectorId, ownerId },
+          { operations: updatedOperations, updatedAt: new Date() }
         );
 
+      this.logger?.info("Connection updated successfully", {
+        connectorId,
+        ownerId,
+      });
       return {
         data: connectionAdapterToConnectionData(updatedConnectionAdapter),
       };
     } catch (e) {
+      this.logger?.error("Failed to update connection", { error: e });
       return {
-        error: new MorphError({
-          code: "MORPH_CONNECTION_UPDATE_FAILED",
+        error: {
+          code: "MORPH::CONNECTION::UPDATE_FAILED",
           message: `Failed to update connection: ${JSON.stringify(e)}`,
-        }),
+        },
       };
     }
   }
 
   private async _retrieve(
-    connectorId: I,
-    ownerId: string,
+    connectorId: C[number]["id"],
+    ownerId: string
   ): Promise<EitherDataOrError<ConnectionData>> {
+    this.logger?.debug("Retrieving connection", { connectorId, ownerId });
+
     try {
       const connectionAdapter =
-        await this.config.morph.database.adapter.retrieveConnection({
-          connectorId: connectorId,
-          ownerId: ownerId,
+        await this.config.morph.𝙢_.database.adapter.retrieveConnection({
+          connectorId,
+          ownerId,
         });
 
-      if (!connectionAdapter)
+      if (!connectionAdapter) {
+        this.logger?.warn("Connection not found", { connectorId, ownerId });
         return {
-          error: new MorphError({
-            code: "MOPH_CONNECTION_UNKNOWN",
+          error: {
+            code: "MORPH::CONNECTION::NOT_FOUND",
             message: `Connection with connectorId '${connectorId}' and ownerId '${ownerId}' couldn't be found.`,
-          }),
+          },
         };
+      }
+
+      this.logger?.debug("Connection retrieved successfully", {
+        connectorId,
+        ownerId,
+      });
       return { data: connectionAdapterToConnectionData(connectionAdapter) };
     } catch (e) {
-      console.log("Error retrieving connection", e);
+      this.logger?.error("Failed to retrieve connection", {
+        error: e,
+        connectorId,
+        ownerId,
+      });
       return {
-        error: new MorphError({
-          code: "MORPH_CONNECTION_RETRIEVE_FAILED",
+        error: {
+          code: "MORPH::CONNECTION::RETRIEVE_FAILED",
           message: `Details : ${JSON.stringify(e)}`,
-        }),
+        },
       };
     }
   }
 
-  private async _getConnectionIds(): Promise<
-    EitherDataOrError<{ connectorId: I; ownerId: string }>
-  > {
+  private _getConnectionIds(): EitherDataOrError<{
+    connectorId: I;
+    ownerId: string;
+  }> {
     switch (this.config.type) {
       case "connection":
         return {
@@ -304,8 +389,8 @@ export class ConnectionClient<
           },
         };
       case "connectionSession": {
-        const { data, error } = await this.config.morph
-          .session()
+        const { data, error } = this.config.morph
+          .sessions()
           .verify(this.config.sessionToken);
         if (error) return { error };
         return {
@@ -319,16 +404,16 @@ export class ConnectionClient<
   }
 
   private async _updateOrCreate(
-    connectorId: I,
+    connectorId: C[number]["id"],
     ownerId: string,
-    params: ConnectionUpdateParams,
+    params?: ConnectionUpdateParams<C>
   ): Promise<EitherDataOrError<ConnectionData>> {
     // First, try to retrieve the existing connection
     const { error: retrieveError } = await this._retrieve(connectorId, ownerId);
 
     if (retrieveError) {
       // If the connection doesn't exist, create a new one
-      if (retrieveError.code === "MOPH_CONNECTION_UNKNOWN") {
+      if (retrieveError.code === "MORPH::CONNECTION::NOT_FOUND") {
         return this._create(connectorId, ownerId, params);
       }
       // If there's a different error, return it
@@ -336,22 +421,40 @@ export class ConnectionClient<
     }
 
     // If the connection exists, update it
-    return this._update(connectorId, ownerId, params as ConnectionUpdateParams);
+    return this._update(
+      connectorId,
+      ownerId,
+      params as ConnectionUpdateParams<C>
+    );
   }
 
-  async _delete(connectorId: I, ownerId: string): Promise<ErrorOrVoid> {
+  async _delete(
+    connectorId: C[number]["id"],
+    ownerId: string
+  ): Promise<ErrorOrVoid> {
+    this.logger?.debug("Deleting connection", { connectorId, ownerId });
+
     try {
-      await this.config.morph.database.adapter.deleteConnection({
-        connectorId: connectorId,
-        ownerId: ownerId,
+      await this.config.morph.𝙢_.database.adapter.deleteConnection({
+        connectorId,
+        ownerId,
+      });
+      this.logger?.info("Connection deleted successfully", {
+        connectorId,
+        ownerId,
       });
       return {};
     } catch (e) {
+      this.logger?.error("Failed to delete connection", {
+        error: e,
+        connectorId,
+        ownerId,
+      });
       return {
-        error: new MorphError({
-          code: "MORPH_CONNECTION_DELETE_FAILED",
+        error: {
+          code: "MORPH::CONNECTION::DELETION_FAILED",
           message: `Details : ${JSON.stringify(e)}`,
-        }),
+        },
       };
     }
   }
@@ -359,29 +462,69 @@ export class ConnectionClient<
   async _authorize(
     connectorId: I,
     ownerId: string,
-    params: CreateAuthorizationParams,
+    params?: CreateAuthorizationParams
   ): Promise<EitherDataOrError<ConnectionAuthorizationData>> {
-    try {
-      const { data: connectorData, error: connectorError } =
-        await this.config.morph.connector().retrieve(connectorId);
-      if (connectorError) return { error: connectorError };
+    this.logger?.debug("Starting authorization process", {
+      connectorId,
+      ownerId,
+      params,
+    });
 
+    try {
       const redirectUrl = params?.redirectUrl;
       const scopes = params?.scopes || [];
 
+      const connector = this.config.morph.𝙢_.connectors[connectorId];
+      this.logger?.debug("Processing scopes", { initialScopes: scopes });
+
+      const connection =
+        await this.config.morph.𝙢_.database.adapter.retrieveConnection({
+          connectorId,
+          ownerId,
+        });
+
+      if (!connection) {
+        this.logger?.error("Connection not found during authorization", {
+          connectorId,
+          ownerId,
+        });
+        return {
+          error: {
+            code: "MORPH::CONNECTION::NOT_FOUND",
+            message: "Connection not found",
+          },
+        };
+      }
+
+      const operations = connection.operations || [];
+
+      operations.forEach(function (operation) {
+        const [resourceModelId, operationType] = operation.split("::");
+        const entityOperations =
+          connector.resourceModelOperations[resourceModelId as ResourceModelId];
+        if (entityOperations) {
+          const operationScopes =
+            entityOperations[operationType as "retrieve"]?.scopes || [];
+          scopes.push(
+            ...operationScopes.filter((scope) => !scopes.includes(scope))
+          );
+        }
+      });
+
+      console.log("scope – after op", scopes);
       const { settings, error } = validateAuthorizationSettings(
-        connectorData,
-        params?.settings || {},
+        connector,
+        params?.settings || {}
       );
 
       if (error) return { error };
 
-      if (connectorData.auth.type !== "oauth2") {
+      if (!connector.connector.auth.type.startsWith("oauth2")) {
         return {
-          error: new MorphError({
-            code: "MORPH_NOT_SUPPORTED",
+          error: {
+            code: "MORPH::CONNECTION::AUTH_TYPE_NOT_SUPPORTED",
             message: "Only 'oauth2' type authorization supported.",
-          }),
+          },
         };
       }
 
@@ -390,57 +533,71 @@ export class ConnectionClient<
         settings: settings,
       };
 
-      await this.config.morph.database.adapter.updateConnection(
+      await this.config.morph.𝙢_.database.adapter.updateConnection(
         {
           connectorId: connectorId,
           ownerId: ownerId,
         },
         {
           authorizationData: JSON.stringify(
-            encryptJson(authorizationStoredData),
+            encryptJson(authorizationStoredData)
           ),
-          updatedAt: new Date().toISOString(),
-        },
+          updatedAt: new Date(),
+        }
       );
 
       const authorizationUrl = generateAuthorizationUrl({
-        connector: connectorData,
+        connector: connector,
         ownerId: ownerId,
         scopes: scopes,
         redirectUrl,
       });
 
       const connectionAuthorizationData: ConnectionAuthorizationData = {
-        object: "connection.authorization",
+        object: "connectionAuthorization",
         connectorId: connectorId,
         ownerId: ownerId,
-        status: "awaiting_authorization", // TODO: not if connection already authorize. Need to connection.verify();
+        status: "awaitingAuthorization", // TODO: not if connection already authorize. Need to connection.verify();
         scopes: scopes,
         settings: settings,
         authorizationUrl,
       };
 
+      this.logger?.info("Authorization process completed", {
+        connectorId,
+        ownerId,
+        scopes,
+        authorizationUrl,
+      });
       return { data: decryptJson(connectionAuthorizationData) };
     } catch (error) {
-      return error instanceof MorphError
-        ? { error }
-        : {
-            error: new MorphError({
-              code: "MORPH_UNKNONW_ERROR",
-              message: `Details : ${error}`,
-            }),
-          };
+      this.logger?.error("Authorization process failed", {
+        error,
+        connectorId,
+        ownerId,
+      });
+      if (error instanceof Error && "code" in error) {
+        return { error: error as MorphError };
+      } else {
+        return {
+          error: {
+            code: "MORPH::UNKNOWN_ERROR",
+            message: `Details : ${error}`,
+          },
+        };
+      }
     }
   }
 
-  _resource(resourceType: string): Resource {
-    // Implementation
-    return new Resource(resourceType);
+  private _resources<LocalEneityId extends ConnectorEntityIds<C, I>>(
+    entityId: LocalEneityId
+  ): ResourceClient<A, C, I, LocalEneityId> {
+    return new ResourceClient(this, entityId);
   }
 
   private serializeQuery(
     query: Record<string, unknown>,
-    prefix: string = "",
+    prefix: string = ""
   ): string {
     const queryParts: string[] = [];
 
@@ -461,7 +618,7 @@ export class ConnectionClient<
         queryParts.push(
           `${encodeURIComponent(parentKey)}=${obj
             .map((v) => encodeURIComponent(String(v)))
-            .join(",")}`,
+            .join(",")}`
         );
       } else {
         queryParts.push(encode(parentKey, obj));
@@ -473,24 +630,39 @@ export class ConnectionClient<
     return queryParts.join("&");
   }
 
-  async _proxy(
-    connectorId: I,
+  async _proxy<T = unknown>(
+    connectorId: C[number]["id"],
     ownerId: string,
-    params: ConnectionProxyParams,
-  ): Promise<EitherDataOrError<unknown>> {
+    params: ConnectionProxyParams
+  ): Promise<EitherDataOrError<T>> {
+    const tracer = this.logger?.newTracer("connection::proxy", {
+      request: { ...params },
+    });
+    tracer?.debug("Starting proxy request", {
+      context: { connectorId, ownerId },
+      ...params,
+    });
+
     try {
       const { path, method, data, query = {}, headers = {} } = params;
-      const { data: connectorData, error: connectorError } =
-        await this.config.morph.connector().retrieve(connectorId);
-      if (connectorError) return { error: connectorError };
 
-      const baseUrl = connectorData.generateProxyBaseUrl({});
+      const { data: connectorData, error: connectorError } =
+        await this.config.morph.connectors().retrieve(connectorId);
+
+      if (connectorError) {
+        tracer?.closeTracer({ error: connectorError });
+        return { error: connectorError };
+      }
+
+      const baseUrl = connectorData.connector.generateProxyBaseUrl({});
       if (!baseUrl) {
+        const errorBaseUrl = {
+          code: "CONNECTOR::BAD_CONFIGURATION" as const,
+          message: `Proxy API base URL is not defined for the "${connectorId}" connector.`,
+        };
+        tracer?.closeTracer({ error: errorBaseUrl });
         return {
-          error: new MorphError({
-            code: "MORPH_CONNECTOR_INVALID_CONFIG",
-            message: "Proxy API base URL is not defined for this connector.",
-          }),
+          error: errorBaseUrl,
         };
       }
 
@@ -507,6 +679,7 @@ export class ConnectionClient<
         this.config.morph,
         connectorId,
         ownerId,
+        this.logger
       );
 
       // Prepare the request config
@@ -521,21 +694,95 @@ export class ConnectionClient<
       };
 
       const response = await axios(requestConfig);
+
+      tracer?.closeTracer({ response: { data: response.data } });
       return { data: response.data };
-    } catch (e) {
-      if (axios.isAxiosError(e)) {
+    } catch (error) {
+      tracer?.error("Proxy request failed", {
+        error,
+        connectorId,
+        ownerId,
+        status: axios.isAxiosError(error) ? error.response?.status : undefined,
+      });
+      tracer?.closeTracer({ error });
+      if (axios.isAxiosError(error)) {
+        const statusCode = error.response?.status;
+        if (statusCode) {
+          switch (statusCode) {
+            case 400:
+              return {
+                error: {
+                  code: "MORPH::CONNECTION::PROXY::BAD_REQUEST",
+                  message: error.response?.data
+                    ? JSON.stringify(error.response?.data, null, 2)
+                    : error.message,
+                },
+              };
+            case 401:
+              return {
+                error: {
+                  code: "MORPH::CONNECTION::PROXY::UNAUTHORIZED",
+                  message: error.response?.data
+                    ? JSON.stringify(error.response?.data, null, 2)
+                    : error.message,
+                },
+              };
+            case 403:
+              return {
+                error: {
+                  code: "MORPH::CONNECTION::PROXY::FORBIDDEN",
+                  message: error.response?.data
+                    ? JSON.stringify(error.response?.data, null, 2)
+                    : error.message,
+                },
+              };
+            case 404:
+              return {
+                error: {
+                  code: "MORPH::CONNECTION::PROXY::NOT_FOUND",
+                  message: error.response?.data
+                    ? JSON.stringify(error.response?.data, null, 2)
+                    : error.message,
+                },
+              };
+            case 429:
+              return {
+                error: {
+                  code: "MORPH::CONNECTION::PROXY::RATE_LIMIT_EXCEEDED",
+                  message: error.response?.data
+                    ? JSON.stringify(error.response?.data, null, 2)
+                    : error.message,
+                },
+              };
+            case 500:
+            case 502:
+            case 503:
+            case 504:
+              return {
+                error: {
+                  code: "MORPH::CONNECTION::PROXY::SERVER_ERROR",
+                  message: error.response?.data
+                    ? JSON.stringify(error.response?.data, null, 2)
+                    : error.message,
+                },
+              };
+            default:
+              // If it's not a recognized status code, fall through to the default error handling
+              break;
+          }
+        }
         return {
-          error: new MorphError({
-            code: "MORPH_PROXY_REQUEST_FAILED",
-            message: `Proxy request failed: ${JSON.stringify(e)}`,
-          }),
+          error: {
+            code: "MORPH::CONNECTION::PROXY::REQUEST_FAILED",
+            message: `${JSON.stringify(error.message)}`,
+          },
         };
       }
       return {
-        error: new MorphError({
-          code: "MORPH_PROXY_REQUEST_FAILED",
-          message: `Proxy request failed: ${JSON.stringify(e)}`,
-        }),
+        error: {
+          code: "MORPH::CONNECTION::PROXY::REQUEST_FAILED",
+          message: `Proxy request failed: ${JSON.stringify(error)}`,
+        },
       };
     }
   }
@@ -543,12 +790,12 @@ export class ConnectionClient<
 
 export class AllConnectionsClient<
   A extends Adapter,
-  C extends Connector<I>[],
+  C extends ConnectorBundle<I, ResourceModelOperations>[],
   I extends string,
 > {
-  private morph: MorphClient<A, C, I>;
+  private morph: MorphClient<A, C>;
 
-  constructor(morph: MorphClient<A, C, I>) {
+  constructor(morph: MorphClient<A, C>) {
     this.morph = morph;
   }
   /*
@@ -594,7 +841,7 @@ export class AllConnectionsClient<
         }
       }
 
-      const connections = await this.morph.database.adapter.listConnections({
+      const connections = await this.morph.𝙢_.database.adapter.listConnections({
         limit,
         filter,
         cursor: decodedCursor,
@@ -668,14 +915,9 @@ export class AllConnectionsClient<
   }
 */
   callback(
-    params: AuthorizeParams,
+    params: AuthorizeParams
   ): Awaitable<
-    EitherOr<
-      [
-        { connection: ConnectionData; redirectUrl: string },
-        { error: MorphError },
-      ]
-    >
+    EitherTypeOrError<{ connection: ConnectionData; redirectUrl: string }>
   > {
     return oautCallback(this.morph, params);
   }

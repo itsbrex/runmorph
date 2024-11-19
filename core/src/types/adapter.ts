@@ -1,5 +1,4 @@
-import { ConnectionIds } from "./connection";
-import { Awaitable } from "./utils";
+import type { ConnectionIds, Awaitable } from "@runmorph/cdk";
 
 export type AdapterConnection = {
   connectorId: string;
@@ -8,8 +7,8 @@ export type AdapterConnection = {
   operations: string[];
   authorizationType: string;
   authorizationData?: string | null;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 export type Adapter = {
@@ -20,7 +19,7 @@ export type Adapter = {
   }: ConnectionIds<string>): Awaitable<AdapterConnection | null>;
   updateConnection(
     { connectorId, ownerId }: ConnectionIds<string>,
-    connection: Partial<AdapterConnection> & { updatedAt: string },
+    connection: Partial<AdapterConnection> & { updatedAt: Date },
   ): Awaitable<AdapterConnection>;
   deleteConnection({
     connectorId,

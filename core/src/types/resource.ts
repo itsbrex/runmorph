@@ -1,14 +1,7 @@
 export type ListParams = {
   limit?: number;
-  filter?: Record<string, unknown>;
+  cursor?: string;
+  filters?: Record<string, string>;
   sort?: string;
   iterator?: boolean;
-};
-
-export type CreateParams = {
-  [key: string]: unknown;
-};
-
-export type UpdateParams = {
-  [key: string]: unknown;
 };

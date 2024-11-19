@@ -1,5 +1,6 @@
-export { Morph, MorphClient } from "./Morph";
-export { ConnectionClient } from "./Connection";
-export { Resource } from "./Resource";
+export * from "@runmorph/resource-models";
+export * from "@runmorph/cdk";
+export * from "./Morph";
+export * from "./Connection";
+export * from "./Resource";
 export * from "./types";
-export { Connector, ConnectorClientOptions } from "@runmorph/cdk";

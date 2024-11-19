@@ -1,6 +1,6 @@
 {
   "name": "@runmorph/core",
-  "version": "0.0.14",
+  "version": "0.0.16",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -17,11 +17,11 @@
     "fix": "run-p fix:*",
     "fix:lint": "eslint --fix src/",
     "fix:format": "prettier --write \"**/*.{ts,tsx,md}\" --ignore-path ../.gitignore",
-    "_publish": "yarn run build && yarn publish --access public"
+    "publish": "yarn run build && yarn publish --access public"
   },
   "dependencies": {
-    "@runmorph/cdk": "^0.0.18",
-    "@runmorph/resource-models": "^0.0.4",
+    "@runmorph/cdk": "^0.0.22",
+    "@runmorph/resource-models": "^0.0.5",
     "axios": "^0.21.1",
     "jsonwebtoken": "^9.0.2",
     "uuid": "^10.0.0"
