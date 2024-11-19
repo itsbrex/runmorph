@@ -1,6 +1,6 @@
 {
   "name": "@runmorph/framework-next",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
@@ -22,11 +22,11 @@
     "publish": "yarn run build && yarn publish --access public"
   },
   "dependencies": {
-    "@runmorph/core": "^0.0.16"
+    "@runmorph/core": "^0.0.17"
   },
   "peerDependencies": {
     "next": "^14.0.0 || ^15.0.0",
-    "react": "^18.0.0"
+    "react": "^18.0.0 || ^19.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

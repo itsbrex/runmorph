@@ -1,6 +1,6 @@
 {
   "name": "@runmorph/core",
-  "version": "0.0.16",
+  "version": "0.0.17",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -20,7 +20,7 @@
     "publish": "yarn run build && yarn publish --access public"
   },
   "dependencies": {
-    "@runmorph/cdk": "^0.0.22",
+    "@runmorph/cdk": "^0.0.23",
     "@runmorph/resource-models": "^0.0.5",
     "axios": "^0.21.1",
     "jsonwebtoken": "^9.0.2",
@@ -28,6 +28,7 @@
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.6",
-    "@types/uuid": "^10.0.0"
+    "@types/uuid": "^10.0.0",
+    "typescript": "^5.6.3"
   }
 }

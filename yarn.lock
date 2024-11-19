@@ -1047,10 +1047,23 @@
     fs "^0.0.1-security"
     path "^0.12.7"
 
+"@runmorph/cdk@^0.0.23":
+  version "0.0.23"
+  resolved "https://registry.yarnpkg.com/@runmorph/cdk/-/cdk-0.0.23.tgz#45fbea0e76d86f91ef26a32660eed43a4641e8ef"
+  integrity sha512-dWn3yEFy1bOUfRAIZH03L8h9AwFxmG3BCUUJd1TaSmGTiAruVlQrWNhdDbLRXQuqJ3BX3sojP+I5beM+hNQp6Q==
+  dependencies:
+    fs "^0.0.1-security"
+    path "^0.12.7"
+
 "@runmorph/connector-hubspot@^0.0.15":
   version "0.0.15"
   resolved "https://registry.yarnpkg.com/@runmorph/connector-hubspot/-/connector-hubspot-0.0.15.tgz#17f03517cf894bcd595db03e0b5d134dd1d50d58"
   integrity sha512-kKQRe7TWVrFycQ4vNNgz7rgLY8o5+w9kY+Q/SZgKnD8ZYtCoqJ7yMkJlnkRVf6O0yyOMoD+FtPY/lxtaxHtrRA==
+
+"@runmorph/connector-hubspot@^0.0.16":
+  version "0.0.16"
+  resolved "https://registry.yarnpkg.com/@runmorph/connector-hubspot/-/connector-hubspot-0.0.16.tgz#633d38962536fd422b322e19a064ebbd51fd67f2"
+  integrity sha512-hzw0CxBlLxorGtubOuvzqIyTIyfhrlfki2psat/jMkALTniL0FJxLAJ01LUk2/7u6pEMGw5TzNTk7x4EWumUVA==
 
 "@runmorph/core@^0.0.16":
   version "0.0.16"
@@ -1058,6 +1071,17 @@
   integrity sha512-oM5HTydOrXmKPwsgGWXmakEBMYaOb2vz00FXoS2WZiTBNmCuoJSYhTw534ywqhYnfE5H5bYfKidWqL4oubK+jg==
   dependencies:
     "@runmorph/cdk" "^0.0.22"
+    "@runmorph/resource-models" "^0.0.5"
+    axios "^0.21.1"
+    jsonwebtoken "^9.0.2"
+    uuid "^10.0.0"
+
+"@runmorph/core@^0.0.17":
+  version "0.0.17"
+  resolved "https://registry.yarnpkg.com/@runmorph/core/-/core-0.0.17.tgz#84053042b42372012027a9b595b214a840efeba0"
+  integrity sha512-/TzXcAcI3xvhHtE5GExgaXajZK+Pu2PgEeQVMEDuIBL7vxT5b+5u7uYkacWL5KSesRShp+pkxLgXNBUE4AZ+Cg==
+  dependencies:
+    "@runmorph/cdk" "^0.0.23"
     "@runmorph/resource-models" "^0.0.5"
     axios "^0.21.1"
     jsonwebtoken "^9.0.2"

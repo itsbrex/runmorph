@@ -9,6 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@runmorph/adapter-memory": "^0.0.1",
+    "@runmorph/connector-hubspot": "^0.0.16",
+    "@runmorph/framework-next": "^0.0.6",
     "@radix-ui/react-accordion": "^1.2.1",
     "@radix-ui/react-dialog": "^1.1.2",
     "@radix-ui/react-popover": "^1.1.2",
@@ -16,9 +19,6 @@
     "@radix-ui/react-separator": "^1.1.0",
     "@radix-ui/react-slot": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.1.4",
-    "@runmorph/adapter-memory": "^0.0.1",
-    "@runmorph/connector-hubspot": "^0.0.15",
-    "@runmorph/framework-next": "^0.0.5",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "cmdk": "1.0.0",
