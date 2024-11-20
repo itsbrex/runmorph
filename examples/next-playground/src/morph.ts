@@ -1,34 +1,44 @@
-import { LocalAdapter } from "@runmorph/adapter-local";
-//import { MemoryAdapter } from "@runmorph/adapter-memory";
 import HubSpotConnector from "@runmorph/connector-hubspot";
+import { type Adapter } from "@runmorph/core";
 import { NextMorph } from "@runmorph/framework-next";
 
-const { morph, handlers } = NextMorph({
-  connectors: [
-    HubSpotConnector({
-      clientId: process.env.MORPH_CONNECTOR_HUBSPOT_CLIENT_ID,
-      clientSecret: process.env.MORPH_CONNECTOR_HUBSPOT_CLIENT_SECRET,
-    }),
-  ],
-  database: { adapter: LocalAdapter() },
-  logger: {
-    debug: () => {},
-    info: () => {},
-    warn: () => {},
-    error: () => {},
-    newTracer: function () {
-      return this;
+// Conditional import based on environment
+const getAdapter = async (): Promise<Adapter> => {
+  if (process.env.NODE_ENV === "development") {
+    const { LocalAdapter } = await import("@runmorph/adapter-local");
+    return LocalAdapter();
+  }
+  const { MemoryAdapter } = await import("@runmorph/adapter-memory");
+  return MemoryAdapter();
+};
+
+const initializeMorph = async () => {
+  const adapter = await getAdapter();
+
+  return NextMorph({
+    connectors: [
+      HubSpotConnector({
+        clientId: process.env.MORPH_CONNECTOR_HUBSPOT_CLIENT_ID,
+        clientSecret: process.env.MORPH_CONNECTOR_HUBSPOT_CLIENT_SECRET,
+      }),
+    ],
+    database: { adapter },
+    logger: {
+      debug: () => {},
+      info: () => {},
+      warn: () => {},
+      error: () => {},
+      newTracer: function () {
+        return this;
+      },
+      closeTracer: function () {
+        return this;
+      },
     },
-    closeTracer: function () {
-      return this;
-    },
-  },
-});
+  });
+};
+
+const { morph, handlers } = await initializeMorph();
 
 export { morph, handlers };
 export type morph = typeof morph;
-
-/**
- * WARNING
- * To view your connectors in the playground – make sure to add them as well in ./connector-listing.ts
- **/
