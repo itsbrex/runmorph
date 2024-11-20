@@ -1,4 +1,5 @@
-import { MemoryAdapter } from "@runmorph/adapter-memory";
+import { LocalAdapter } from "@runmorph/adapter-local";
+//import { MemoryAdapter } from "@runmorph/adapter-memory";
 import HubSpotConnector from "@runmorph/connector-hubspot";
 import { NextMorph } from "@runmorph/framework-next";
 
@@ -9,7 +10,7 @@ const { morph, handlers } = NextMorph({
       clientSecret: process.env.MORPH_CONNECTOR_HUBSPOT_CLIENT_SECRET,
     }),
   ],
-  database: { adapter: MemoryAdapter() },
+  database: { adapter: LocalAdapter() },
   logger: {
     debug: () => {},
     info: () => {},

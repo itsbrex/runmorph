@@ -16,10 +16,7 @@ tests
 postgres-data
 
 # MVP
-resource-models
 playground
-packages
-core
 
 # Logs
 logs

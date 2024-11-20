@@ -27,11 +27,11 @@
     "fix:format": "prettier --write \"**/*.{ts,tsx,md}\" --ignore-path ../../.gitignore"
   },
   "peerDependencies": {
-    "@runmorph/core": "^0.0.14",
+    "@runmorph/core": "^0.0.17",
     "@prisma/client": ">=2.26.0 || >=3 || >=4 || >=5"
   },
   "devDependencies": {
-    "@runmorph/core": "^0.0.14",
+    "@runmorph/core": "^0.0.17",
     "@prisma/client": "^5.9.1",
     "@prisma/extension-accelerate": "^0.6.3",
     "mongodb": "^4.17.0",

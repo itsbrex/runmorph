@@ -47,7 +47,7 @@ export function PlaygroundSidebar({
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
                   <span className="font-semibold">Morph Playground</span>
-                  <span className="">{ownerId}</span>
+                  <span className="text-purple-700">{ownerId}</span>
                 </div>
               </a>
             </SidebarMenuButton>
@@ -83,6 +83,7 @@ export function PlaygroundSidebar({
                   <GlobeLock />
                   Proxy Request
                 </SidebarMenuButton>
+                <SidebarMenuBadge>(soon)</SidebarMenuBadge>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
@@ -93,22 +94,32 @@ export function PlaygroundSidebar({
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <Github />
-                  morphHQ/runmorph
-                </SidebarMenuButton>
-                <SidebarMenuBadge>
-                  <SquareArrowOutUpRight className="w-3.5 text-muted-foreground" />
-                </SidebarMenuBadge>
+                <Link
+                  href="https://github.com/morphHQ/runmorph/tree/main"
+                  target="_blank"
+                >
+                  <SidebarMenuButton>
+                    <Github />
+                    morphHQ/runmorph
+                  </SidebarMenuButton>
+                  <SidebarMenuBadge>
+                    <SquareArrowOutUpRight className="w-3.5 text-muted-foreground" />
+                  </SidebarMenuBadge>
+                </Link>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <Slack />
-                  Community
-                </SidebarMenuButton>
-                <SidebarMenuBadge>
-                  <SquareArrowOutUpRight className="w-3.5 text-muted-foreground" />
-                </SidebarMenuBadge>
+                <Link
+                  href="https://join.slack.com/t/morphcommunity/shared_invite/zt-2tc1vo0n7-8lUPL8~D7wwjC4UmbujAUA"
+                  target="_blank"
+                >
+                  <SidebarMenuButton>
+                    <Slack />
+                    Community
+                  </SidebarMenuButton>
+                  <SidebarMenuBadge>
+                    <SquareArrowOutUpRight className="w-3.5 text-muted-foreground" />
+                  </SidebarMenuBadge>
+                </Link>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>

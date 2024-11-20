@@ -19,7 +19,11 @@
   },
   "packageManager": "yarn@1.22.22",
   "workspaces": [
+    "core",
+    "adapters/*",
     "packages/*",
+    "connectors/*",
+    "resource-models",
     "frameworks/*",
     "examples/*"
   ],
@@ -30,8 +34,8 @@
   "devDependencies": {
     "dotenv-cli": "^7.4.2",
     "eslint": "^8.52.0",
+    "npm-run-all": "^4.1.5",
     "prettier": "^3.2.5",
-    "turbo": "latest",
-    "npm-run-all": "^4.1.5"
+    "turbo": "latest"
   }
 }

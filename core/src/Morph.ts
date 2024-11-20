@@ -23,8 +23,7 @@ export type MorphConfig<A, CA> = {
 };
 export function Morph<
   A extends Adapter,
-  CA extends ConnectorBundle<I, ResourceModelOperations>[],
-  I extends string,
+  CA extends ConnectorBundle<string, ResourceModelOperations>[],
 >(options: MorphConfig<A, CA>): MorphClient<A, CA> {
   return new MorphClient(options);
 }
