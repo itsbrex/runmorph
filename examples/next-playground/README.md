@@ -1,6 +1,9 @@
+![morph-next-playground-template-thumb](https://github.com/user-attachments/assets/d1c42af7-8186-42d9-b997-fe3e5aa2028f)
+
 # Morph NextJS Starter Kit
 
 A modern Next.js starter template for building third-party integrations with Morph SDK.
+
 
 ## Deploy to Vercel
 
