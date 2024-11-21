@@ -53,6 +53,13 @@ export function ConnectionButton({
 
       setStatus(data?.status === "authorized" ? "connected" : "not_connected");
     } catch (error) {
+      if (error instanceof Error && error.message === "Load failed") {
+        alert(
+          "Make sure you have correctly set the NEXT_PUBLIC_MORPH_API_BASE_URL and that you are loading the playground on the main domain (and not a subdeployment domain)."
+        );
+      } else {
+        alert(error);
+      }
       console.error("Error checking connection status:", error);
       setStatus("error");
     }

@@ -51,7 +51,7 @@ interface ResourceListProps {
 export function ResourceList({ connections }: ResourceListProps): JSX.Element {
   const [selectedConnection, setSelectedConnection] = useState<
     string | undefined
-  >();
+  >(connectorListing[0]?.id);
   const [selectedResource, setSelectedResource] =
     useState<ResourceModelId>("genericContact");
   const [resources, setResources] = useState<
@@ -96,9 +96,18 @@ export function ResourceList({ connections }: ResourceListProps): JSX.Element {
       }
     } catch (error) {
       console.error(error);
-      setError(
-        error instanceof Error ? error.message : "An unknown error occurred"
-      );
+
+      if (error instanceof Error) {
+        if (error.message === "Load failed") {
+          setError(
+            "Make sure you have correctly set the NEXT_PUBLIC_MORPH_API_BASE_URL and that you are loading the playground on the main domain (and not a subdeployment domain)."
+          );
+        } else {
+          setError(error.message);
+        }
+      } else {
+        setError("An unknown error occurred");
+      }
       setResources([]);
     } finally {
       setIsLoading(false);
