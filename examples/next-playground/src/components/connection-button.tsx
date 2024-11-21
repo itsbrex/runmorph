@@ -30,7 +30,7 @@ export function ConnectionButton({
   useEffect(() => {
     checkConnectionStatus();
 
-    const handleMessage = (event: MessageEvent) => {
+    const handleMessage = (event: MessageEvent): void => {
       if (event.data === "connection_callback_complete") {
         checkConnectionStatus();
       }
@@ -40,7 +40,7 @@ export function ConnectionButton({
     return () => window.removeEventListener("message", handleMessage);
   }, []);
 
-  const checkConnectionStatus = async () => {
+  const checkConnectionStatus = async (): Promise<void> => {
     try {
       const { data, error } = await nextMorphClient
         .connections({ sessionToken })
@@ -58,7 +58,7 @@ export function ConnectionButton({
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = async (): Promise<void> => {
     if (!confirm("Are you sure you want to delete this connection?")) {
       return;
     }

@@ -14,7 +14,7 @@ export const connectorListing: ConnectorListingEntry[] = [
     id: "hubspot",
     name: "Hubspot",
     description:
-      "A leading CRM platform that provides tools for marketing, sales, and customer service.",
+      "Public test credentials: \n→ conscience-limousines0f@icloud.com \n→ faqcir-butvo2-xynbEs",
     logo: "/connectors/hubspot.svg",
   },
 ];

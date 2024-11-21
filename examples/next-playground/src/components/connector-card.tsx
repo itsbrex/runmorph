@@ -36,9 +36,13 @@ export function ConnectorCard({
         <CardTitle>{name}</CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-muted-foreground">{description}</p>
+        <p className="text-muted-foreground whitespace-pre-line">
+          {description}
+        </p>
       </CardContent>
-      <CardFooter className="flex items-center justify-end gap-2">{children}</CardFooter>
+      <CardFooter className="flex items-center justify-end gap-2">
+        {children}
+      </CardFooter>
     </Card>
   );
 }

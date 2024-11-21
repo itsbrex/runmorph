@@ -5,8 +5,8 @@ import { headers } from "next/headers";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 
+import { ConnectionButton } from "@/components/connection-button";
 import { ConnectorCard } from "@/components/connector-card";
-import { ConnectionButton } from "@/components/morph-connection-button";
 import {
   Accordion,
   AccordionContent,

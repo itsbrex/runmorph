@@ -1,7 +1,7 @@
 "use server";
 import { Info } from "lucide-react";
 
-import { ResourceList } from "@/components/morph-resource-list";
+import { ResourceList } from "@/components/resource-list";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Breadcrumb,
