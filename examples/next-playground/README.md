@@ -4,9 +4,20 @@ A modern Next.js starter template for building third-party integrations with Mor
 
 ## Deploy to Vercel
 
-You can deploy this example project to Vercel with one click:
+### Option 1: Deploy as part of monorepo
 
-[![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/morphHQ/runmorph/tree/8a118eb14b9495a8a396028d8513bb6c8a8ea8e9/examples/next-app&env=MORPH_ENCRYPTION_KEY,MORPH_CALLBACK_BASE_URL,NEXT_PUBLIC_MORPH_API_BASE_URL,MORPH_CONNECTOR_HUBSPOT_CLIENT_ID,MORPH_CONNECTOR_HUBSPOT_CLIENT_SECRET&envDescription=Environment%20variables%20for%20Morph%20integration&envLink=https://github.com/morphHQ/runmorph/tree/8a118eb14b9495a8a396028d8513bb6c8a8ea8e9/examples/next-app#environment-variables)
+1. Fork the `runmorph` repository on GitHub
+2. Create a new project in Vercel and import your forked repository
+3. In the Vercel project settings:
+   - Set the Root Directory to `examples/next-playground`
+   - Leave the default Build Command and Output Directory
+4. Deploy the project
+
+### Option 2: Deploy standalone example
+
+You can also deploy just this example directly to Vercel with one click:
+
+[![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/morphHQ/runmorph/tree/main/examples/next-playground&env=MORPH_ENCRYPTION_KEY,MORPH_CALLBACK_BASE_URL,NEXT_PUBLIC_MORPH_API_BASE_URL,MORPH_CONNECTOR_HUBSPOT_CLIENT_ID,MORPH_CONNECTOR_HUBSPOT_CLIENT_SECRET&envDescription=Environment%20variables%20for%20Morph%20integration&envLink=https://github.com/morphHQ/runmorph/tree/main/examples/next-playground#environment-variables)
 
 ## Features
 
