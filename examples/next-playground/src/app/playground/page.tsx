@@ -1,10 +1,17 @@
-"use server";
-import { redirect } from "next/navigation";
+"use client";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-export default async function PlaygroundRedirect(): Promise<void> {
-  // Generate a random ownerId
-  const ownerId = Math.random().toString(36).substring(2, 15);
+export default function PlaygroundRedirect(): JSX.Element {
+  const router = useRouter();
 
-  // Redirect to /{ownerId}
-  redirect(`/playground/fake-user-${ownerId}`);
+  useEffect(() => {
+    // Generate a random ownerId
+    const ownerId = Math.random().toString(36).substring(2, 15);
+
+    // Redirect to /{ownerId} using client-side navigation
+    router.push(`/playground/fake-user-${ownerId}`);
+  }, [router]);
+
+  return <></>;
 }
