@@ -7,13 +7,12 @@ node_modules
 dist/
 dist-ssr
 out
-*.local
-.env
 .cache
 server/dist
 public/dist
 tests
 postgres-data
+
 
 # MVP
 playground
