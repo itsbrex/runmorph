@@ -11,9 +11,9 @@ This software is freely available for use in any paid or unpaid SaaS application
 ### 2. Restrictions on Repurposing for Paid Integration Platforms
 
 The software must not be repackaged or used to create or support:
-• A paid unified API service.
-• Integration Platform as a Service (iPaaS) solutions.
-• Any B2B/B2C/... service that provides third-party integrations as a paid standalone product not listed above.
+- A paid unified API service.
+- Integration Platform as a Service (iPaaS) solutions.
+- Any B2B/B2C/... service that provides third-party integrations as a paid standalone product not listed above.
 
 ### 3. Third-Party Components
 
@@ -22,8 +22,8 @@ All third-party components incorporated into this software are licensed under th
 ### 4. License Structure
 
 Portions of this software fall under different licensing terms:
-• Code residing in all packages strating by @runmorph/... such as @runmorph/core are restricted under the terms outlined above and is not freely available for unrestricted commercial use outside of integration scenarios as specified.
-• All other content outside of restricted directories/packages is available under the terms of the GNU Affero General Public License (AGPLv3).
+- Code residing in all packages strating by @runmorph/... such as @runmorph/core are restricted under the terms outlined above and is not freely available for unrestricted commercial use outside of integration scenarios as specified.
+- All other content outside of restricted directories/packages is available under the terms of the GNU Affero General Public License (AGPLv3).
 
 GNU Affero General Public License
 
