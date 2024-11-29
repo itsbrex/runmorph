@@ -4,6 +4,7 @@
 
 A modern Next.js starter template for building third-party integrations with Morph SDK.
 
+[Demo Playground](https://morph-next-playground-clone.vercel.app/playground/fake-user-6ivhxgnknnt/connectors)
 
 ## Deploy to Vercel
 
