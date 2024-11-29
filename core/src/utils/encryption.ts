@@ -34,7 +34,7 @@ function decryptValue(encryptedValue: string): string {
     const decipher = crypto.createDecipheriv(
       "aes-256-gcm",
       getEncryptionKey(),
-      iv,
+      iv
     );
     decipher.setAuthTag(authTag);
 
@@ -51,7 +51,7 @@ function decryptValue(encryptedValue: string): string {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function encryptJson<T extends Record<string, any>>(
   data: T,
-  encryptAll = false,
+  encryptAll = false
 ): T {
   const encryptedData = { ...data };
 
@@ -73,7 +73,7 @@ export function encryptJson<T extends Record<string, any>>(
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function decryptJson<T extends Record<string, any>>(
   data: T,
-  decryptAll = false,
+  decryptAll = false
 ): T {
   const decryptedData = { ...data };
 
@@ -113,4 +113,16 @@ function getEncryptionKey(): Buffer {
   }
   // Hash the ENCRYPTION_KEY to ensure it's always 32 bytes
   return crypto.createHash("sha256").update(String(ENCRYPTION_KEY)).digest();
+}
+
+/**
+ * Generates a unique ID with a given prefix and random string
+ * @param prefix - The prefix to prepend to the ID (e.g. "whk")
+ * @param length - The length of the random string portion (default: 50)
+ * @returns A string in the format "{prefix}_{random}"
+ */
+export function generateId(prefix: string, length = 50): string {
+  const randomBytes = crypto.randomBytes(Math.ceil(length / 2));
+  const randomString = randomBytes.toString("hex").slice(0, length);
+  return `${prefix}_${randomString}`;
 }

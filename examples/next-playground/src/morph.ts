@@ -12,16 +12,16 @@ const getAdapter = async (): Promise<Adapter> => {
   return MemoryAdapter();
 };
 
+const hubspot = HubSpotConnector({
+  clientId: process.env.MORPH_CONNECTOR_HUBSPOT_CLIENT_ID,
+  clientSecret: process.env.MORPH_CONNECTOR_HUBSPOT_CLIENT_SECRET,
+});
+console.log("HubSpotConnector", hubspot);
 const initializeMorph = async () => {
   const adapter = await getAdapter();
 
   return NextMorph({
-    connectors: [
-      HubSpotConnector({
-        clientId: process.env.MORPH_CONNECTOR_HUBSPOT_CLIENT_ID,
-        clientSecret: process.env.MORPH_CONNECTOR_HUBSPOT_CLIENT_SECRET,
-      }),
-    ],
+    connectors: [hubspot],
     database: { adapter },
     logger: {
       debug: () => {},

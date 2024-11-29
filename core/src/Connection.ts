@@ -19,6 +19,8 @@ import type {
   MorphError,
   ConnectionStatus,
   Logger,
+  WebhookOperations,
+  ResourceEvents,
 } from "@runmorph/cdk";
 import type { ResourceModelId } from "@runmorph/resource-models";
 import axios, { AxiosRequestConfig } from "axios";
@@ -37,9 +39,14 @@ import {
   getAuthorizationHeader,
   oautCallback,
 } from "./utils/oauth";
+import { WebhookClient } from "./Webhook";
 
 function validateAuthorizationSettings(
-  connector: ConnectorBundle<string, ResourceModelOperations>,
+  connector: ConnectorBundle<
+    string,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+  >,
   settings: Record<string, string>,
   strict: boolean = true
 ): EitherTypeOrError<{ settings: Record<string, string> }> {
@@ -90,14 +97,22 @@ function connectionAdapterToConnectionData(
 
 type ConnectionClientBase<
   A extends Adapter,
-  C extends ConnectorBundle<string, ResourceModelOperations>[],
+  C extends ConnectorBundle<
+    string,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+  >[],
 > = {
   morph: MorphClient<A, C>;
 };
 
 type ConnectionClientConnection<
   A extends Adapter,
-  C extends ConnectorBundle<string, ResourceModelOperations>[],
+  C extends ConnectorBundle<
+    string,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+  >[],
   I extends C[number]["id"],
 > = ConnectionClientBase<A, C> & {
   type: "connection";
@@ -108,7 +123,11 @@ type ConnectionClientConnection<
 
 type ConnectionClientSession<
   A extends Adapter,
-  C extends ConnectorBundle<string, ResourceModelOperations>[],
+  C extends ConnectorBundle<
+    string,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+  >[],
 > = ConnectionClientBase<A, C> & {
   type: "connectionSession";
   sessionToken: string;
@@ -118,13 +137,21 @@ type ConnectionClientSession<
 
 type ConnectionClientType<
   A extends Adapter,
-  C extends ConnectorBundle<string, ResourceModelOperations>[],
+  C extends ConnectorBundle<
+    string,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+  >[],
   I extends C[number]["id"],
 > = ConnectionClientConnection<A, C, I> | ConnectionClientSession<A, C>;
 
 export class ConnectionClient<
   A extends Adapter,
-  C extends ConnectorBundle<string, ResourceModelOperations>[],
+  C extends ConnectorBundle<
+    string,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+  >[],
   I extends C[number]["id"],
 > {
   config: ConnectionClientType<A, C, I>;
@@ -786,11 +813,19 @@ export class ConnectionClient<
       };
     }
   }
+
+  webhook(): WebhookClient<A, C, I> {
+    return new WebhookClient(this);
+  }
 }
 
 export class AllConnectionsClient<
   A extends Adapter,
-  C extends ConnectorBundle<I, ResourceModelOperations>[],
+  C extends ConnectorBundle<
+    I,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+  >[],
   I extends string,
 > {
   private morph: MorphClient<A, C>;

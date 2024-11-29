@@ -3,6 +3,8 @@ import type {
   ResourceModelOperations,
   Awaitable,
   EitherDataOrError,
+  WebhookOperations,
+  ResourceEvents,
 } from "@runmorph/cdk";
 import { config } from "dotenv";
 import { sign, verify } from "jsonwebtoken";
@@ -19,7 +21,11 @@ const TOKEN_EXPIRATION = process.env.MORPH_SESSION_DURATION || "30m"; // 30 minu
 
 export class Session<
   A extends Adapter,
-  C extends ConnectorBundle<I, ResourceModelOperations>[],
+  C extends ConnectorBundle<
+    I,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+  >[],
   I extends string,
 > {
   private morph: MorphClient<A, C>;

@@ -8,6 +8,8 @@ import type {
   ConnectionData,
   EitherTypeOrError,
   Logger,
+  WebhookOperations,
+  ResourceEvents,
 } from "@runmorph/cdk";
 import axios from "axios";
 
@@ -82,7 +84,11 @@ export async function exchangeCodeForToken({
 }
 
 export function getConnectorOAuthCredentials(
-  connector: ConnectorBundle<string, ResourceModelOperations>
+  connector: ConnectorBundle<
+    string,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+  >
 ): {
   clientId: string;
   clientSecret: string;
@@ -127,7 +133,11 @@ export async function fetchOAuthToken(
 
 export async function oautCallback<
   A extends Adapter,
-  C extends ConnectorBundle<I, ResourceModelOperations>[],
+  C extends ConnectorBundle<
+    I,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+  >[],
   I extends string,
 >(
   morph: MorphClient<A, C>,
@@ -266,7 +276,11 @@ export async function oautCallback<
 
 export async function getAuthorizationHeader<
   A extends Adapter,
-  C extends ConnectorBundle<I, ResourceModelOperations>[],
+  C extends ConnectorBundle<
+    I,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+  >[],
   I extends string,
 >(
   morph: MorphClient<A, C>,
@@ -335,7 +349,11 @@ export async function getAuthorizationHeader<
 
 export async function refreshAccessToken<
   A extends Adapter,
-  C extends ConnectorBundle<I, ResourceModelOperations>[],
+  C extends ConnectorBundle<
+    I,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+  >[],
   I extends string,
 >(
   morph: MorphClient<A, C>,
@@ -440,7 +458,11 @@ function calculateExpiresAt(expiresIn: number): string {
 }
 
 function getConnectorClientId(
-  connector: ConnectorBundle<string, ResourceModelOperations>
+  connector: ConnectorBundle<
+    string,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+  >
 ): string {
   const { clientId } = connector.connector.getOptions();
   if (clientId) return clientId;
@@ -457,7 +479,11 @@ function getConnectorClientId(
 }
 
 function getConnectorClientSecret(
-  connector: ConnectorBundle<string, ResourceModelOperations>
+  connector: ConnectorBundle<
+    string,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+  >
 ): string {
   const { clientSecret } = connector.connector.getOptions();
   if (clientSecret) return clientSecret;

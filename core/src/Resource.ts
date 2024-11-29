@@ -8,6 +8,8 @@ import type {
   EitherDataOrError,
   ResourceRefData,
   Logger,
+  WebhookOperations,
+  ResourceEvents,
 } from "@runmorph/cdk";
 import type {
   ResourceModels,
@@ -24,7 +26,11 @@ export type MorphResource<RTI extends ResourceModelId> = ResourceData<
 >;
 export class ResourceClient<
   A extends Adapter,
-  C extends ConnectorBundle<string, ResourceModelOperations>[],
+  C extends ConnectorBundle<
+    string,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+  >[],
   CI extends C[number]["id"],
   RTI extends keyof ArrayToIndexedObject<
     C,

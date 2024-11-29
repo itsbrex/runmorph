@@ -3,6 +3,8 @@ import {
   ResourceModelOperations,
   Awaitable,
   EitherDataOrError,
+  WebhookOperations,
+  ResourceEvents,
 } from "@runmorph/cdk";
 
 import { MorphClient } from "./Morph";
@@ -10,7 +12,11 @@ import { Adapter } from "./types/adapter";
 
 export class ClientConnector<
   A extends Adapter,
-  C extends ConnectorBundle<I, ResourceModelOperations>[],
+  C extends ConnectorBundle<
+    I,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+  >[],
   I extends string,
 > {
   private morph: MorphClient<A, C>;
@@ -21,7 +27,15 @@ export class ClientConnector<
 
   retrieve<T extends I>(
     id: T
-  ): Awaitable<EitherDataOrError<ConnectorBundle<T, ResourceModelOperations>>> {
+  ): Awaitable<
+    EitherDataOrError<
+      ConnectorBundle<
+        T,
+        ResourceModelOperations,
+        WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+      >
+    >
+  > {
     const connector = this.morph.𝙢_.connectors[id];
 
     if (!connector) {
@@ -34,7 +48,11 @@ export class ClientConnector<
     }
 
     return {
-      data: connector as unknown as ConnectorBundle<T, ResourceModelOperations>,
+      data: connector as unknown as ConnectorBundle<
+        T,
+        ResourceModelOperations,
+        WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+      >,
     };
   }
 }

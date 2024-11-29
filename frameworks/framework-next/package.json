@@ -22,7 +22,7 @@
     "publish": "yarn run build && yarn publish --access public"
   },
   "dependencies": {
-    "@runmorph/core": "^0.0.17"
+    "@runmorph/core": "^0.0.18"
   },
   "peerDependencies": {
     "next": "^14.0.0 || ^15.0.0",

@@ -7,6 +7,8 @@ import {
   Awaitable,
   EitherTypeOrError,
   ConnectionData,
+  WebhookOperations,
+  ResourceEvents,
 } from "@runmorph/cdk/";
 
 import { ConnectionClient, AllConnectionsClient } from "./Connection";
@@ -23,14 +25,22 @@ export type MorphConfig<A, CA> = {
 };
 export function Morph<
   A extends Adapter,
-  CA extends ConnectorBundle<string, ResourceModelOperations>[],
+  CA extends ConnectorBundle<
+    string,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+  >[],
 >(options: MorphConfig<A, CA>): MorphClient<A, CA> {
   return new MorphClient(options);
 }
 
 export class MorphClient<
   A extends Adapter,
-  CA extends ConnectorBundle<string, ResourceModelOperations>[],
+  CA extends ConnectorBundle<
+    string,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+  >[],
 > {
   𝙢_: {
     connectors: ArrayToIndexedObject<CA, "id">;

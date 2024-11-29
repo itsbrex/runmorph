@@ -76,6 +76,14 @@ export function ResourceList({ connections }: ResourceListProps): JSX.Element {
       const morphConnection = morphClient.connections({
         sessionToken: connection.sessionToken,
       });
+
+      const { data: w, error: ew } = await morphConnection.webhook().create({
+        model: "genericContact",
+        trigger: "created",
+      });
+
+      console.log("w", w);
+      console.log("ew", ew);
       const { data, error } = await morphConnection
         .resources(selectedResource)
         .list({ limit: 3 });
@@ -156,13 +164,7 @@ export function ResourceList({ connections }: ResourceListProps): JSX.Element {
             </Select>
             <Select
               value={selectedResource}
-              onValueChange={(v) =>
-                setSelectedResource(
-                  v as Parameters<
-                    ReturnType<morph["connections"]>["resources"]
-                  >[0]
-                )
-              }
+              onValueChange={(v) => setSelectedResource(v as ResourceModelId)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select a resource type" />

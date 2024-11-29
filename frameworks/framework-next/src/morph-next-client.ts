@@ -3,7 +3,9 @@ import type {
   ConnectorBundle,
   MorphClient,
   ResourceClient,
+  ResourceEvents,
   ResourceModelOperations,
+  WebhookOperations,
 } from "@runmorph/core";
 
 interface ApiRequestPayload<TData = unknown> {
@@ -41,7 +43,11 @@ class ApiClient {
 
 class ResourceNextClient<
   A extends Adapter,
-  CA extends ConnectorBundle<string, ResourceModelOperations>[],
+  CA extends ConnectorBundle<
+    string,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+  >[],
   TResourceModelId extends Parameters<
     ReturnType<MorphClient<A, CA>["connections"]>["resources"]
   >[0],
@@ -133,9 +139,75 @@ class ResourceNextClient<
   }
 }
 
+class WebhookNextClient<
+  A extends Adapter,
+  CA extends ConnectorBundle<
+    string,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+  >[],
+> extends ApiClient {
+  constructor(sessionToken: string, baseUrl: string) {
+    super(baseUrl, sessionToken);
+  }
+
+  async create(
+    params: Parameters<
+      ReturnType<
+        ReturnType<MorphClient<A, CA>["connections"]>["webhook"]
+      >["create"]
+    >[0]
+  ): Promise<
+    ReturnType<
+      ReturnType<
+        ReturnType<MorphClient<A, CA>["connections"]>["webhook"]
+      >["create"]
+    >
+  > {
+    return this.post("s/webhooks", {
+      action: "create",
+      data: params,
+    });
+  }
+  /*
+  async retrieve(
+    id: string
+  ): Promise<
+    ReturnType<
+      ReturnType<
+        ReturnType<MorphClient<A, CA>["connections"]>["webhook"]
+      >["retrieve"]
+    >
+  > {
+    return this.post("s/webhooks", {
+      action: "retrieve",
+      data: { id },
+    });
+  }
+
+  async delete(
+    id: string
+  ): Promise<
+    ReturnType<
+      ReturnType<
+        ReturnType<MorphClient<A, CA>["connections"]>["webhook"]
+      >["delete"]
+    >
+  > {
+    return this.post("s/webhooks", {
+      action: "delete",
+      data: { id },
+    });
+  }*/
+}
+
 class ConnectionsNextClient<
   A extends Adapter,
-  CA extends ConnectorBundle<string, ResourceModelOperations>[],
+  CA extends ConnectorBundle<
+    string,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+  >[],
 > extends ApiClient {
   constructor(sessionToken: string, baseUrl: string) {
     super(baseUrl, sessionToken);
@@ -189,11 +261,19 @@ class ConnectionsNextClient<
       this.baseUrl
     );
   }
+
+  webhook(): WebhookNextClient<A, CA> {
+    return new WebhookNextClient(this.sessionToken!, this.baseUrl);
+  }
 }
 
 class MorphNextClient<
   A extends Adapter,
-  CA extends ConnectorBundle<string, ResourceModelOperations>[],
+  CA extends ConnectorBundle<
+    string,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+  >[],
 > extends ApiClient {
   constructor(baseUrl: string) {
     super(baseUrl);
