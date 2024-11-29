@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@runmorph/framework-next": "^0.0.6",
+    "@runmorph/framework-next": "^0.0.7",
     "@runmorph/adapter-memory": "^0.0.1",
     "@runmorph/connector-hubspot": "0.0.17",
     "next": "15.0.3",
