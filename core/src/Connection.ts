@@ -11,7 +11,6 @@ import type {
   ConnectionIds,
   ConnectionProxyParams,
   ConnectionAuthorizationStoredData,
-  Awaitable,
   EitherDataOrError,
   ErrorOrVoid,
   EitherTypeOrError,
@@ -26,17 +25,11 @@ import axios, { AxiosRequestConfig } from "axios";
 
 import { MorphClient } from "./Morph";
 import { ResourceClient } from "./Resource";
-import type {
-  AuthorizeParams,
-  Adapter,
-  AdapterConnection,
-  CreateAuthorizationParams,
-} from "./types";
+import type { AdapterConnection, CreateAuthorizationParams } from "./types";
 import { decryptJson, encryptJson } from "./utils/encryption";
 import {
   generateAuthorizationUrl,
   getAuthorizationHeader,
-  oautCallback,
 } from "./utils/oauth";
 import { WebhookClient } from "./Webhook";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
