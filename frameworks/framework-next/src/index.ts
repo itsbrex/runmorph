@@ -17,19 +17,13 @@ export { NextMorphClient } from "./morph-next-client";
 export type { MorphResource, ResourceModelId };
 export { resourceModelIds };
 export function NextMorph<
-  A extends Adapter,
-  CA extends ConnectorBundle<
-    string,
-    ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
-  >[],
+  TConnectorBundleArray extends ConnectorBundle<any, any, any>[],
 >(
-  config: MorphConfig<A, CA>
+  config: MorphConfig<TConnectorBundleArray>
 ): {
-  morph: MorphClient<A, CA>;
+  morph: MorphClient<TConnectorBundleArray>;
   handlers: ReturnType<NextMorphHandlers>;
 } {
-  console.log("NextMorph – init", config);
   const morph = Morph(config);
   const handlers = NextMorphHandlers(morph);
 

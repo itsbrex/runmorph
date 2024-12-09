@@ -15,6 +15,7 @@ import { sign } from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 
 import { ConnectionClient } from "./Connection";
+import { MorphClient } from "./Morph";
 import { Adapter, AdapterWebhook } from "./types";
 import { generateId } from "./utils/encryption";
 
@@ -46,40 +47,49 @@ export function generateHookUrl(params: {
 }
 
 export class WebhookClient<
-  A extends Adapter,
   C extends ConnectorBundle<
     string,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
+  >,
+  CA extends ConnectorBundle<
+    string,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
-  CI extends C[number]["id"],
 > {
-  connection: ConnectionClient<A, C, CI>;
-  connector: ArrayToIndexedObject<C, "id">[CI];
+  connection: ConnectionClient<C, CA>;
+  connector: C;
   logger?: Logger;
 
-  constructor(connection: ConnectionClient<A, C, CI>) {
+  constructor(connection: ConnectionClient<C, CA>) {
     this.connection = connection;
-    this.connector =
-      connection.config.morph.𝙢_.connectors[connection.connectorId];
-    this.logger = connection.logger;
+    const { data: ids, error } = this.connection.getConnectionIds();
+    if (error) {
+      this.logger?.error("WebhookClient : Failed to get connection ids", {
+        error,
+      });
+      throw "WebhookClient : Failed to get connection ids";
+    }
+    this.connector = MorphClient.instance.foo.connectors[ids.connectorId];
+    this.logger = connection.𝙢_.logger;
   }
 
   create = async (params: {
-    model: GetWebhookModels<
-      ArrayToIndexedObject<C, "id">[CI]["webhookOperations"]
-    >;
+    model: GetWebhookModels<C["webhookOperations"]>;
     trigger: EventTrigger;
-    redirectUrl?: string;
   }): Promise<EitherDataOrError<WebhookData>> => {
-    this.logger?.debug("Creating webhook", { params });
-
-    const c = this.connector;
     console.log("[WebhookClient.create] Starting webhook creation", {
       params,
-      c,
     });
-
+    this.logger?.debug("Creating webhook", { params });
+    const { data: ids, error } = this.connection.getConnectionIds();
+    if (error) {
+      this.logger?.error("WebhookClient : Failed to get connection ids", {
+        error,
+      });
+      throw "WebhookClient : Failed to get connection ids";
+    }
     const webhookSubscriptionOperations =
       this.connector.webhookOperations?.subscription;
     const webhookGlobalOperations = this.connector.webhookOperations?.global;
@@ -99,7 +109,7 @@ export class WebhookClient<
     // First, try to subscribe to the event in priority
     if (
       webhookSubscriptionOperations?.mapper?.events[params.model] &&
-      webhookSubscriptionOperations?.create
+      webhookSubscriptionOperations?.subscribe
     ) {
       console.log(
         "[WebhookClient.create] Attempting subscription webhook creation"
@@ -108,14 +118,14 @@ export class WebhookClient<
       let url;
       try {
         url = generateHookUrl({
-          connectorId: this.connection.connectorId,
-          ownerId: this.connection.ownerId,
+          connectorId: ids.connectorId,
+          ownerId: ids.ownerId,
           model: params.model,
           trigger: params.trigger,
         });
-        console.log("[WebhookClient.create] Generated hook URL", { url });
+        console.log("[WebhookClient.subscribe] Generated hook URL", { url });
       } catch (error) {
-        console.log("[WebhookClient.create] Failed to generate hook URL", {
+        console.log("[WebhookClient.subscribe] Failed to generate hook URL", {
           error,
         });
         if (error instanceof Error && "code" in error) {
@@ -130,13 +140,13 @@ export class WebhookClient<
           error: {
             code: "MORPH::UNKNOWN_ERROR",
             message:
-              "An unknown error occurred: " +
-              (error instanceof Error ? error.message : String(error)),
+              "An unknown error occurred 6: " +
+              (error instanceof Error ? error.message : JSON.stringify(error)),
           },
         };
       }
 
-      const { data, error } = await webhookSubscriptionOperations.create.run(
+      const { data, error } = await webhookSubscriptionOperations.subscribe.run(
         this.connection,
         { model: params.model, trigger: params.trigger, url }
       );
@@ -156,7 +166,7 @@ export class WebhookClient<
         webhookResponse = {
           type: "subscription",
           // Make the webhook if from the third-aprty app unique accross all connected owner
-          identifierKey: `${this.connection.ownerId}::${this.connection.connectorId}::${data.id}`,
+          identifierKey: `${this.connection.𝙢_.ownerId}::${this.connection.𝙢_.connectorId}::${data.id}`,
           meta: data?.meta,
         };
       }
@@ -168,12 +178,12 @@ export class WebhookClient<
         webhookGlobalOperations.mapper.eventRouter
       ).find(([_route, events]) => events[params.model]);
 
-      if (foundEntry && webhookGlobalOperations?.create) {
+      if (foundEntry && webhookGlobalOperations?.subscribe) {
         const [globalRoute] = foundEntry;
         console.log("[WebhookClient.create] Found matching global route", {
           globalRoute,
         });
-        const { data, error } = await webhookGlobalOperations.create.run(
+        const { data, error } = await webhookGlobalOperations.subscribe.run(
           this.connection,
           { model: params.model, trigger: params.trigger, globalRoute }
         );
@@ -213,14 +223,12 @@ export class WebhookClient<
     }
 
     const webhook: AdapterWebhook = {
-      connectorId: this.connection.connectorId,
-      ownerId: this.connection.ownerId,
-      id: generateId("whk"),
+      connectorId: ids.connectorId,
+      ownerId: ids.ownerId,
       type: webhookResponse.type,
       identifierKey: webhookResponse.identifierKey,
       model: params.model,
       trigger: params.trigger,
-      redirectUrl: params.redirectUrl,
       meta: webhookResponse.meta ? JSON.stringify(webhookResponse.meta) : null,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -228,27 +236,61 @@ export class WebhookClient<
     console.log("[WebhookClient.create] Created webhook object", { webhook });
 
     try {
-      const createdWebhook =
-        await this.connection.config.morph.𝙢_.database.adapter.createWebhook(
-          webhook
-        );
+      let createdWebhook: AdapterWebhook;
+
+      // If we have an identifierKey, check if webhook already exists
+
+      const existingWebhook =
+        await MorphClient.instance.foo.database.adapter.retrieveWebhook({
+          connectorId: webhook.connectorId,
+          ownerId: webhook.ownerId,
+          model: webhook.model,
+          trigger: webhook.trigger,
+        });
+
+      if (existingWebhook) {
+        // Update existing webhook
+        createdWebhook =
+          await MorphClient.instance.foo.database.adapter.updateWebhook(
+            {
+              connectorId: existingWebhook.connectorId,
+              ownerId: existingWebhook.ownerId,
+              model: existingWebhook.model,
+              trigger: existingWebhook.trigger,
+            },
+            {
+              ...webhook,
+              updatedAt: new Date(),
+            }
+          );
+      } else {
+        // Create new webhook
+        createdWebhook =
+          await MorphClient.instance.foo.database.adapter.createWebhook(
+            webhook
+          );
+      }
+
       console.log(
         "[WebhookClient.create] Successfully stored webhook in adapter",
         { createdWebhook }
       );
       this.logger?.debug("Webhook created successfully", {
-        webhookId: createdWebhook.id,
+        connectorId: createdWebhook.connectorId,
+        ownerId: createdWebhook.ownerId,
+        model: createdWebhook.model,
+        trigger: createdWebhook.trigger,
       });
       const webhookData: WebhookData = {
         object: "webhook",
-        connectorId: webhook.connectorId,
-        ownerId: webhook.ownerId,
-        id: webhook.id,
-        model: webhook.model,
-        trigger: webhook.trigger,
-        redirectUrl: webhook.redirectUrl,
-        createdAt: webhook.createdAt,
-        updatedAt: webhook.updatedAt,
+        connectorId: createdWebhook.connectorId,
+        ownerId: createdWebhook.ownerId,
+        // id: createdWebhook.id,
+        model: createdWebhook.model,
+        trigger: createdWebhook.trigger,
+        // redirectUrl: createdWebhook.redirectUrl,
+        createdAt: createdWebhook.createdAt,
+        updatedAt: createdWebhook.updatedAt,
       };
       return { data: webhookData };
     } catch (error) {

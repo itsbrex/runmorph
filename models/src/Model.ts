@@ -1,7 +1,7 @@
 import { z, zMoprhResource } from "./ZodExtensions";
 
-export type ResourceModelFieldKeys<
-  RT extends ResourceModel<string, Record<string, z.ZodTypeAny>>,
+export type ModelFieldKeys<
+  RT extends Model<string, Record<string, z.ZodTypeAny>>,
 > = keyof z.infer<ReturnType<RT["schema"]>>;
 
 type ResourceModelExpandableFiedCheck =
@@ -10,8 +10,8 @@ type ResourceModelExpandableFiedCheck =
     }
   | undefined;
 
-export type ResourceModelExpandableFieldKeys<
-  RT extends ResourceModel<string, Record<string, z.ZodTypeAny>>,
+export type ModelExpandableFieldKeys<
+  RT extends Model<string, Record<string, z.ZodTypeAny>>,
 > = {
   [K in keyof z.infer<ReturnType<RT["schema"]>>]: z.infer<
     ReturnType<RT["schema"]>
@@ -23,10 +23,7 @@ export type ResourceModelExpandableFieldKeys<
     : never;
 }[keyof z.infer<ReturnType<RT["schema"]>>];
 
-export class ResourceModel<
-  I extends string,
-  RFS extends Record<string, z.ZodTypeAny>,
-> {
+export class Model<I extends string, RFS extends Record<string, z.ZodTypeAny>> {
   public id: I;
   public schema: (zInstance?: typeof z) => z.ZodObject<RFS>;
 
@@ -51,13 +48,13 @@ export class ResourceModel<
   }
 }
 
-export class ResourceModelMap<
-  T extends Record<string, ResourceModel<string, Record<string, z.ZodTypeAny>>>,
+export class ModelDirectory<
+  T extends Record<string, Model<string, Record<string, z.ZodTypeAny>>>,
 > {
   constructor(private resourceModelsMap: T) {}
 
   // Get the entire resource models record
-  public getResourceModelMap(): T {
+  public getModelDirectory(): T {
     if (!this.resourceModelsMap) {
       throw new Error("Resource models map not found");
     }
@@ -76,7 +73,7 @@ export class ResourceModelMap<
   }
 
   // Get all resource model IDs
-  public getResourceModelIds(): Array<keyof T> {
+  public getModelIds(): Array<keyof T> {
     if (!this.resourceModelsMap) {
       throw new Error("Resource models map not found");
     }
@@ -84,16 +81,11 @@ export class ResourceModelMap<
   }
 
   // Add a new resource model with a schema and return a new instance of ResourceModels with the updated type
-  public addResourceModel<
-    I extends string,
-    RFS extends Record<string, z.ZodTypeAny>,
-  >(
-    resourceModel: ResourceModel<I, RFS>
-  ): ResourceModelMap<T & Record<I, ResourceModel<I, RFS>>> {
+  public addModel<I extends string, RFS extends Record<string, z.ZodTypeAny>>(
+    resourceModel: Model<I, RFS>
+  ): ModelDirectory<T & Record<I, Model<I, RFS>>> {
     if (!resourceModel?.id) {
-      return this as unknown as ResourceModelMap<
-        T & Record<I, ResourceModel<I, RFS>>
-      >;
+      return this as unknown as ModelDirectory<T & Record<I, Model<I, RFS>>>;
     }
     if (!this.resourceModelsMap) {
       throw new Error(`Resource models map not found`);
@@ -103,7 +95,7 @@ export class ResourceModelMap<
     }
 
     // Return a new instance of ResourceModels with the updated type map
-    return new ResourceModelMap({
+    return new ModelDirectory({
       ...this.resourceModelsMap,
       [resourceModel.id]: resourceModel,
     });

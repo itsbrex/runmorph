@@ -102,16 +102,18 @@ export function PrismaAdapter(
      * @param params - The webhook identifier parameters
      * @param params.connectorId - The unique identifier of the connector
      * @param params.ownerId - The unique identifier of the owner
-     * @param params.id - The unique identifier of the webhook
+     * @param params.model - The model name of the webhook
+     * @param params.trigger - The trigger type of the webhook
      * @returns A Promise that resolves to the found webhook or null if not found
      */
-    retrieveWebhook: ({ connectorId, ownerId, id }) => {
+    retrieveWebhook: ({ connectorId, ownerId, model, trigger }) => {
       return p.webhook.findUnique({
         where: {
-          connectorId_ownerId_id: {
-            id,
+          connectorId_ownerId_model_trigger: {
             connectorId,
             ownerId,
+            model,
+            trigger,
           },
         },
       });
@@ -137,17 +139,19 @@ export function PrismaAdapter(
      * @param params - The webhook identifier parameters
      * @param params.connectorId - The unique identifier of the connector
      * @param params.ownerId - The unique identifier of the owner
-     * @param params.id - The unique identifier of the webhook
+     * @param params.model - The model name of the webhook
+     * @param params.trigger - The trigger type of the webhook
      * @param data - The partial webhook data to update
      * @returns A Promise that resolves to the updated webhook
      */
-    updateWebhook: ({ connectorId, ownerId, id }, data) => {
+    updateWebhook: ({ connectorId, ownerId, model, trigger }, data) => {
       return p.webhook.update({
         where: {
-          connectorId_ownerId_id: {
+          connectorId_ownerId_model_trigger: {
             connectorId,
             ownerId,
-            id,
+            model,
+            trigger,
           },
         },
         data,
@@ -160,16 +164,18 @@ export function PrismaAdapter(
      * @param params - The webhook identifier parameters
      * @param params.connectorId - The unique identifier of the connector
      * @param params.ownerId - The unique identifier of the owner
-     * @param params.id - The unique identifier of the webhook
+     * @param params.model - The model name of the webhook
+     * @param params.trigger - The trigger type of the webhook
      * @returns A Promise that resolves when the webhook is deleted
      */
-    deleteWebhook: ({ connectorId, ownerId, id }) => {
+    deleteWebhook: ({ connectorId, ownerId, model, trigger }) => {
       p.webhook.delete({
         where: {
-          connectorId_ownerId_id: {
+          connectorId_ownerId_model_trigger: {
             connectorId,
             ownerId,
-            id,
+            model,
+            trigger,
           },
         },
       });

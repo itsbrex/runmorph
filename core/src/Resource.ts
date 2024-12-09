@@ -19,35 +19,50 @@ import type {
 } from "@runmorph/resource-models";
 
 import { ConnectionClient } from "./Connection";
-import { ListParams, Adapter } from "./types";
+import { MorphClient } from "./Morph";
+import { ListParams } from "./types";
 
 export type MorphResource<RTI extends ResourceModelId> = ResourceData<
   ResourceModels[RTI]
 >;
 export class ResourceClient<
-  A extends Adapter,
   C extends ConnectorBundle<
     string,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
+  >,
+  CA extends ConnectorBundle<
+    string,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
-  CI extends C[number]["id"],
-  RTI extends keyof ArrayToIndexedObject<
-    C,
-    "id"
-  >[CI]["resourceModelOperations"],
+  RTI extends keyof C["resourceModelOperations"],
 > {
-  connection: ConnectionClient<A, C, CI>;
-  connector: ArrayToIndexedObject<C, "id">[CI];
-  resourceModelId: RTI;
-  logger?: Logger;
-  constructor(connection: ConnectionClient<A, C, CI>, entityId: RTI) {
-    this.logger = connection.logger;
-    this.connection = connection;
-    this.connector =
-      connection.config.morph.𝙢_.connectors[connection.connectorId];
-    this.resourceModelId = entityId;
-  } // eslint-disable-line @typescript-eslint/no-unused-vars
+  𝙢_: {
+    connection: ConnectionClient<C, CA>;
+    connector: C;
+    resourceModelId: RTI;
+    logger?: Logger;
+  };
+
+  constructor(connection: ConnectionClient<C, CA>, entityId: RTI) {
+    const { data: ids, error } = connection.getConnectionIds();
+    if (error) {
+      connection.𝙢_.logger?.error(
+        "ResourceClient : Failed to get connection ids",
+        {
+          error,
+        }
+      );
+      throw "WebhookClient : Failed to get connection ids";
+    }
+    this.𝙢_ = {
+      logger: connection.𝙢_.logger,
+      connection: connection,
+      connector: MorphClient.instance.foo.connectors[ids.connectorId] as C,
+      resourceModelId: entityId,
+    };
+  }
 
   async list(params?: ListParams): Promise<
     EitherTypeOrError<{
@@ -56,29 +71,29 @@ export class ResourceClient<
       next: string | null;
     }>
   > {
-    this.logger?.debug("Listing resources", {
-      resourceModelId: this.resourceModelId,
+    this.𝙢_.logger?.debug("Listing resources", {
+      resourceModelId: this.𝙢_.resourceModelId,
       params,
     });
 
     const entityRecord =
-      this.connector.resourceModelOperations[
-        this.resourceModelId as RTI & ResourceModelId
+      this.𝙢_.connector.resourceModelOperations[
+        this.𝙢_.resourceModelId as RTI & ResourceModelId
       ];
 
     if (entityRecord) {
       if (entityRecord.list) {
         const { data, next, error } = await entityRecord.list.run(
-          this.connection,
+          this.𝙢_.connection,
           params
         );
 
         if (error) {
-          this.logger?.error("Failed to list resources", { error });
+          this.𝙢_.logger?.error("Failed to list resources", { error });
           return { error };
         }
 
-        this.logger?.debug("Resources listed successfully", {
+        this.𝙢_.logger?.debug("Resources listed successfully", {
           count: data.length,
           hasMore: !!next,
         });
@@ -93,20 +108,20 @@ export class ResourceClient<
           next,
         };
       } else {
-        this.logger?.error("List operation not implemented", {
-          resourceModelId: this.resourceModelId,
-          connectorId: this.connector.id,
+        this.𝙢_.logger?.error("List operation not implemented", {
+          resourceModelId: this.𝙢_.resourceModelId,
+          connectorId: this.𝙢_.connector.id,
         });
         return {
           error: {
             code: "CONNECTOR::RESOURCE_MODEL::NOT_FOUND",
-            message: `Entity "${String(this.resourceModelId)}" not implemented on the "${this.connector.id}" connector.`,
+            message: `Entity "${String(this.𝙢_.resourceModelId)}" not implemented on the "${this.𝙢_.connector.id}" connector.`,
           },
         };
       }
     }
 
-    this.logger?.error("Unknown error during list operation");
+    this.𝙢_.logger?.error("Unknown error during list operation");
     return {
       error: {
         code: "CONNECTOR::UNKNOWN_ERROR",
@@ -140,27 +155,27 @@ export class ResourceClient<
       ResourceData<ResourceModels[RTI extends ResourceModelId ? RTI : never]>
     >
   > {
-    this.logger?.debug("Retrieving resource", {
-      resourceModelId: this.resourceModelId,
+    this.𝙢_.logger?.debug("Retrieving resource", {
+      resourceModelId: this.𝙢_.resourceModelId,
       resourceId: id,
       options,
     });
 
     const resourceModelRecord =
-      this.connector.resourceModelOperations[
-        this.resourceModelId as RTI extends ResourceModelId ? RTI : never
+      this.𝙢_.connector.resourceModelOperations[
+        this.𝙢_.resourceModelId as RTI extends ResourceModelId ? RTI : never
       ];
 
     if (resourceModelRecord) {
       if (resourceModelRecord.retrieve) {
         const { data, error } = await resourceModelRecord.retrieve.run(
-          this.connection,
+          this.𝙢_.connection,
           id,
           options
         );
 
         if (error) {
-          this.logger?.error("Failed to retrieve resource", {
+          this.𝙢_.logger?.error("Failed to retrieve resource", {
             error,
             resourceId: id,
           });
@@ -173,7 +188,7 @@ export class ResourceClient<
         );
         delete data.rawResource;
 
-        this.logger?.debug("Resource retrieved successfully", {
+        this.𝙢_.logger?.debug("Resource retrieved successfully", {
           resourceId: id,
         });
         return {
@@ -183,19 +198,19 @@ export class ResourceClient<
         };
       }
     } else {
-      this.logger?.error("Resource model not found", {
-        resourceModelId: this.resourceModelId,
-        connectorId: this.connector.id,
+      this.𝙢_.logger?.error("Resource model not found", {
+        resourceModelId: this.𝙢_.resourceModelId,
+        connectorId: this.𝙢_.connector.id,
       });
       return {
         error: {
           code: "CONNECTOR::RESOURCE_MODEL::NOT_FOUND",
-          message: `Entity "${String(this.resourceModelId)}" not implemented on the "${this.connector.id}" connector.`,
+          message: `Entity "${String(this.𝙢_.resourceModelId)}" not implemented on the "${this.𝙢_.connector.id}" connector.`,
         },
       };
     }
 
-    this.logger?.error("Unknown error during retrieve operation");
+    this.𝙢_.logger?.error("Unknown error during retrieve operation");
     return {
       error: {
         code: "CONNECTOR::UNKNOWN_ERROR",
@@ -220,37 +235,37 @@ export class ResourceClient<
           >
     >
   > {
-    this.logger?.debug("Creating resource", {
-      resourceModelId: this.resourceModelId,
+    this.𝙢_.logger?.debug("Creating resource", {
+      resourceModelId: this.𝙢_.resourceModelId,
       fields,
       options,
     });
 
     const resourceModelRecord =
-      this.connector.resourceModelOperations[
-        this.resourceModelId as RTI extends ResourceModelId ? RTI : never
+      this.𝙢_.connector.resourceModelOperations[
+        this.𝙢_.resourceModelId as RTI extends ResourceModelId ? RTI : never
       ];
 
     if (resourceModelRecord) {
       if (resourceModelRecord.create) {
         const { data, error } = await resourceModelRecord.create.run(
-          this.connection,
+          this.𝙢_.connection,
           fields
         );
 
         if (error) {
-          this.logger?.error("Failed to create resource", { error });
+          this.𝙢_.logger?.error("Failed to create resource", { error });
           return { error };
         }
 
         if (options?.returnResource) {
-          this.logger?.debug("Retrieving created resource", {
+          this.𝙢_.logger?.debug("Retrieving created resource", {
             resourceId: data.id,
           });
           const { data: createdResource, error: retrieveError } =
             await this.retrieve(data.id);
           if (retrieveError) {
-            this.logger?.error("Failed to retrieve created resource", {
+            this.𝙢_.logger?.error("Failed to retrieve created resource", {
               error: retrieveError,
             });
             return { error: retrieveError };
@@ -260,33 +275,33 @@ export class ResourceClient<
         }
 
         delete data.rawResource;
-        this.logger?.info("Resource created successfully", {
+        this.𝙢_.logger?.info("Resource created successfully", {
           resourceId: data.id,
         });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return { data: data as any };
       } else {
-        this.logger?.error("Create operation not implemented", {
-          resourceModelId: this.resourceModelId,
-          connectorId: this.connector.id,
+        this.𝙢_.logger?.error("Create operation not implemented", {
+          resourceModelId: this.𝙢_.resourceModelId,
+          connectorId: this.𝙢_.connector.id,
         });
         return {
           error: {
             code: "CONNECTOR::OPERATION::NOT_FOUND",
-            message: `Create operation not implemented for resource model "${String(this.resourceModelId)}" on the "${this.connector.id}" connector.`,
+            message: `Create operation not implemented for resource model "${String(this.𝙢_.resourceModelId)}" on the "${this.𝙢_.connector.id}" connector.`,
           },
         };
       }
     }
 
-    this.logger?.error("Resource model not found", {
-      resourceModelId: this.resourceModelId,
-      connectorId: this.connector.id,
+    this.𝙢_.logger?.error("Resource model not found", {
+      resourceModelId: this.𝙢_.resourceModelId,
+      connectorId: this.𝙢_.connector.id,
     });
     return {
       error: {
         code: "CONNECTOR::RESOURCE_MODEL::NOT_FOUND",
-        message: `Resource model "${String(this.resourceModelId)}" not found on the "${this.connector.id}" connector.`,
+        message: `Resource model "${String(this.𝙢_.resourceModelId)}" not found on the "${this.𝙢_.connector.id}" connector.`,
       },
     };
   }
@@ -311,14 +326,14 @@ export class ResourceClient<
     >
   > {
     const resourceModelRecord =
-      this.connector.resourceModelOperations[
-        this.resourceModelId as RTI extends ResourceModelId ? RTI : never
+      this.𝙢_.connector.resourceModelOperations[
+        this.𝙢_.resourceModelId as RTI extends ResourceModelId ? RTI : never
       ];
 
     if (resourceModelRecord) {
       if (resourceModelRecord.update) {
         const { data, error } = await resourceModelRecord.update.run(
-          this.connection,
+          this.𝙢_.connection,
           id,
           fields
         );
@@ -344,7 +359,7 @@ export class ResourceClient<
         return {
           error: {
             code: "CONNECTOR::OPERATION::NOT_FOUND",
-            message: `Update operation not implemented for resource model "${String(this.resourceModelId)}" on the "${this.connector.id}" connector.`,
+            message: `Update operation not implemented for resource model "${String(this.𝙢_.resourceModelId)}" on the "${this.𝙢_.connector.id}" connector.`,
           },
         };
       }
@@ -353,7 +368,7 @@ export class ResourceClient<
     return {
       error: {
         code: "CONNECTOR::RESOURCE_MODEL::NOT_FOUND",
-        message: `Resource model "${String(this.resourceModelId)}" not found on the "${this.connector.id}" connector.`,
+        message: `Resource model "${String(this.𝙢_.resourceModelId)}" not found on the "${this.𝙢_.connector.id}" connector.`,
       },
     };
   }
@@ -368,13 +383,13 @@ export class ResourceClient<
     parentKey?: string
   ): Promise<any> => {
     if (Array.isArray(obj)) {
-      this.logger?.debug("Expanding array of resource refs");
+      this.𝙢_.logger?.debug("Expanding array of resource refs");
       return Promise.all(
         obj.map((o) => this._expandResourceRefs(o, expandKeys, parentKey))
       );
     } else if (typeof obj === "object" && obj !== null) {
       if (obj.object === "resourceRef" && obj.model && obj.id) {
-        this.logger?.debug("Expanding resource ref", {
+        this.𝙢_.logger?.debug("Expanding resource ref", {
           model: obj.model,
           id: obj.id,
           parentKey,
@@ -388,9 +403,9 @@ export class ResourceClient<
           ];
 
           if (obj.rawResource) {
-            this.logger?.debug("Using local raw resource ref");
+            this.𝙢_.logger?.debug("Using local raw resource ref");
             const mappedLocalResourceRef =
-              this.connector.resourceModelOperations[
+              this.𝙢_.connector.resourceModelOperations[
                 obj.model as ResourceModelId
               ]?.mapper.read(obj.rawResource);
 
@@ -400,7 +415,7 @@ export class ResourceClient<
             }
           }
 
-          return this.connection
+          return this.𝙢_.connection
             .resources(obj.model)
             .retrieve(obj.id)
             .then(({ data: refData }) => {
@@ -411,7 +426,7 @@ export class ResourceClient<
               return obj;
             })
             .catch((error) => {
-              this.logger?.error("Failed to expand resource ref", {
+              this.𝙢_.logger?.error("Failed to expand resource ref", {
                 error,
                 model: obj.model,
                 id: obj.id,

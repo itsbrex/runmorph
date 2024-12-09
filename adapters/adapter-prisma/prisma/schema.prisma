@@ -22,16 +22,14 @@ model Connection {
 
 model Webhook {
   connectorId       String   @map("connector_id")
-  ownerId           String   @map("owner_id")
-  id                String  
-  type              String
-  identifierKey     String?  @map("identifier_key") @unique
+  ownerId           String   @map("owner_id")  
   model             String
   trigger           String
-  redirectUrl       String?  @map("redirect_url")
+  type              String
+  identifierKey     String?  @map("identifier_key") @unique
   meta              String?
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
-  @@id([connectorId, ownerId, id])
+  @@id([connectorId, ownerId, model, trigger])
   @@map("webhooks")
 }

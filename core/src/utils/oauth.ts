@@ -87,7 +87,7 @@ export function getConnectorOAuthCredentials(
   connector: ConnectorBundle<
     string,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >
 ): {
   clientId: string;
@@ -136,11 +136,11 @@ export async function oautCallback<
   C extends ConnectorBundle<
     I,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
   I extends string,
 >(
-  morph: MorphClient<A, C>,
+  morph: MorphClient<C>,
   { state, code }: AuthorizeParams
 ): Promise<
   EitherTypeOrError<{ connection: ConnectionData; redirectUrl: string }>
@@ -208,7 +208,7 @@ export async function oautCallback<
       let newAuthorizationStoredData: ConnectionAuthorizationStoredData = {};
 
       const currentConnectiondData =
-        await morph.𝙢_.database.adapter.retrieveConnection({
+        await morph.foo.database.adapter.retrieveConnection({
           connectorId: connectionData.connectorId,
           ownerId: connectionData.ownerId,
         });
@@ -227,7 +227,7 @@ export async function oautCallback<
         newAuthorizationStoredData
       );
 
-      await morph.𝙢_.database.adapter.updateConnection(
+      await morph.foo.database.adapter.updateConnection(
         {
           connectorId: connectionData.connectorId,
           ownerId: connectionData.ownerId,
@@ -247,7 +247,7 @@ export async function oautCallback<
       return { connection: updatedConnection, redirectUrl };
     }
 
-    await morph.𝙢_.database.adapter.updateConnection(
+    await morph.foo.database.adapter.updateConnection(
       {
         connectorId: connectionData.connectorId,
         ownerId: connectionData.ownerId,
@@ -279,11 +279,11 @@ export async function getAuthorizationHeader<
   C extends ConnectorBundle<
     I,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
   I extends string,
 >(
-  morph: MorphClient<A, C>,
+  morph: MorphClient<C>,
   connectorId: I,
   ownerId: string,
   logger?: Logger
@@ -299,10 +299,12 @@ export async function getAuthorizationHeader<
     return null; // No authorization needed for non-OAuth2 connectors
   }
 
-  const connectionAdapter = await morph.𝙢_.database.adapter.retrieveConnection({
-    connectorId,
-    ownerId,
-  });
+  const connectionAdapter = await morph.foo.database.adapter.retrieveConnection(
+    {
+      connectorId,
+      ownerId,
+    }
+  );
   if (!connectionAdapter) {
     throw {
       code: "MORPH::ADAPTER::CONNECTION_NOT_FOUND",
@@ -352,16 +354,15 @@ export async function refreshAccessToken<
   C extends ConnectorBundle<
     I,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
   I extends string,
 >(
-  morph: MorphClient<A, C>,
+  morph: MorphClient<C>,
   connectorId: I,
   ownerId: string,
   authorizationData: ConnectionAuthorizationStoredData
 ): Promise<ConnectionAuthorizationStoredData> {
-  console.log("REFRESHING TOKEN");
   const { data: connectorData, error: connectorError } = await morph
     .connectors()
     .retrieve(connectorId);
@@ -395,7 +396,6 @@ export async function refreshAccessToken<
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
       }
     );
-    console.log("TOKEN", response);
     const newAuthorizationOAuthData: ConnectionAuthorizationOAuthData = {
       _accessToken: response.data.access_token,
       _refreshToken:
@@ -408,7 +408,7 @@ export async function refreshAccessToken<
     let newAuthorizationStoredData: ConnectionAuthorizationStoredData = {};
 
     const currentConnectiondData =
-      await morph.𝙢_.database.adapter.retrieveConnection({
+      await morph.foo.database.adapter.retrieveConnection({
         connectorId: connectorId,
         ownerId: ownerId,
       });
@@ -427,7 +427,7 @@ export async function refreshAccessToken<
       newAuthorizationStoredData
     );
 
-    await morph.𝙢_.database.adapter.updateConnection(
+    await morph.foo.database.adapter.updateConnection(
       { connectorId, ownerId },
       {
         authorizationData: stringEncryptedAuthorizationStoredData,
@@ -461,7 +461,7 @@ function getConnectorClientId(
   connector: ConnectorBundle<
     string,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >
 ): string {
   const { clientId } = connector.connector.getOptions();
@@ -482,7 +482,7 @@ function getConnectorClientSecret(
   connector: ConnectorBundle<
     string,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >
 ): string {
   const { clientSecret } = connector.connector.getOptions();

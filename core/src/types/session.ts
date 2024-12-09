@@ -11,7 +11,7 @@ type SessionConnectionParams<
   C extends ConnectorBundle<
     I,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
   I extends string,
 > = ConnectionIds<I> & ConnectionCreateParams<C>;
@@ -20,7 +20,7 @@ export type SessionCreateParams<
   C extends ConnectorBundle<
     I,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
   I extends string,
 > = {
@@ -33,7 +33,7 @@ export type SessionData<
   C extends ConnectorBundle<
     I,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
   I extends string,
 > = {

@@ -1,56 +1,47 @@
 import {
   ConnectorBundle,
-  ResourceModelOperations,
   ConnectionIds,
   ArrayToIndexedObject,
   Logger,
   Awaitable,
   EitherTypeOrError,
   ConnectionData,
-  WebhookOperations,
-  ResourceEvents,
 } from "@runmorph/cdk/";
 
 import { ConnectionClient, AllConnectionsClient } from "./Connection";
 import { ClientConnector } from "./Connector";
 import { Session } from "./Session";
-import { AuthorizeParams } from "./types";
+import { AuthorizeHadleParams, AuthorizeParams } from "./types";
 import { Adapter } from "./types/adapter";
 import { oautCallback } from "./utils/oauth";
+import { WebhookRegistry } from "./WebhookRegistry";
 
-export type MorphConfig<A, CA> = {
-  database: { adapter: A };
+export type MorphConfig<CA> = {
+  database: { adapter: Adapter };
   connectors: CA;
   logger?: Logger;
 };
 export function Morph<
-  A extends Adapter,
-  CA extends ConnectorBundle<
-    string,
-    ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
-  >[],
->(options: MorphConfig<A, CA>): MorphClient<A, CA> {
+  TConnectorBundleArray extends ConnectorBundle<any, any, any>[],
+>(
+  options: MorphConfig<TConnectorBundleArray>
+): MorphClient<TConnectorBundleArray> {
   return new MorphClient(options);
 }
 
 export class MorphClient<
-  A extends Adapter,
-  CA extends ConnectorBundle<
-    string,
-    ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
-  >[],
+  TConnectorBundleArray extends ConnectorBundle<any, any, any>[],
 > {
-  𝙢_: {
-    connectors: ArrayToIndexedObject<CA, "id">;
+  foo: {
+    connectors: ArrayToIndexedObject<TConnectorBundleArray, "id">;
     database: {
-      adapter: A;
+      adapter: Adapter;
     };
     logger?: Logger;
   };
-  constructor(options: MorphConfig<A, CA>) {
-    this.𝙢_ = {
+  public static instance: MorphClient<any>;
+  constructor(options: MorphConfig<TConnectorBundleArray>) {
+    this.foo = {
       database: options.database,
       connectors: options.connectors.reduce(
         (acc, connector) => {
@@ -58,53 +49,69 @@ export class MorphClient<
           acc[connector.id] = connector;
           return acc;
         },
-        {} as ArrayToIndexedObject<CA, "id">
+        {} as ArrayToIndexedObject<TConnectorBundleArray, "id">
       ),
     };
 
     if (options.logger) {
       this.setLogger(options.logger);
     }
+
+    if (!MorphClient.instance) {
+      MorphClient.instance = this;
+    }
+  }
+
+  webhooks(): WebhookRegistry<TConnectorBundleArray> {
+    return WebhookRegistry.getInstance();
   }
 
   setLogger(logger: Logger): void {
-    this.𝙢_.logger = logger;
-    Object.keys(this.𝙢_.connectors).forEach((ci) =>
-      this.𝙢_.connectors[ci as keyof typeof this.𝙢_.connectors].setLogger(
+    this.foo.logger = logger;
+    Object.keys(this.foo.connectors).forEach((ci) =>
+      this.foo.connectors[ci as keyof typeof this.foo.connectors].setLogger(
         logger
       )
     );
   }
 
-  connections(): AllConnectionsClient<A, CA, CA[number]["id"]>;
-  connections<I extends CA[number]["id"]>(
+  connections<I extends TConnectorBundleArray[number]["id"]>(
     params: ConnectionIds<I> | { sessionToken: string }
-  ): ConnectionClient<A, CA, I>;
-
-  connections<I extends CA[number]["id"]>(
-    params?: ConnectionIds<I> | { sessionToken: string }
-  ):
-    | ConnectionClient<A, CA, I>
-    | AllConnectionsClient<A, CA, CA[number]["id"]> {
-    if (!params) {
-      return new AllConnectionsClient(this);
-    } else {
-      return new ConnectionClient(this, params);
-    }
+  ): ConnectionClient<
+    ArrayToIndexedObject<TConnectorBundleArray, "id">[I],
+    TConnectorBundleArray
+  > {
+    return new ConnectionClient(params);
   }
-  sessions(): Session<A, CA, CA[number]["id"]> {
+
+  sessions(): Session<
+    Adapter,
+    TConnectorBundleArray,
+    TConnectorBundleArray[number]["id"]
+  > {
     return new Session(this);
   }
 
-  connectors(): ClientConnector<A, CA, CA[number]["id"]> {
-    return new ClientConnector(this);
+  connectors(): ClientConnector<TConnectorBundleArray> {
+    return new ClientConnector();
   }
 
-  callbacks(
-    params: AuthorizeParams
-  ): Awaitable<
-    EitherTypeOrError<{ connection: ConnectionData; redirectUrl: string }>
-  > {
-    return oautCallback(this, params);
+  callbacks(type: "oauth"): {
+    handle: (params: AuthorizeHadleParams) => Awaitable<
+      EitherTypeOrError<{
+        connection: ConnectionData;
+        redirectUrl: string;
+      }>
+    >;
+  } {
+    return {
+      oauth: {
+        handle: (
+          params: AuthorizeHadleParams
+        ): Awaitable<
+          EitherTypeOrError<{ connection: ConnectionData; redirectUrl: string }>
+        > => oautCallback(this, { ...params, type: "oauth" }),
+      },
+    }[type];
   }
 }

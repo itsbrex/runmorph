@@ -21,22 +21,22 @@ const TOKEN_EXPIRATION = process.env.MORPH_SESSION_DURATION || "30m"; // 30 minu
 
 export class Session<
   A extends Adapter,
-  C extends ConnectorBundle<
+  TConnectorBundleArray extends ConnectorBundle<
     I,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
   I extends string,
 > {
-  private morph: MorphClient<A, C>;
+  private morph: MorphClient<TConnectorBundleArray>;
 
-  constructor(morph: MorphClient<A, C>) {
+  constructor(morph: MorphClient<TConnectorBundleArray>) {
     this.morph = morph;
   }
 
   create(
-    params: SessionCreateParams<C, I>
-  ): Awaitable<EitherDataOrError<SessionData<C, I>>> {
+    params: SessionCreateParams<TConnectorBundleArray, I>
+  ): Awaitable<EitherDataOrError<SessionData<TConnectorBundleArray, I>>> {
     if (!JWT_SECRET) {
       return {
         error: {
@@ -52,7 +52,7 @@ export class Session<
       Date.now() + (expiresIn || 30 * 60) * 1000
     ).toISOString();
 
-    const sessionData: SessionData<C, I> = {
+    const sessionData: SessionData<TConnectorBundleArray, I> = {
       object: "session",
       ...createSessionParams,
       expiresAt,
@@ -64,7 +64,9 @@ export class Session<
     return { data: sessionData };
   }
 
-  verify(sessionToken: string): EitherDataOrError<SessionData<C, I>> {
+  verify(
+    sessionToken: string
+  ): EitherDataOrError<SessionData<TConnectorBundleArray, I>> {
     if (!JWT_SECRET) {
       return {
         error: {
@@ -77,7 +79,7 @@ export class Session<
       const decodedSessionData = verify(
         sessionToken,
         JWT_SECRET
-      ) as SessionData<C, I> & {
+      ) as SessionData<TConnectorBundleArray, I> & {
         jti: string;
       };
 

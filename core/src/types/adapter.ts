@@ -14,13 +14,12 @@ export type AdapterConnection = {
 export type AdapterWebhook = {
   connectorId: string;
   ownerId: string;
-  id: string; // whk_xxxxxx
-  type: string; // subscription | gloabl
-  identifierKey?: string | null;
   model: string;
   trigger: string;
-  redirectUrl?: string | null;
+  type: string; // subscription | global
+  identifierKey?: string | null;
   meta?: string | null;
+  //redirectUrl?: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -47,13 +46,25 @@ export type Adapter = {
   retrieveWebhook({
     connectorId,
     ownerId,
-    id,
-  }: ConnectionIds<string> & { id: string }): Awaitable<AdapterWebhook | null>;
+    model,
+    trigger,
+  }: ConnectionIds<string> & {
+    model: string;
+    trigger: string;
+  }): Awaitable<AdapterWebhook | null>;
   retrieveWebhookByIdentifierKey(
     identifierKey: string
   ): Awaitable<AdapterWebhook | null>;
   updateWebhook(
-    { connectorId, ownerId, id }: ConnectionIds<string> & { id: string },
+    {
+      connectorId,
+      ownerId,
+      model,
+      trigger,
+    }: ConnectionIds<string> & {
+      model: string;
+      trigger: string;
+    },
     webhook: Partial<AdapterWebhook> & {
       updatedAt: Date;
     }
@@ -61,6 +72,10 @@ export type Adapter = {
   deleteWebhook({
     connectorId,
     ownerId,
-    id,
-  }: ConnectionIds<string> & { id: string }): Awaitable<void>;
+    model,
+    trigger,
+  }: ConnectionIds<string> & {
+    model: string;
+    trigger: string;
+  }): Awaitable<void>;
 };

@@ -9,7 +9,7 @@ export type GenerateAuthorizationUrlParams = {
   connector: ConnectorBundle<
     string,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >;
   ownerId: string;
   scopes?: string[];
@@ -26,7 +26,7 @@ export type ExchangeCodeForTokenParams = {
   connector: ConnectorBundle<
     string,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >;
   code: string;
 };
@@ -35,7 +35,7 @@ export type RefreshAccessTokenParams = {
   connector: ConnectorBundle<
     string,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>>
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >;
   refreshToken: string;
 };
@@ -48,6 +48,11 @@ export type TokenResponse = {
 
 export type AuthorizeParams = {
   type: "oauth";
+  code: string;
+  state: string;
+};
+
+export type AuthorizeHadleParams = {
   code: string;
   state: string;
 };

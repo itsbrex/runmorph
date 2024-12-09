@@ -26,10 +26,10 @@
     "fix:format": "prettier --write \"**/*.{ts,tsx,md}\" --ignore-path ../../.gitignore"
   },
   "peerDependencies": {
-    "@runmorph/core": "^0.0.18"
+    "@runmorph/core": "^0.0.19"
   },
   "devDependencies": {
-    "@runmorph/core": "^0.0.18",
+    "@runmorph/core": "^0.0.19",
     "@types/node": "^20.11.17",
     "typescript": "^5.3.3"
   }

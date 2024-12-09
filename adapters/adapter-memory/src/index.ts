@@ -30,8 +30,9 @@ const createKey = (connectorId: string, ownerId: string): string =>
 const createWebhookKey = (
   connectorId: string,
   ownerId: string,
-  id: string
-): string => `${connectorId}:${ownerId}:${id}`;
+  model: string,
+  trigger: string
+): string => `${connectorId}:${ownerId}:${model}:${trigger}`;
 
 /**
  * Creates an in-memory adapter for quick prototyping and testing.
@@ -100,7 +101,8 @@ export function MemoryAdapter(): Adapter {
       const key = createWebhookKey(
         webhook.connectorId,
         webhook.ownerId,
-        webhook.id
+        webhook.model,
+        webhook.trigger
       );
 
       if (webhooksStore.has(key)) {
@@ -117,8 +119,8 @@ export function MemoryAdapter(): Adapter {
       return newWebhook;
     },
 
-    retrieveWebhook: async ({ connectorId, ownerId, id }) => {
-      const key = createWebhookKey(connectorId, ownerId, id);
+    retrieveWebhook: async ({ connectorId, ownerId, model, trigger }) => {
+      const key = createWebhookKey(connectorId, ownerId, model, trigger);
       const webhook = webhooksStore.get(key) || null;
       return webhook;
     },
@@ -132,8 +134,8 @@ export function MemoryAdapter(): Adapter {
       return null;
     },
 
-    updateWebhook: async ({ connectorId, ownerId, id }, data) => {
-      const key = createWebhookKey(connectorId, ownerId, id);
+    updateWebhook: async ({ connectorId, ownerId, model, trigger }, data) => {
+      const key = createWebhookKey(connectorId, ownerId, model, trigger);
       const existing = webhooksStore.get(key);
 
       if (!existing) {
@@ -151,8 +153,8 @@ export function MemoryAdapter(): Adapter {
       return updated;
     },
 
-    deleteWebhook: async ({ connectorId, ownerId, id }) => {
-      const key = createWebhookKey(connectorId, ownerId, id);
+    deleteWebhook: async ({ connectorId, ownerId, model, trigger }) => {
+      const key = createWebhookKey(connectorId, ownerId, model, trigger);
       webhooksStore.delete(key);
     },
   };

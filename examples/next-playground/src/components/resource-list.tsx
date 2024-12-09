@@ -77,13 +77,14 @@ export function ResourceList({ connections }: ResourceListProps): JSX.Element {
         sessionToken: connection.sessionToken,
       });
 
+      console.log("WEBHOOK_INIT");
       const { data: w, error: ew } = await morphConnection.webhook().create({
         model: "genericContact",
         trigger: "created",
       });
 
-      console.log("w", w);
-      console.log("ew", ew);
+      console.log("WEBHOOK", w);
+      console.log("WEBHOOK_ERROR", ew);
       const { data, error } = await morphConnection
         .resources(selectedResource)
         .list({ limit: 3 });

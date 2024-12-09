@@ -43,8 +43,9 @@ const createKey = (connectorId: string, ownerId: string): string =>
 const createWebhookKey = (
   connectorId: string,
   ownerId: string,
-  id: string
-): string => `${connectorId}:${ownerId}:${id}`;
+  model: string,
+  trigger: string
+): string => `${connectorId}:${ownerId}:${model}:${trigger}`;
 
 /**
  * Initializes the storage directory and loads existing connections
@@ -183,7 +184,8 @@ export function LocalAdapter(): Adapter {
       const key = createWebhookKey(
         webhook.connectorId,
         webhook.ownerId,
-        webhook.id
+        webhook.model,
+        webhook.trigger
       );
 
       if (webhooksCache.has(key)) {
@@ -200,8 +202,8 @@ export function LocalAdapter(): Adapter {
       };
     },
 
-    retrieveWebhook: async ({ connectorId, ownerId, id }) => {
-      const key = createWebhookKey(connectorId, ownerId, id);
+    retrieveWebhook: async ({ connectorId, ownerId, model, trigger }) => {
+      const key = createWebhookKey(connectorId, ownerId, model, trigger);
       const webhook = webhooksCache.get(key);
 
       if (!webhook) {
@@ -231,8 +233,8 @@ export function LocalAdapter(): Adapter {
       };
     },
 
-    updateWebhook: async ({ connectorId, ownerId, id }, data) => {
-      const key = createWebhookKey(connectorId, ownerId, id);
+    updateWebhook: async ({ connectorId, ownerId, model, trigger }, data) => {
+      const key = createWebhookKey(connectorId, ownerId, model, trigger);
       const existing = webhooksCache.get(key);
 
       if (!existing) {
@@ -256,8 +258,8 @@ export function LocalAdapter(): Adapter {
       };
     },
 
-    deleteWebhook: async ({ connectorId, ownerId, id }) => {
-      const key = createWebhookKey(connectorId, ownerId, id);
+    deleteWebhook: async ({ connectorId, ownerId, model, trigger }) => {
+      const key = createWebhookKey(connectorId, ownerId, model, trigger);
       webhooksCache.delete(key);
       persistConnections();
     },

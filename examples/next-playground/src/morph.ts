@@ -1,5 +1,5 @@
 import HubSpotConnector from "@runmorph/connector-hubspot";
-import { type Adapter } from "@runmorph/core";
+import { MorphClient, type Adapter } from "@runmorph/core";
 import { NextMorph } from "@runmorph/framework-next";
 
 // Conditional import based on environment
@@ -16,7 +16,7 @@ const hubspot = HubSpotConnector({
   clientId: process.env.MORPH_CONNECTOR_HUBSPOT_CLIENT_ID,
   clientSecret: process.env.MORPH_CONNECTOR_HUBSPOT_CLIENT_SECRET,
 });
-console.log("HubSpotConnector", hubspot);
+
 const initializeMorph = async () => {
   const adapter = await getAdapter();
 
@@ -39,6 +39,21 @@ const initializeMorph = async () => {
 };
 
 const { morph, handlers } = await initializeMorph();
+
+morph
+  .webhooks()
+  .onEvents(
+    "genericContact::updated",
+    async (connection, { model, trigger, data, idempotencyKey }) => {
+      console.log("ON_EVENT_CALLBACK", model, trigger, data, idempotencyKey);
+
+      return { processed: true };
+    }
+  );
+
+morph.webhooks().onEvents("*", async (connection, { model, trigger, data }) => {
+  // console.log("SECOND_CALLBACK", model, trigger, data);
+});
 
 export { morph, handlers };
 export type morph = typeof morph;
