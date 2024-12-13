@@ -1,7 +1,9 @@
 import {
+  ExtractConnectorSettings,
   SubscribeToGlobalEvent,
-  SubscribeToGlobalEventParams,
 } from "@runmorph/cdk";
+
+import type { HubSpotConnector } from "../../connector";
 
 import HubSpotGlobalEventMapper from "./mapper";
 
@@ -38,7 +40,7 @@ type HubspotModel = keyof typeof hubspotObjectProperties;
 type HubspotEvent = keyof typeof hubspotEventType;
 
 async function subscribeToEvent(
-  appId: number,
+  appId: string,
   hapikey: string,
   body: any
 ): Promise<Response> {
@@ -57,7 +59,11 @@ async function subscribeToEvent(
 
 export default new SubscribeToGlobalEvent({
   globalEventMapper: HubSpotGlobalEventMapper,
-  handler: async (connection, { model, trigger, globalRoute }) => {
+  handler: async (connection, { model, trigger, globalRoute, settings }) => {
+    const { appId, hapikey } =
+      settings as ExtractConnectorSettings<HubSpotConnector>;
+
+    console.log("settings", settings);
     // Type guard to ensure model is HubspotModel
     if (!(model in hubspotObjectProperties)) {
       return {
@@ -72,9 +78,6 @@ export default new SubscribeToGlobalEvent({
     const eventType = hubspotEventType[trigger as HubspotEvent];
     // TODO : add in conenction meta data
     const portalId = 43833156;
-    // TODO : add in connector custom config
-    const appId = 4591533;
-    const hapikey = "ebe982b9-5fce-4478-8140-f5f5b3f4d849";
 
     // TODO : fix type inference
     if (globalRoute === "main") {
