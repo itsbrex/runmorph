@@ -10,6 +10,7 @@ import type {
   EventTrigger,
   WebhookData,
   MorphErrorCode,
+  Settings,
 } from "@runmorph/cdk";
 import { sign } from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
@@ -49,20 +50,26 @@ export function generateHookUrl(params: {
 export class WebhookClient<
   C extends ConnectorBundle<
     string,
+    Settings,
+    Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >,
   CA extends ConnectorBundle<
     string,
+    Settings,
+    Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
 > {
+  private morph: MorphClient<CA>;
   connection: ConnectionClient<C, CA>;
   connector: C;
   logger?: Logger;
 
-  constructor(connection: ConnectionClient<C, CA>) {
+  constructor(morph: MorphClient<CA>, connection: ConnectionClient<C, CA>) {
+    this.morph = morph;
     this.connection = connection;
     const { data: ids, error } = this.connection.getConnectionIds();
     if (error) {
@@ -71,8 +78,8 @@ export class WebhookClient<
       });
       throw "WebhookClient : Failed to get connection ids";
     }
-    this.connector = MorphClient.instance.foo.connectors[ids.connectorId];
-    this.logger = connection.𝙢_.logger;
+    this.connector = this.morph.𝙢_.connectors[ids.connectorId] as C;
+    this.logger = this.morph.𝙢_.logger;
   }
 
   create = async (params: {
@@ -166,7 +173,7 @@ export class WebhookClient<
         webhookResponse = {
           type: "subscription",
           // Make the webhook if from the third-aprty app unique accross all connected owner
-          identifierKey: `${this.connection.𝙢_.ownerId}::${this.connection.𝙢_.connectorId}::${data.id}`,
+          identifierKey: `${data.id}`,
           meta: data?.meta,
         };
       }
@@ -185,7 +192,12 @@ export class WebhookClient<
         });
         const { data, error } = await webhookGlobalOperations.subscribe.run(
           this.connection,
-          { model: params.model, trigger: params.trigger, globalRoute }
+          {
+            model: params.model,
+            trigger: params.trigger,
+            globalRoute,
+            settings: this.connector.connector.getOptions(),
+          }
         );
         console.log("[WebhookClient.create] Global webhook creation result", {
           data,
@@ -241,7 +253,7 @@ export class WebhookClient<
       // If we have an identifierKey, check if webhook already exists
 
       const existingWebhook =
-        await MorphClient.instance.foo.database.adapter.retrieveWebhook({
+        await this.morph.𝙢_.database.adapter.retrieveWebhook({
           connectorId: webhook.connectorId,
           ownerId: webhook.ownerId,
           model: webhook.model,
@@ -250,25 +262,22 @@ export class WebhookClient<
 
       if (existingWebhook) {
         // Update existing webhook
-        createdWebhook =
-          await MorphClient.instance.foo.database.adapter.updateWebhook(
-            {
-              connectorId: existingWebhook.connectorId,
-              ownerId: existingWebhook.ownerId,
-              model: existingWebhook.model,
-              trigger: existingWebhook.trigger,
-            },
-            {
-              ...webhook,
-              updatedAt: new Date(),
-            }
-          );
+        createdWebhook = await this.morph.𝙢_.database.adapter.updateWebhook(
+          {
+            connectorId: existingWebhook.connectorId,
+            ownerId: existingWebhook.ownerId,
+            model: existingWebhook.model,
+            trigger: existingWebhook.trigger,
+          },
+          {
+            ...webhook,
+            updatedAt: new Date(),
+          }
+        );
       } else {
         // Create new webhook
         createdWebhook =
-          await MorphClient.instance.foo.database.adapter.createWebhook(
-            webhook
-          );
+          await this.morph.𝙢_.database.adapter.createWebhook(webhook);
       }
 
       console.log(

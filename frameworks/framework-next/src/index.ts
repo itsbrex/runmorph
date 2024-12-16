@@ -17,7 +17,7 @@ export { NextMorphClient } from "./morph-next-client";
 export type { MorphResource, ResourceModelId };
 export { resourceModelIds };
 export function NextMorph<
-  TConnectorBundleArray extends ConnectorBundle<any, any, any>[],
+  TConnectorBundleArray extends ConnectorBundle<any, any, any, any, any>[],
 >(
   config: MorphConfig<TConnectorBundleArray>
 ): {

@@ -20,12 +20,17 @@ import type {
   WebhookOperations,
   ResourceEvents,
   ArrayToIndexedObject,
+  Settings,
 } from "@runmorph/cdk";
 import axios, { AxiosRequestConfig } from "axios";
 
 import { MorphClient } from "./Morph";
 import { ResourceClient } from "./Resource";
-import type { AdapterConnection, CreateAuthorizationParams } from "./types";
+import type {
+  Adapter,
+  AdapterConnection,
+  CreateAuthorizationParams,
+} from "./types";
 import { decryptJson, encryptJson } from "./utils/encryption";
 import {
   generateAuthorizationUrl,
@@ -33,19 +38,22 @@ import {
 } from "./utils/oauth";
 import { WebhookClient } from "./Webhook";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type ConnectorResourceModelId<C extends ConnectorBundle<any, any, any>> =
-  keyof C["resourceModelOperations"];
+type ConnectorResourceModelId<
+  C extends ConnectorBundle<any, any, any, any, any>,
+> = keyof C["resourceModelOperations"];
 
 function validateAuthorizationSettings(
   connector: ConnectorBundle<
     string,
+    Settings,
+    Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >,
   settings: Record<string, string>,
   strict: boolean = true
 ): EitherTypeOrError<{ settings: Record<string, string> }> {
-  const finalSettings = { ...settings };
+  const finalSettings = { ...settings } as Record<string, any>;
   const missingSettings: string[] = [];
 
   for (const setting of connector.connector.auth.getSettingFields()) {
@@ -92,36 +100,32 @@ function connectionAdapterToConnectionData(
 
 export class ConnectionClient<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  C extends ConnectorBundle<any, any, any>,
+  C extends ConnectorBundle<any, any, any, any, any>,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  CA extends ConnectorBundle<any, any, any>[],
+  CA extends ConnectorBundle<any, any, any, any, any>[],
 > {
   //config: ConnectionClientType<A, C, I>;
-  𝙢_: {
-    type: "connectionSession" | "connection";
-    connectorId?: C["id"];
-    ownerId?: string;
-    sessionToken?: string;
-    resourceModelIds?: keyof C["resourceModelOperations"];
-    logger?: Logger;
-    //TODO POC to improve
-    authHeader?: string;
-  };
 
-  constructor(params: ConnectionIds<C["id"]> | { sessionToken: string }) {
+  private type: "connectionSession" | "connection";
+  private connectorId?: C["id"];
+  private ownerId?: string;
+  private sessionToken?: string;
+  // private resourceModelIds?: keyof C["resourceModelOperations"];
+  private morph: MorphClient<CA>;
+
+  constructor(
+    morph: MorphClient<CA>,
+    params: (ConnectionIds<C["id"]> | { sessionToken: string }) & {}
+  ) {
+    this.morph = morph;
+
     if ("sessionToken" in params) {
-      this.𝙢_ = {
-        type: "connectionSession",
-        sessionToken: params.sessionToken,
-        logger: MorphClient.instance.foo.logger,
-      };
+      this.type = "connectionSession";
+      this.sessionToken = params.sessionToken;
     } else {
-      this.𝙢_ = {
-        type: "connection",
-        connectorId: params.connectorId,
-        ownerId: params.ownerId,
-        logger: MorphClient.instance.foo.logger,
-      };
+      this.type = "connection";
+      this.connectorId = params.connectorId;
+      this.ownerId = params.ownerId;
     }
   }
 
@@ -131,16 +135,17 @@ export class ConnectionClient<
     const { data: connectionids, error } = this.getConnectionIds();
     if (error) return { error };
     const { ownerId, connectorId } = connectionids;
-    this.𝙢_.logger?.debug("Creating connection", {
+    this.morph.𝙢_.logger?.debug("Creating connection", {
       params,
       connectorId,
       ownerId,
     });
 
-    const { data: connectorData, error: connectorError } =
-      await MorphClient.instance.connectors().retrieve(connectorId);
+    const { data: connectorData, error: connectorError } = await this.morph
+      .connectors()
+      .retrieve(connectorId);
     if (connectorError) {
-      this.𝙢_.logger?.error("Failed to retrieve connector", {
+      this.morph.𝙢_.logger?.error("Failed to retrieve connector", {
         error: connectorError,
       });
       return { error: connectorError };
@@ -148,7 +153,7 @@ export class ConnectionClient<
 
     try {
       const connectionAdapter =
-        await MorphClient.instance.foo.database.adapter.createConnection({
+        await this.morph.𝙢_.database.adapter.createConnection({
           connectorId: connectorId,
           ownerId: ownerId,
           status: "unauthorized",
@@ -158,13 +163,13 @@ export class ConnectionClient<
           updatedAt: new Date(),
         });
 
-      this.𝙢_.logger?.info("Connection created successfully", {
+      this.morph.𝙢_.logger?.info("Connection created successfully", {
         connectorId,
         ownerId,
       });
       return { data: connectionAdapterToConnectionData(connectionAdapter) };
     } catch (e) {
-      this.𝙢_.logger?.error("Failed to create connection", { error: e });
+      this.morph.𝙢_.logger?.error("Failed to create connection", { error: e });
       return {
         error: {
           code: "MORPH::CONNECTION::CREATION_FAILED",
@@ -180,7 +185,7 @@ export class ConnectionClient<
     const { data: connectionids, error } = this.getConnectionIds();
     if (error) return { error };
     const { ownerId, connectorId } = connectionids;
-    this.𝙢_.logger?.debug("Updating connection", {
+    this.morph.𝙢_.logger?.debug("Updating connection", {
       params,
       connectorId,
       ownerId,
@@ -189,7 +194,7 @@ export class ConnectionClient<
     const { data: currentConnection, error: retrieveError } =
       await this.retrieve();
     if (retrieveError) {
-      this.𝙢_.logger?.error("Failed to retrieve connection for update", {
+      this.morph.𝙢_.logger?.error("Failed to retrieve connection for update", {
         error: retrieveError,
       });
       return { error: retrieveError };
@@ -202,12 +207,12 @@ export class ConnectionClient<
 
     try {
       const updatedConnectionAdapter =
-        await MorphClient.instance.foo.database.adapter.updateConnection(
+        await this.morph.𝙢_.database.adapter.updateConnection(
           { connectorId, ownerId },
           { operations: updatedOperations, updatedAt: new Date() }
         );
 
-      this.𝙢_.logger?.info("Connection updated successfully", {
+      this.morph.𝙢_.logger?.info("Connection updated successfully", {
         connectorId,
         ownerId,
       });
@@ -215,7 +220,7 @@ export class ConnectionClient<
         data: connectionAdapterToConnectionData(updatedConnectionAdapter),
       };
     } catch (e) {
-      this.𝙢_.logger?.error("Failed to update connection", { error: e });
+      this.morph.𝙢_.logger?.error("Failed to update connection", { error: e });
       return {
         error: {
           code: "MORPH::CONNECTION::UPDATE_FAILED",
@@ -250,24 +255,33 @@ export class ConnectionClient<
   async retrieve(): Promise<EitherDataOrError<ConnectionData>> {
     const { data: connectionids, error } = this.getConnectionIds();
     if (error) {
-      this.𝙢_.logger?.error("isConnector : Failed to get connection ids", {
-        error,
-      });
+      this.morph.𝙢_.logger?.error(
+        "isConnector : Failed to get connection ids",
+        {
+          error,
+        }
+      );
       return { error };
     }
 
     const { ownerId, connectorId } = connectionids;
-    this.𝙢_.logger?.debug("Retrieving connection", { connectorId, ownerId });
+    this.morph.𝙢_.logger?.debug("Retrieving connection", {
+      connectorId,
+      ownerId,
+    });
 
     try {
       const connectionAdapter =
-        await MorphClient.instance.foo.database.adapter.retrieveConnection({
+        await this.morph.𝙢_.database.adapter.retrieveConnection({
           connectorId,
           ownerId,
         });
 
       if (!connectionAdapter) {
-        this.𝙢_.logger?.warn("Connection not found", { connectorId, ownerId });
+        this.morph.𝙢_.logger?.warn("Connection not found", {
+          connectorId,
+          ownerId,
+        });
         return {
           error: {
             code: "MORPH::CONNECTION::NOT_FOUND",
@@ -276,13 +290,13 @@ export class ConnectionClient<
         };
       }
 
-      this.𝙢_.logger?.debug("Connection retrieved successfully", {
+      this.morph.𝙢_.logger?.debug("Connection retrieved successfully", {
         connectorId,
         ownerId,
       });
       return { data: connectionAdapterToConnectionData(connectionAdapter) };
     } catch (e) {
-      this.𝙢_.logger?.error("Failed to retrieve connection", {
+      this.morph.𝙢_.logger?.error("Failed to retrieve connection", {
         error: e,
         connectorId,
         ownerId,
@@ -299,27 +313,33 @@ export class ConnectionClient<
   async delete(): Promise<ErrorOrVoid> {
     const { data: connectionids, error } = this.getConnectionIds();
     if (error) {
-      this.𝙢_.logger?.error("isConnector : Failed to get connection ids", {
-        error,
-      });
+      this.morph.𝙢_.logger?.error(
+        "isConnector : Failed to get connection ids",
+        {
+          error,
+        }
+      );
       return { error };
     }
 
     const { ownerId, connectorId } = connectionids;
-    this.𝙢_.logger?.debug("Deleting connection", { connectorId, ownerId });
+    this.morph.𝙢_.logger?.debug("Deleting connection", {
+      connectorId,
+      ownerId,
+    });
 
     try {
-      await MorphClient.instance.foo.database.adapter.deleteConnection({
+      await this.morph.𝙢_.database.adapter.deleteConnection({
         connectorId,
         ownerId,
       });
-      this.𝙢_.logger?.info("Connection deleted successfully", {
+      this.morph.𝙢_.logger?.info("Connection deleted successfully", {
         connectorId,
         ownerId,
       });
       return {};
     } catch (e) {
-      this.𝙢_.logger?.error("Failed to delete connection", {
+      this.morph.𝙢_.logger?.error("Failed to delete connection", {
         error: e,
         connectorId,
         ownerId,
@@ -338,15 +358,18 @@ export class ConnectionClient<
   ): Promise<EitherDataOrError<ConnectionAuthorizationData>> {
     const { data: connectionids, error } = this.getConnectionIds();
     if (error) {
-      this.𝙢_.logger?.error("isConnector : Failed to get connection ids", {
-        error,
-      });
+      this.morph.𝙢_.logger?.error(
+        "isConnector : Failed to get connection ids",
+        {
+          error,
+        }
+      );
       return { error };
     }
 
     const { ownerId, connectorId } = connectionids;
 
-    this.𝙢_.logger?.debug("Starting authorization process", {
+    this.morph.𝙢_.logger?.debug("Starting authorization process", {
       connectorId,
       ownerId,
       params,
@@ -356,20 +379,25 @@ export class ConnectionClient<
       const redirectUrl = params?.redirectUrl;
       const scopes = params?.scopes || [];
 
-      const connector = MorphClient.instance.foo.connectors[connectorId] as C;
-      this.𝙢_.logger?.debug("Processing scopes", { initialScopes: scopes });
+      const connector = this.morph.𝙢_.connectors[connectorId] as C;
+      this.morph.𝙢_.logger?.debug("Processing scopes", {
+        initialScopes: scopes,
+      });
 
       const connection =
-        await MorphClient.instance.foo.database.adapter.retrieveConnection({
+        await this.morph.𝙢_.database.adapter.retrieveConnection({
           connectorId,
           ownerId,
         });
 
       if (!connection) {
-        this.𝙢_.logger?.error("Connection not found during authorization", {
-          connectorId,
-          ownerId,
-        });
+        this.morph.𝙢_.logger?.error(
+          "Connection not found during authorization",
+          {
+            connectorId,
+            ownerId,
+          }
+        );
         return {
           error: {
             code: "MORPH::CONNECTION::NOT_FOUND",
@@ -419,7 +447,7 @@ export class ConnectionClient<
         settings: settings,
       };
 
-      await MorphClient.instance.foo.database.adapter.updateConnection(
+      await this.morph.𝙢_.database.adapter.updateConnection(
         {
           connectorId: connectorId,
           ownerId: ownerId,
@@ -449,7 +477,7 @@ export class ConnectionClient<
         authorizationUrl,
       };
 
-      this.𝙢_.logger?.info("Authorization process completed", {
+      this.morph.𝙢_.logger?.info("Authorization process completed", {
         connectorId,
         ownerId,
         scopes,
@@ -457,7 +485,7 @@ export class ConnectionClient<
       });
       return { data: decryptJson(connectionAuthorizationData) };
     } catch (error) {
-      this.𝙢_.logger?.error("Authorization process failed", {
+      this.morph.𝙢_.logger?.error("Authorization process failed", {
         error,
         connectorId,
         ownerId,
@@ -481,7 +509,7 @@ export class ConnectionClient<
     const { data: connectionids, error } = this.getConnectionIds();
     if (error) return { error };
     const { ownerId, connectorId } = connectionids;
-    const tracer = this.𝙢_.logger?.newTracer("connection::proxy", {
+    const tracer = this.morph.𝙢_.logger?.newTracer("connection::proxy", {
       request: { ...params },
     });
     tracer?.debug("Starting proxy request", {
@@ -492,8 +520,9 @@ export class ConnectionClient<
     try {
       const { path, method, data, query = {}, headers = {} } = params;
 
-      const { data: connectorData, error: connectorError } =
-        await MorphClient.instance.connectors().retrieve(connectorId);
+      const { data: connectorData, error: connectorError } = await this.morph
+        .connectors()
+        .retrieve(connectorId);
 
       if (connectorError) {
         tracer?.closeTracer({ error: connectorError });
@@ -522,10 +551,10 @@ export class ConnectionClient<
 
       // Get the authorization header
       const authHeader = await getAuthorizationHeader(
-        MorphClient.instance,
+        this.morph,
         connectorId,
         ownerId,
-        this.𝙢_.logger
+        this.morph.𝙢_.logger
       );
 
       // Prepare the request config
@@ -636,7 +665,7 @@ export class ConnectionClient<
   resources<LocalResourceModelId extends ConnectorResourceModelId<C>>(
     resourceModelId: LocalResourceModelId
   ): ResourceClient<C, CA, LocalResourceModelId> {
-    return new ResourceClient(this, resourceModelId);
+    return new ResourceClient(this.morph, this, resourceModelId);
   }
 
   isConnector<TConnectorIds extends CA[number]["id"]>(
@@ -647,9 +676,12 @@ export class ConnectionClient<
   > | null {
     const { data: ids, error } = this.getConnectionIds();
     if (error) {
-      this.𝙢_.logger?.error("isConnector : Failed to get connection ids", {
-        error,
-      });
+      this.morph.𝙢_.logger?.error(
+        "isConnector : Failed to get connection ids",
+        {
+          error,
+        }
+      );
       return null;
     }
     if (connectorIds.includes(ids.connectorId)) {
@@ -665,9 +697,12 @@ export class ConnectionClient<
   isOwner(...ownerIds: string[]): ConnectionClient<C, CA> | null {
     const { data: ids, error } = this.getConnectionIds();
     if (error) {
-      this.𝙢_.logger?.error("isConnector : Failed to get connection ids", {
-        error,
-      });
+      this.morph.𝙢_.logger?.error(
+        "isConnector : Failed to get connection ids",
+        {
+          error,
+        }
+      );
       return null;
     }
     if (ownerIds.includes(ids.ownerId)) {
@@ -681,18 +716,18 @@ export class ConnectionClient<
     connectorId: C["id"];
     ownerId: string;
   }> {
-    switch (this.𝙢_.type) {
+    switch (this.type) {
       case "connection":
         return {
           data: {
-            connectorId: this.𝙢_.connectorId!,
-            ownerId: this.𝙢_.ownerId!,
+            connectorId: this.connectorId!,
+            ownerId: this.ownerId!,
           },
         };
       case "connectionSession": {
-        const { data, error } = MorphClient.instance
+        const { data, error } = this.morph
           .sessions()
-          .verify(this.𝙢_.sessionToken!);
+          .verify(this.sessionToken!);
         if (error) return { error };
         return {
           data: {
@@ -741,13 +776,15 @@ export class ConnectionClient<
 
   webhooks(): WebhookClient<C, CA> {
     console.log("CORE_LOAD_WEBOOK");
-    return new WebhookClient(this);
+    return new WebhookClient(this.morph, this);
   }
 }
 
 export class AllConnectionsClient<
   C extends ConnectorBundle<
     I,
+    Settings,
+    Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],

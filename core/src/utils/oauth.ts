@@ -10,6 +10,7 @@ import type {
   Logger,
   WebhookOperations,
   ResourceEvents,
+  Settings,
 } from "@runmorph/cdk";
 import axios from "axios";
 
@@ -86,6 +87,8 @@ export async function exchangeCodeForToken({
 export function getConnectorOAuthCredentials(
   connector: ConnectorBundle<
     string,
+    Settings,
+    Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >
@@ -135,6 +138,8 @@ export async function oautCallback<
   A extends Adapter,
   C extends ConnectorBundle<
     I,
+    Settings,
+    Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
@@ -208,7 +213,7 @@ export async function oautCallback<
       let newAuthorizationStoredData: ConnectionAuthorizationStoredData = {};
 
       const currentConnectiondData =
-        await morph.foo.database.adapter.retrieveConnection({
+        await morph.𝙢_.database.adapter.retrieveConnection({
           connectorId: connectionData.connectorId,
           ownerId: connectionData.ownerId,
         });
@@ -227,7 +232,7 @@ export async function oautCallback<
         newAuthorizationStoredData
       );
 
-      await morph.foo.database.adapter.updateConnection(
+      await morph.𝙢_.database.adapter.updateConnection(
         {
           connectorId: connectionData.connectorId,
           ownerId: connectionData.ownerId,
@@ -247,7 +252,7 @@ export async function oautCallback<
       return { connection: updatedConnection, redirectUrl };
     }
 
-    await morph.foo.database.adapter.updateConnection(
+    await morph.𝙢_.database.adapter.updateConnection(
       {
         connectorId: connectionData.connectorId,
         ownerId: connectionData.ownerId,
@@ -278,6 +283,8 @@ export async function getAuthorizationHeader<
   A extends Adapter,
   C extends ConnectorBundle<
     I,
+    Settings,
+    Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
@@ -299,12 +306,10 @@ export async function getAuthorizationHeader<
     return null; // No authorization needed for non-OAuth2 connectors
   }
 
-  const connectionAdapter = await morph.foo.database.adapter.retrieveConnection(
-    {
-      connectorId,
-      ownerId,
-    }
-  );
+  const connectionAdapter = await morph.𝙢_.database.adapter.retrieveConnection({
+    connectorId,
+    ownerId,
+  });
   if (!connectionAdapter) {
     throw {
       code: "MORPH::ADAPTER::CONNECTION_NOT_FOUND",
@@ -353,6 +358,8 @@ export async function refreshAccessToken<
   A extends Adapter,
   C extends ConnectorBundle<
     I,
+    Settings,
+    Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
@@ -408,7 +415,7 @@ export async function refreshAccessToken<
     let newAuthorizationStoredData: ConnectionAuthorizationStoredData = {};
 
     const currentConnectiondData =
-      await morph.foo.database.adapter.retrieveConnection({
+      await morph.𝙢_.database.adapter.retrieveConnection({
         connectorId: connectorId,
         ownerId: ownerId,
       });
@@ -427,7 +434,7 @@ export async function refreshAccessToken<
       newAuthorizationStoredData
     );
 
-    await morph.foo.database.adapter.updateConnection(
+    await morph.𝙢_.database.adapter.updateConnection(
       { connectorId, ownerId },
       {
         authorizationData: stringEncryptedAuthorizationStoredData,
@@ -460,11 +467,20 @@ function calculateExpiresAt(expiresIn: number): string {
 function getConnectorClientId(
   connector: ConnectorBundle<
     string,
+    Settings,
+    Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >
 ): string {
-  const { clientId } = connector.connector.getOptions();
+  const options = connector.connector.getOptions();
+  if (!options) {
+    throw {
+      code: "MORPH::BAD_CONFIGURATION",
+      message: `Connector client is not configured.`,
+    };
+  }
+  const { clientId } = options;
   if (clientId) return clientId;
 
   const envClientId =
@@ -481,11 +497,20 @@ function getConnectorClientId(
 function getConnectorClientSecret(
   connector: ConnectorBundle<
     string,
+    Settings,
+    Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >
 ): string {
-  const { clientSecret } = connector.connector.getOptions();
+  const options = connector.connector.getOptions();
+  if (!options) {
+    throw {
+      code: "MORPH::BAD_CONFIGURATION",
+      message: `Connector client is not configured.`,
+    };
+  }
+  const { clientSecret } = options;
   if (clientSecret) return clientSecret;
 
   const envClientSecret =

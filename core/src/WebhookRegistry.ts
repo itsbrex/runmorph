@@ -11,13 +11,18 @@ import type {
   EventType,
   Awaitable,
   EitherTypeOrError,
+  Settings,
 } from "@runmorph/cdk";
 import { ResourceModel, ResourceModelId } from "@runmorph/resource-models";
 
+import { ConnectionClient } from "./Connection";
 import { MorphClient } from "./Morph";
 
-export type WebhookCallback<RTI extends ResourceModelId> = (
-  connection: ReturnType<typeof MorphClient.instance.connections>,
+export type WebhookCallback<
+  RTI extends ResourceModelId,
+  CON extends ConnectionClient<any, any>,
+> = (
+  connection: CON,
   event: {
     model: RTI;
     trigger: EventTrigger;
@@ -30,28 +35,32 @@ export type WebhookCallback<RTI extends ResourceModelId> = (
 }>;
 
 export class WebhookRegistry<
-  C extends ConnectorBundle<
+  CA extends ConnectorBundle<
     string,
+    Settings,
+    Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
 > {
   private static instance: WebhookRegistry<any>;
   private eventEmitter: EventEmitter;
-  private constructor() {
+  private morph: MorphClient<CA>;
+  private constructor(morph: MorphClient<CA>) {
+    this.morph = morph;
     this.eventEmitter = new EventEmitter();
   }
 
-  static getInstance(): WebhookRegistry<any> {
+  static getInstance(morph: MorphClient<any>): WebhookRegistry<any> {
     if (!WebhookRegistry.instance) {
-      WebhookRegistry.instance = new WebhookRegistry();
+      WebhookRegistry.instance = new WebhookRegistry(morph);
     }
     return WebhookRegistry.instance;
   }
 
   onEvents<RTI extends ResourceModelId>(
     eventName: EventType<RTI> | EventType<RTI>[],
-    callback: WebhookCallback<RTI>
+    callback: WebhookCallback<RTI, ConnectionClient<any, any>>
   ): void {
     if (typeof eventName === "string") {
       this.eventEmitter.on(eventName, callback);
@@ -78,7 +87,7 @@ export class WebhookRegistry<
     request: RawEventRequest;
   }) => void;
 
-  requestHandler = async <I extends C[number]["id"]>(
+  requestHandler = async <I extends CA[number]["id"]>(
     params:
       | {
           webhookType: "subscription";
@@ -97,8 +106,7 @@ export class WebhookRegistry<
   ): Promise<EitherTypeOrError<{ processed: boolean; data?: unknown }>> => {
     const { connectorId, webhookType, request } = params;
 
-    const morph = MorphClient.instance as MorphClient<C>;
-    const connectors = morph.foo.connectors;
+    const connectors = this.morph.𝙢_.connectors;
     console.log("Available connectors:", Object.keys(connectors));
 
     let connector;
@@ -167,7 +175,7 @@ export class WebhookRegistry<
         const identifierKey = event.identifierKey;
 
         const webhookAdapter =
-          await morph.foo.database.adapter.retrieveWebhookByIdentifierKey(
+          await this.morph.𝙢_.database.adapter.retrieveWebhookByIdentifierKey(
             identifierKey
           );
 
@@ -186,7 +194,7 @@ export class WebhookRegistry<
         } else if ("resourceRef" in event) {
           const resourceId = event.resourceRef.id;
 
-          const { data, error } = await MorphClient.instance
+          const { data, error } = await this.morph
             .connections({ connectorId, ownerId })
             .resources(model)
             .retrieve(resourceId);
@@ -250,14 +258,13 @@ export class WebhookRegistry<
     RTI extends ResourceModelId,
     RD extends ResourceData<ResourceModel<RTI, any>>,
   >(params: {
-    connectorId: C[number]["id"];
+    connectorId: CA[number]["id"];
     ownerId: string;
     model: RTI;
     trigger: EventTrigger;
     mappedResource: RD;
     idempotencyKey: string;
   }): Promise<EitherTypeOrError<{ processed: boolean; data?: unknown }>> {
-    const morph = MorphClient.instance as MorphClient<C>;
     const {
       ownerId,
       model,
@@ -267,7 +274,7 @@ export class WebhookRegistry<
       idempotencyKey,
     } = params;
     if (ownerId && model && trigger && mappedResource) {
-      const connection = (morph as MorphClient<C>).connections({
+      const connection = this.morph.connections({
         connectorId,
         ownerId: ownerId,
       });
@@ -281,10 +288,10 @@ export class WebhookRegistry<
       // Get both specific and wildcard listeners
       const specificListeners = this.eventEmitter.listeners(
         eventType
-      ) as WebhookCallback<typeof model>[];
+      ) as WebhookCallback<typeof model, typeof connection>[];
       const wildcardListeners = this.eventEmitter.listeners(
         "*"
-      ) as WebhookCallback<typeof model>[];
+      ) as WebhookCallback<typeof model, typeof connection>[];
 
       try {
         // Execute all listeners and collect results

@@ -365,10 +365,10 @@ async function main() {
     // @ts-expect-error
     const invalidResponse = await morph.connectors().retrieve("invalid-id");
 
-    morph.foo.connectors["test-2"].resourceModelOperations.crmOpportunity;
-    morph.foo.connectors["test-2"].resourceModelOperations.genericContact;
+    morph.𝙢_.connectors["test-2"].resourceModelOperations.crmOpportunity;
+    morph.𝙢_.connectors["test-2"].resourceModelOperations.genericContact;
     // @ts-expect-error
-    morph.foo.connectors["test"].resourceModelOperations.crmOpportunity;
+    morph.𝙢_.connectors["test"].resourceModelOperations.crmOpportunity;
   } catch (error) {
     console.error("Unexpected error:", error);
   }

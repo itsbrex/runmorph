@@ -2,12 +2,15 @@ import {
   ConnectorBundle,
   ResourceEvents,
   ResourceModelOperations,
+  Settings,
   WebhookOperations,
 } from "@runmorph/cdk";
 
 export type GenerateAuthorizationUrlParams = {
   connector: ConnectorBundle<
     string,
+    Settings,
+    Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >;
@@ -25,6 +28,8 @@ export type CreateAuthorizationParams = {
 export type ExchangeCodeForTokenParams = {
   connector: ConnectorBundle<
     string,
+    Settings,
+    Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >;
@@ -34,6 +39,8 @@ export type ExchangeCodeForTokenParams = {
 export type RefreshAccessTokenParams = {
   connector: ConnectorBundle<
     string,
+    Settings,
+    Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >;

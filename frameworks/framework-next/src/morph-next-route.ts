@@ -9,6 +9,7 @@ import type {
   WebhookOperations,
   ResourceEvents,
   RawEventRequest,
+  Settings,
 } from "@runmorph/core";
 import { WebhookRegistry } from "@runmorph/core";
 import type { NextRequest } from "next/server";
@@ -33,6 +34,8 @@ export function NextMorphHandlers<
   A extends Adapter,
   TConnectorBundleArray extends ConnectorBundle<
     string,
+    Settings,
+    Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],

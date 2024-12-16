@@ -5,6 +5,7 @@ import type {
   EitherDataOrError,
   WebhookOperations,
   ResourceEvents,
+  Settings,
 } from "@runmorph/cdk";
 import { config } from "dotenv";
 import { sign, verify } from "jsonwebtoken";
@@ -23,6 +24,8 @@ export class Session<
   A extends Adapter,
   TConnectorBundleArray extends ConnectorBundle<
     I,
+    Settings,
+    Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],

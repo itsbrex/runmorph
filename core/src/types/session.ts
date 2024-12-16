@@ -5,11 +5,14 @@ import type {
   ConnectionIds,
   WebhookOperations,
   ResourceEvents,
+  Settings,
 } from "@runmorph/cdk";
 
 type SessionConnectionParams<
   C extends ConnectorBundle<
     I,
+    Settings,
+    Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
@@ -19,6 +22,8 @@ type SessionConnectionParams<
 export type SessionCreateParams<
   C extends ConnectorBundle<
     I,
+    Settings,
+    Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
@@ -32,6 +37,8 @@ export type SessionCreateParams<
 export type SessionData<
   C extends ConnectorBundle<
     I,
+    Settings,
+    Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],

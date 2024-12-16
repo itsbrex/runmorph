@@ -10,6 +10,7 @@ import type {
   Logger,
   WebhookOperations,
   ResourceEvents,
+  Settings,
 } from "@runmorph/cdk";
 import type {
   ResourceModels,
@@ -28,16 +29,21 @@ export type MorphResource<RTI extends ResourceModelId> = ResourceData<
 export class ResourceClient<
   C extends ConnectorBundle<
     string,
+    Settings,
+    Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >,
   CA extends ConnectorBundle<
     string,
+    Settings,
+    Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
   RTI extends keyof C["resourceModelOperations"],
 > {
+  private morph: MorphClient<CA>;
   𝙢_: {
     connection: ConnectionClient<C, CA>;
     connector: C;
@@ -45,10 +51,15 @@ export class ResourceClient<
     logger?: Logger;
   };
 
-  constructor(connection: ConnectionClient<C, CA>, entityId: RTI) {
+  constructor(
+    morph: MorphClient<CA>,
+    connection: ConnectionClient<C, CA>,
+    entityId: RTI
+  ) {
+    this.morph = morph;
     const { data: ids, error } = connection.getConnectionIds();
     if (error) {
-      connection.𝙢_.logger?.error(
+      this.morph.𝙢_.logger?.error(
         "ResourceClient : Failed to get connection ids",
         {
           error,
@@ -57,9 +68,9 @@ export class ResourceClient<
       throw "WebhookClient : Failed to get connection ids";
     }
     this.𝙢_ = {
-      logger: connection.𝙢_.logger,
+      logger: this.morph.𝙢_.logger,
       connection: connection,
-      connector: MorphClient.instance.foo.connectors[ids.connectorId] as C,
+      connector: this.morph.𝙢_.connectors[ids.connectorId] as C,
       resourceModelId: entityId,
     };
   }

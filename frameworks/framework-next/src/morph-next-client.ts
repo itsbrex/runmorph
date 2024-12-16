@@ -5,6 +5,7 @@ import type {
   ResourceClient,
   ResourceEvents,
   ResourceModelOperations,
+  Settings,
   WebhookOperations,
 } from "@runmorph/core";
 
@@ -44,6 +45,8 @@ class ApiClient {
 class ResourceNextClient<
   CA extends ConnectorBundle<
     string,
+    Settings,
+    Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
@@ -127,6 +130,8 @@ class ResourceNextClient<
 class WebhookNextClient<
   TConnectorBundleArray extends ConnectorBundle<
     string,
+    Settings,
+    Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
@@ -192,6 +197,8 @@ class WebhookNextClient<
 class ConnectionsNextClient<
   TConnectorBundleArray extends ConnectorBundle<
     string,
+    Settings,
+    Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
@@ -273,6 +280,8 @@ class ConnectionsNextClient<
 class MorphNextClient<
   TConnectorBundleArray extends ConnectorBundle<
     string,
+    Settings,
+    Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],

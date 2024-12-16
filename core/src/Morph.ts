@@ -22,7 +22,7 @@ export type MorphConfig<CA> = {
   logger?: Logger;
 };
 export function Morph<
-  TConnectorBundleArray extends ConnectorBundle<any, any, any>[],
+  TConnectorBundleArray extends ConnectorBundle<any, any, any, any, any>[],
 >(
   options: MorphConfig<TConnectorBundleArray>
 ): MorphClient<TConnectorBundleArray> {
@@ -30,18 +30,18 @@ export function Morph<
 }
 
 export class MorphClient<
-  TConnectorBundleArray extends ConnectorBundle<any, any, any>[],
+  TConnectorBundleArray extends ConnectorBundle<any, any, any, any, any>[],
 > {
-  foo: {
+  𝙢_: {
     connectors: ArrayToIndexedObject<TConnectorBundleArray, "id">;
     database: {
       adapter: Adapter;
     };
     logger?: Logger;
   };
-  public static instance: MorphClient<any>;
+  //public static instance: MorphClient<any>;
   constructor(options: MorphConfig<TConnectorBundleArray>) {
-    this.foo = {
+    this.𝙢_ = {
       database: options.database,
       connectors: options.connectors.reduce(
         (acc, connector) => {
@@ -57,19 +57,19 @@ export class MorphClient<
       this.setLogger(options.logger);
     }
 
-    if (!MorphClient.instance) {
+    /* if (!MorphClient.instance) {
       MorphClient.instance = this;
-    }
+    }*/
   }
 
   webhooks(): WebhookRegistry<TConnectorBundleArray> {
-    return WebhookRegistry.getInstance();
+    return WebhookRegistry.getInstance(this);
   }
 
   setLogger(logger: Logger): void {
-    this.foo.logger = logger;
-    Object.keys(this.foo.connectors).forEach((ci) =>
-      this.foo.connectors[ci as keyof typeof this.foo.connectors].setLogger(
+    this.𝙢_.logger = logger;
+    Object.keys(this.𝙢_.connectors).forEach((ci) =>
+      this.𝙢_.connectors[ci as keyof typeof this.𝙢_.connectors].setLogger(
         logger
       )
     );
@@ -81,7 +81,7 @@ export class MorphClient<
     ArrayToIndexedObject<TConnectorBundleArray, "id">[I],
     TConnectorBundleArray
   > {
-    return new ConnectionClient(params);
+    return new ConnectionClient(this, params);
   }
 
   sessions(): Session<
@@ -93,7 +93,7 @@ export class MorphClient<
   }
 
   connectors(): ClientConnector<TConnectorBundleArray> {
-    return new ClientConnector();
+    return new ClientConnector(this);
   }
 
   callbacks(type: "oauth"): {
