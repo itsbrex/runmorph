@@ -1,6 +1,6 @@
 import { Connector } from "@runmorph/cdk";
 
-const connector = new Connector<"salesforce">({
+const connector = new Connector({
   id: "salesforce",
   name: "Salesforce",
   auth: {
