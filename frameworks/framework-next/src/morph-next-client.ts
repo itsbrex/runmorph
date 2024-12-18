@@ -140,13 +140,13 @@ class WebhookNextClient<
     super(baseUrl, sessionToken);
   }
 
-  async create(
+  async subscribe(
     params: Parameters<
       ReturnType<
         ReturnType<
           MorphClient<TConnectorBundleArray>["connections"]
         >["webhooks"]
-      >["create"]
+      >["subscribe"]
     >[0]
   ): Promise<
     ReturnType<
@@ -154,44 +154,37 @@ class WebhookNextClient<
         ReturnType<
           MorphClient<TConnectorBundleArray>["connections"]
         >["webhooks"]
-      >["create"]
+      >["subscribe"]
     >
   > {
     return this.post("s/webhooks", {
-      action: "create",
+      action: "subscribe",
       data: params,
     });
   }
-  /*
-  async retrieve(
-    id: string
+
+  async unsubscribe(
+    params: Parameters<
+      ReturnType<
+        ReturnType<
+          MorphClient<TConnectorBundleArray>["connections"]
+        >["webhooks"]
+      >["unsubscribe"]
+    >[0]
   ): Promise<
     ReturnType<
       ReturnType<
-        ReturnType<MorphClient<A, CA>["connections"]>["webhook"]
-      >["retrieve"]
+        ReturnType<
+          MorphClient<TConnectorBundleArray>["connections"]
+        >["webhooks"]
+      >["unsubscribe"]
     >
   > {
     return this.post("s/webhooks", {
-      action: "retrieve",
-      data: { id },
+      action: "unsubscribe",
+      data: params,
     });
   }
-
-  async delete(
-    id: string
-  ): Promise<
-    ReturnType<
-      ReturnType<
-        ReturnType<MorphClient<A, CA>["connections"]>["webhook"]
-      >["delete"]
-    >
-  > {
-    return this.post("s/webhooks", {
-      action: "delete",
-      data: { id },
-    });
-  }*/
 }
 
 class ConnectionsNextClient<

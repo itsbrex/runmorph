@@ -213,7 +213,7 @@ export async function oautCallback<
       let newAuthorizationStoredData: ConnectionAuthorizationStoredData = {};
 
       const currentConnectiondData =
-        await morph.𝙢_.database.adapter.retrieveConnection({
+        await morph.m_.database.adapter.retrieveConnection({
           connectorId: connectionData.connectorId,
           ownerId: connectionData.ownerId,
         });
@@ -232,7 +232,7 @@ export async function oautCallback<
         newAuthorizationStoredData
       );
 
-      await morph.𝙢_.database.adapter.updateConnection(
+      await morph.m_.database.adapter.updateConnection(
         {
           connectorId: connectionData.connectorId,
           ownerId: connectionData.ownerId,
@@ -252,7 +252,7 @@ export async function oautCallback<
       return { connection: updatedConnection, redirectUrl };
     }
 
-    await morph.𝙢_.database.adapter.updateConnection(
+    await morph.m_.database.adapter.updateConnection(
       {
         connectorId: connectionData.connectorId,
         ownerId: connectionData.ownerId,
@@ -306,7 +306,7 @@ export async function getAuthorizationHeader<
     return null; // No authorization needed for non-OAuth2 connectors
   }
 
-  const connectionAdapter = await morph.𝙢_.database.adapter.retrieveConnection({
+  const connectionAdapter = await morph.m_.database.adapter.retrieveConnection({
     connectorId,
     ownerId,
   });
@@ -415,7 +415,7 @@ export async function refreshAccessToken<
     let newAuthorizationStoredData: ConnectionAuthorizationStoredData = {};
 
     const currentConnectiondData =
-      await morph.𝙢_.database.adapter.retrieveConnection({
+      await morph.m_.database.adapter.retrieveConnection({
         connectorId: connectorId,
         ownerId: ownerId,
       });
@@ -434,7 +434,7 @@ export async function refreshAccessToken<
       newAuthorizationStoredData
     );
 
-    await morph.𝙢_.database.adapter.updateConnection(
+    await morph.m_.database.adapter.updateConnection(
       { connectorId, ownerId },
       {
         authorizationData: stringEncryptedAuthorizationStoredData,

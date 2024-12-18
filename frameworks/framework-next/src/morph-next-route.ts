@@ -207,24 +207,15 @@ export function NextMorphHandlers<
     const payload = (await request.json()) as any;
     const connection = morph.connections({ sessionToken });
     const webhook = connection.webhooks();
-    console.log("WEBHOOK_API_LOAD_CLIENT", webhook);
 
     try {
       switch (payload.action) {
-        case "create":
-          console.log("WEBHOOK_API_INTI", payload);
-          const response = await webhook.create(payload.data);
-          console.log("WEBHOOK_API_RESP", response);
-          return Response.json(response);
+        case "subscribe":
+          return Response.json(await webhook.subscribe(payload.data));
 
-        /*  case "retrieve":
-          const { id: retrieveId } = payload.data as { id: string };
-          return Response.json(await webhook.retrieve(retrieveId));
+        case "unsubscribe":
+          return Response.json(await webhook.unsubscribe(payload.data));
 
-        case "delete":
-          const { id: deleteId } = payload.data as { id: string };
-          return Response.json(await webhook.delete(deleteId));
-*/
         default:
           return Response.json(
             {

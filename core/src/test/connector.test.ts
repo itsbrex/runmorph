@@ -10,6 +10,8 @@ import {
   SubscribeToGlobalEvent,
   GlobalEventMapper,
   SubscribeToEvent,
+  UnsubscribeFromGlobalEvent,
+  UnsubscribeFromGlobalEventHandlerResult,
 } from "@runmorph/cdk";
 import type { ResourceModels } from "@runmorph/resource-models";
 
@@ -270,7 +272,7 @@ const TestWebhookSubscriptionMapper = new EventMapper({
   },
 });
 
-const TestWebhookGlobalCreate = new SubscribeToGlobalEvent({
+const TestWebhookGlobalSubscribe = new SubscribeToGlobalEvent({
   globalEventMapper: TestWebhookGlobalMapper,
   handler: async (connection, params) => {
     return {
@@ -279,7 +281,7 @@ const TestWebhookGlobalCreate = new SubscribeToGlobalEvent({
   },
 });
 
-const TestWebhookSubscriptionCreate = new SubscribeToEvent({
+const TestWebhookSubscription = new SubscribeToEvent({
   eventMapper: TestWebhookSubscriptionMapper,
   handler: async (connection, { model, trigger, url }) => {
     return {
@@ -289,6 +291,14 @@ const TestWebhookSubscriptionCreate = new SubscribeToEvent({
       },
     };
   },
+});
+
+const TestWebhookGlobalUnsubscribe = new UnsubscribeFromGlobalEvent({
+  globalEventMapper: TestWebhookGlobalMapper,
+  handler: (
+    connection,
+    { identifierKey }
+  ): UnsubscribeFromGlobalEventHandlerResult => {},
 });
 
 const connectorBundleTest = new ConnectorBundle({
@@ -305,7 +315,7 @@ const connectorBundleTest = new ConnectorBundle({
   webhookOperations: {
     subscription: {
       mapper: TestWebhookSubscriptionMapper as any,
-      subscribe: TestWebhookSubscriptionCreate,
+      subscribe: TestWebhookSubscription,
     },
   },
 }).init;
@@ -331,7 +341,8 @@ const connectorBundleTest2 = new ConnectorBundle({
   webhookOperations: {
     global: {
       mapper: TestWebhookGlobalMapper as any,
-      subscribe: TestWebhookGlobalCreate,
+      subscribe: TestWebhookGlobalSubscribe,
+      unsubscribe: TestWebhookGlobalUnsubscribe,
     },
   },
 }).init;

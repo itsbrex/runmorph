@@ -76,8 +76,20 @@ export default new SubscribeToGlobalEvent({
 
     const object = hubspotObjectProperties[model as HubspotModel];
     const eventType = hubspotEventType[trigger as HubspotEvent];
-    // TODO : add in conenction meta data
-    const portalId = 43833156;
+
+    // TODO : get portalId from connection.getMeta("portalId")
+    const { data: accountData, error } = await connection.proxy<{
+      portalId: number;
+    }>({
+      method: "GET",
+      path: "/account-info/v3/details",
+    });
+
+    if (error) {
+      return { error };
+    }
+
+    const portalId = accountData.portalId;
 
     // TODO : fix type inference
     if (globalRoute === "main") {

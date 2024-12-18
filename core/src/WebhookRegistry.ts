@@ -75,7 +75,7 @@ export class WebhookRegistry<
   removeEventListeners(eventName: string): void {
     this.eventEmitter.removeAllListeners(eventName);
   }
-*/
+ */
 
   // TODO Type to fix
   private subscriptionHandler?: (params: {
@@ -106,7 +106,7 @@ export class WebhookRegistry<
   ): Promise<EitherTypeOrError<{ processed: boolean; data?: unknown }>> => {
     const { connectorId, webhookType, request } = params;
 
-    const connectors = this.morph.𝙢_.connectors;
+    const connectors = this.morph.m_.connectors;
     console.log("Available connectors:", Object.keys(connectors));
 
     let connector;
@@ -175,7 +175,7 @@ export class WebhookRegistry<
         const identifierKey = event.identifierKey;
 
         const webhookAdapter =
-          await this.morph.𝙢_.database.adapter.retrieveWebhookByIdentifierKey(
+          await this.morph.m_.database.adapter.retrieveWebhookByIdentifierKey(
             identifierKey
           );
 

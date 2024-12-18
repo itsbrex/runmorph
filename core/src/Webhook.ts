@@ -12,6 +12,7 @@ import type {
   MorphErrorCode,
   Settings,
 } from "@runmorph/cdk";
+import { ResourceModelId } from "@runmorph/resource-models";
 import { sign } from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 
@@ -78,238 +79,311 @@ export class WebhookClient<
       });
       throw "WebhookClient : Failed to get connection ids";
     }
-    this.connector = this.morph.𝙢_.connectors[ids.connectorId] as C;
-    this.logger = this.morph.𝙢_.logger;
+    this.connector = this.morph.m_.connectors[ids.connectorId] as C;
+    this.logger = this.morph.m_.logger;
   }
 
-  create = async (params: {
-    model: GetWebhookModels<C["webhookOperations"]>;
-    trigger: EventTrigger;
-  }): Promise<EitherDataOrError<WebhookData>> => {
-    console.log("[WebhookClient.create] Starting webhook creation", {
-      params,
-    });
-    this.logger?.debug("Creating webhook", { params });
-    const { data: ids, error } = this.connection.getConnectionIds();
-    if (error) {
-      this.logger?.error("WebhookClient : Failed to get connection ids", {
-        error,
-      });
-      throw "WebhookClient : Failed to get connection ids";
-    }
-    const webhookSubscriptionOperations =
-      this.connector.webhookOperations?.subscription;
-    const webhookGlobalOperations = this.connector.webhookOperations?.global;
-    console.log("[WebhookClient.create] Available operations", {
-      hasSubscriptionOps: !!webhookSubscriptionOperations,
-      hasGlobalOps: !!webhookGlobalOperations,
-    });
+  subscribe = async (params: {
+    events: [
+      `${GetWebhookModels<C["webhookOperations"]>}::${EventTrigger}`,
+      ...`${GetWebhookModels<C["webhookOperations"]>}::${EventTrigger}`[],
+    ];
+  }): Promise<EitherDataOrError<WebhookData[]>> => {
+    this.logger?.debug("Subscribing to webhook", { params });
 
-    let webhookResponse:
-      | {
-          type: "subscription" | "global";
-          identifierKey: string;
-          meta?: Record<string, string>;
-        }
-      | undefined;
+    const results: WebhookData[] = [];
 
-    // First, try to subscribe to the event in priority
-    if (
-      webhookSubscriptionOperations?.mapper?.events[params.model] &&
-      webhookSubscriptionOperations?.subscribe
-    ) {
-      console.log(
-        "[WebhookClient.create] Attempting subscription webhook creation"
-      );
-      // To generate
-      let url;
-      try {
-        url = generateHookUrl({
-          connectorId: ids.connectorId,
-          ownerId: ids.ownerId,
-          model: params.model,
-          trigger: params.trigger,
-        });
-        console.log("[WebhookClient.subscribe] Generated hook URL", { url });
-      } catch (error) {
-        console.log("[WebhookClient.subscribe] Failed to generate hook URL", {
+    for (const event of params.events) {
+      const [model, trigger] = event.split("::") as [
+        ResourceModelId,
+        EventTrigger,
+      ];
+
+      const { data: ids, error } = this.connection.getConnectionIds();
+      if (error) {
+        this.logger?.error("WebhookClient : Failed to get connection ids", {
           error,
         });
-        if (error instanceof Error && "code" in error) {
+        throw "WebhookClient : Failed to get connection ids";
+      }
+
+      const webhookSubscriptionOperations =
+        this.connector.webhookOperations?.subscription;
+      const webhookGlobalOperations = this.connector.webhookOperations?.global;
+
+      let webhookResponse:
+        | {
+            type: "subscription" | "global";
+            identifierKey: string;
+            meta?: Record<string, string>;
+          }
+        | undefined;
+
+      if (
+        webhookSubscriptionOperations?.mapper?.events[model] &&
+        webhookSubscriptionOperations?.subscribe
+      ) {
+        let url;
+        try {
+          url = generateHookUrl({
+            connectorId: ids.connectorId,
+            ownerId: ids.ownerId,
+            model,
+            trigger,
+          });
+        } catch (error) {
+          if (error instanceof Error && "code" in error) {
+            return {
+              error: {
+                code: error.code as MorphErrorCode,
+                message: error.message,
+              },
+            };
+          }
           return {
             error: {
-              code: error.code as MorphErrorCode,
-              message: error.message,
+              code: "MORPH::UNKNOWN_ERROR",
+              message:
+                "An unknown error occurred: " +
+                (error instanceof Error
+                  ? error.message
+                  : JSON.stringify(error)),
             },
           };
         }
-        return {
-          error: {
-            code: "MORPH::UNKNOWN_ERROR",
-            message:
-              "An unknown error occurred 6: " +
-              (error instanceof Error ? error.message : JSON.stringify(error)),
-          },
-        };
-      }
 
-      const { data, error } = await webhookSubscriptionOperations.subscribe.run(
-        this.connection,
-        { model: params.model, trigger: params.trigger, url }
-      );
-      console.log(
-        "[WebhookClient.create] Subscription webhook creation result",
-        { data, error }
-      );
-
-      if (error) {
-        this.logger?.error(
-          "Failed to create webhook with subscription method. Checking global webhook.",
-          {
-            error,
-          }
-        );
-      } else {
-        webhookResponse = {
-          type: "subscription",
-          // Make the webhook if from the third-aprty app unique accross all connected owner
-          identifierKey: `${data.id}`,
-          meta: data?.meta,
-        };
-      }
-    }
-
-    if (webhookGlobalOperations?.mapper?.eventRouter) {
-      console.log("[WebhookClient.create] Attempting global webhook creation");
-      const foundEntry = Object.entries(
-        webhookGlobalOperations.mapper.eventRouter
-      ).find(([_route, events]) => events[params.model]);
-
-      if (foundEntry && webhookGlobalOperations?.subscribe) {
-        const [globalRoute] = foundEntry;
-        console.log("[WebhookClient.create] Found matching global route", {
-          globalRoute,
-        });
-        const { data, error } = await webhookGlobalOperations.subscribe.run(
-          this.connection,
-          {
-            model: params.model,
-            trigger: params.trigger,
-            globalRoute,
-            settings: this.connector.connector.getOptions(),
-          }
-        );
-        console.log("[WebhookClient.create] Global webhook creation result", {
-          data,
-          error,
-        });
+        const { data, error } =
+          await webhookSubscriptionOperations.subscribe.run(this.connection, {
+            model,
+            trigger,
+            url,
+          });
 
         if (error) {
-          this.logger?.error("Failed to create webhook with global method.", {
-            error,
-          });
+          this.logger?.error(
+            "Failed to create webhook with subscription method. Checking global webhook.",
+            { error }
+          );
         } else {
           webhookResponse = {
-            type: "global",
-            // Make the webhook if from the third-aprty app unique accross all connected owner
-            identifierKey: data.identifierKey,
+            type: "subscription",
+            identifierKey: `${data.id}`,
             meta: data?.meta,
           };
         }
       }
-    }
 
-    if (!webhookResponse) {
-      console.log(
-        "[WebhookClient.create] No webhook response - webhooks not supported"
-      );
-      this.logger?.error("Webhooks not supported by connector", {
-        connectorId: this.connector.id,
-      });
-      return {
-        error: {
-          code: "CONNECTOR::WEBHOOKS_NOT_SUPPORTED",
-          message: `Webhooks are not supported by connector "${this.connector.id}"`,
-        },
-      };
-    }
+      // Try global webhook if subscription failed or wasn't available
+      if (!webhookResponse && webhookGlobalOperations?.mapper?.eventRouter) {
+        const foundEntry = Object.entries(
+          webhookGlobalOperations.mapper.eventRouter
+        ).find(([_route, events]) => events[model]);
 
-    const webhook: AdapterWebhook = {
-      connectorId: ids.connectorId,
-      ownerId: ids.ownerId,
-      type: webhookResponse.type,
-      identifierKey: webhookResponse.identifierKey,
-      model: params.model,
-      trigger: params.trigger,
-      meta: webhookResponse.meta ? JSON.stringify(webhookResponse.meta) : null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    console.log("[WebhookClient.create] Created webhook object", { webhook });
+        if (foundEntry && webhookGlobalOperations?.subscribe) {
+          const [globalRoute] = foundEntry;
+          const { data, error } = await webhookGlobalOperations.subscribe.run(
+            this.connection,
+            {
+              model,
+              trigger,
+              globalRoute,
+              settings: this.connector.connector.getOptions(),
+            }
+          );
 
-    try {
-      let createdWebhook: AdapterWebhook;
-
-      // If we have an identifierKey, check if webhook already exists
-
-      const existingWebhook =
-        await this.morph.𝙢_.database.adapter.retrieveWebhook({
-          connectorId: webhook.connectorId,
-          ownerId: webhook.ownerId,
-          model: webhook.model,
-          trigger: webhook.trigger,
-        });
-
-      if (existingWebhook) {
-        // Update existing webhook
-        createdWebhook = await this.morph.𝙢_.database.adapter.updateWebhook(
-          {
-            connectorId: existingWebhook.connectorId,
-            ownerId: existingWebhook.ownerId,
-            model: existingWebhook.model,
-            trigger: existingWebhook.trigger,
-          },
-          {
-            ...webhook,
-            updatedAt: new Date(),
+          if (error) {
+            this.logger?.error("Failed to create webhook with global method.", {
+              error,
+            });
+          } else {
+            webhookResponse = {
+              type: "global",
+              identifierKey: data.identifierKey,
+              meta: data?.meta,
+            };
           }
-        );
-      } else {
-        // Create new webhook
-        createdWebhook =
-          await this.morph.𝙢_.database.adapter.createWebhook(webhook);
+        }
       }
 
-      console.log(
-        "[WebhookClient.create] Successfully stored webhook in adapter",
-        { createdWebhook }
-      );
-      this.logger?.debug("Webhook created successfully", {
-        connectorId: createdWebhook.connectorId,
-        ownerId: createdWebhook.ownerId,
-        model: createdWebhook.model,
-        trigger: createdWebhook.trigger,
-      });
-      const webhookData: WebhookData = {
-        object: "webhook",
-        connectorId: createdWebhook.connectorId,
-        ownerId: createdWebhook.ownerId,
-        // id: createdWebhook.id,
-        model: createdWebhook.model,
-        trigger: createdWebhook.trigger,
-        // redirectUrl: createdWebhook.redirectUrl,
-        createdAt: createdWebhook.createdAt,
-        updatedAt: createdWebhook.updatedAt,
+      if (!webhookResponse) {
+        this.logger?.error("Webhooks not supported by connector", {
+          connectorId: this.connector.id,
+        });
+        return {
+          error: {
+            code: "CONNECTOR::WEBHOOKS_NOT_SUPPORTED",
+            message: `Webhooks are not supported by connector "${this.connector.id}"`,
+          },
+        };
+      }
+
+      const webhook: AdapterWebhook = {
+        connectorId: ids.connectorId,
+        ownerId: ids.ownerId,
+        type: webhookResponse.type,
+        identifierKey: webhookResponse.identifierKey,
+        model,
+        trigger,
+        meta: webhookResponse.meta
+          ? JSON.stringify(webhookResponse.meta)
+          : null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
-      return { data: webhookData };
-    } catch (error) {
-      this.logger?.error("Failed to store webhook in adapter", { error });
-      return {
-        error: {
-          code: "ADAPTER::WEBHOOK::CREATE_FAILED",
-          message: "Failed to store webhook in adapter",
-        },
-      };
+
+      try {
+        let createdWebhook: AdapterWebhook;
+        const existingWebhook =
+          await this.morph.m_.database.adapter.retrieveWebhook({
+            connectorId: webhook.connectorId,
+            ownerId: webhook.ownerId,
+            model,
+            trigger,
+          });
+
+        if (existingWebhook) {
+          createdWebhook = await this.morph.m_.database.adapter.updateWebhook(
+            {
+              connectorId: existingWebhook.connectorId,
+              ownerId: existingWebhook.ownerId,
+              model,
+              trigger,
+            },
+            {
+              ...webhook,
+              updatedAt: new Date(),
+            }
+          );
+        } else {
+          createdWebhook =
+            await this.morph.m_.database.adapter.createWebhook(webhook);
+        }
+
+        results.push({
+          object: "webhook",
+          connectorId: createdWebhook.connectorId,
+          ownerId: createdWebhook.ownerId,
+          model: createdWebhook.model,
+          trigger: createdWebhook.trigger,
+          createdAt: createdWebhook.createdAt,
+          updatedAt: createdWebhook.updatedAt,
+        });
+      } catch (error) {
+        this.logger?.error("Failed to store webhook in adapter", {
+          error,
+          model,
+          trigger,
+        });
+        return {
+          error: {
+            code: "ADAPTER::WEBHOOK::CREATE_FAILED",
+            message: `Failed to store webhook in adapter for ${model}::${trigger}`,
+          },
+        };
+      }
     }
+
+    return { data: results };
+  };
+
+  unsubscribe = async (params: {
+    events: [
+      `${GetWebhookModels<C["webhookOperations"]>}::${EventTrigger}`,
+      ...`${GetWebhookModels<C["webhookOperations"]>}::${EventTrigger}`[],
+    ];
+  }): Promise<EitherDataOrError<void>> => {
+    this.logger?.debug("Unsubscribing from webhook", { params });
+
+    for (const event of params.events) {
+      const [model, trigger] = event.split("::") as [
+        ResourceModelId,
+        EventTrigger,
+      ];
+
+      const { data: ids, error } = this.connection.getConnectionIds();
+      if (error) {
+        this.logger?.error("WebhookClient : Failed to get connection ids", {
+          error,
+        });
+        throw "WebhookClient : Failed to get connection ids";
+      }
+
+      const existingWebhook =
+        await this.morph.m_.database.adapter.retrieveWebhook({
+          connectorId: ids.connectorId,
+          ownerId: ids.ownerId,
+          model,
+          trigger,
+        });
+
+      if (!existingWebhook) {
+        continue; // Skip if webhook doesn't exist
+      }
+
+      if (existingWebhook.type === "global") {
+        const webhookGlobalOperations =
+          this.connector.webhookOperations?.global;
+        if (!webhookGlobalOperations?.unsubscribe) {
+          return {
+            error: {
+              code: "CONNECTOR::WEBHOOKS_NOT_SUPPORTED",
+              message: `Global webhook unsubscribe not supported for ${model}::${trigger}`,
+            },
+          };
+        }
+
+        const foundEntry = Object.entries(
+          webhookGlobalOperations.mapper.eventRouter
+        ).find(([_route, events]) => events[model]);
+
+        if (!foundEntry) {
+          return {
+            error: {
+              code: "CONNECTOR::WEBHOOKS_NOT_SUPPORTED",
+              message: "Global webhook route not found for model",
+            },
+          };
+        }
+
+        const [globalRoute] = foundEntry;
+        const { error } = await webhookGlobalOperations.unsubscribe.run(
+          this.connection,
+          {
+            identifierKey: existingWebhook.identifierKey || "",
+            model,
+            trigger,
+            globalRoute,
+            settings: this.connector.connector.getOptions(),
+          }
+        );
+
+        if (error) {
+          return { error };
+        }
+      }
+
+      try {
+        await this.morph.m_.database.adapter.deleteWebhook({
+          connectorId: ids.connectorId,
+          ownerId: ids.ownerId,
+          model,
+          trigger,
+        });
+      } catch (error) {
+        this.logger?.error("Failed to delete webhook from adapter", {
+          error,
+          model,
+          trigger,
+        });
+        return {
+          error: {
+            code: "ADAPTER::WEBHOOK::DELETE_FAILED",
+            message: `Failed to delete webhook from adapter for ${model}::${trigger}`,
+          },
+        };
+      }
+    }
+
+    return { data: undefined };
   };
 }

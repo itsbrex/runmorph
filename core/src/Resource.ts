@@ -59,7 +59,7 @@ export class ResourceClient<
     this.morph = morph;
     const { data: ids, error } = connection.getConnectionIds();
     if (error) {
-      this.morph.𝙢_.logger?.error(
+      this.morph.m_.logger?.error(
         "ResourceClient : Failed to get connection ids",
         {
           error,
@@ -68,9 +68,9 @@ export class ResourceClient<
       throw "WebhookClient : Failed to get connection ids";
     }
     this.𝙢_ = {
-      logger: this.morph.𝙢_.logger,
+      logger: this.morph.m_.logger,
       connection: connection,
-      connector: this.morph.𝙢_.connectors[ids.connectorId] as C,
+      connector: this.morph.m_.connectors[ids.connectorId] as C,
       resourceModelId: entityId,
     };
   }

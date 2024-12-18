@@ -259,22 +259,34 @@ async function main() {
      */
 
     // Create webhook with valid params ✅
-    response = await connectionSessionOk.webhooks().create({
-      model: "genericContact",
-      trigger: "created",
+    response = await connectionSessionOk.webhooks().subscribe({
+      events: ["genericContact::created"],
     });
 
     // Create webhook with invalid parameter ❌
-    response = await connectionSessionOk.webhooks().create({
+    response = await connectionSessionOk.webhooks().subscribe({
       // @ts-expect-error
-      model: "invalidModel",
-      // @ts-expect-error
-      trigger: "invalid",
+      events: ["invalidModel::created"],
     });
 
     // Create webhook without required parameters ❌
     // @ts-expect-error
-    response = await connectionSessionOk.webhooks().create({});
+    response = await connectionSessionOk.webhooks().subscribe({});
+
+    // Unsubscribe webhook with valid params ✅
+    response = await connectionSessionOk.webhooks().unsubscribe({
+      events: ["genericContact::created"],
+    });
+
+    // Unsubscribe webhook with invalid parameter ❌
+    response = await connectionSessionOk.webhooks().unsubscribe({
+      // @ts-expect-error
+      events: ["invalidModel::created"],
+    });
+
+    // Unsubscribe webhook without required parameters ❌
+    // @ts-expect-error
+    response = await connectionSessionOk.webhooks().unsubscribe({});
 
     morph
       .webhooks()
@@ -365,10 +377,10 @@ async function main() {
     // @ts-expect-error
     const invalidResponse = await morph.connectors().retrieve("invalid-id");
 
-    morph.𝙢_.connectors["test-2"].resourceModelOperations.crmOpportunity;
-    morph.𝙢_.connectors["test-2"].resourceModelOperations.genericContact;
+    morph.m_.connectors["test-2"].resourceModelOperations.crmOpportunity;
+    morph.m_.connectors["test-2"].resourceModelOperations.genericContact;
     // @ts-expect-error
-    morph.𝙢_.connectors["test"].resourceModelOperations.crmOpportunity;
+    morph.m_.connectors["test"].resourceModelOperations.crmOpportunity;
   } catch (error) {
     console.error("Unexpected error:", error);
   }

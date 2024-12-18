@@ -78,10 +78,11 @@ export function ResourceList({ connections }: ResourceListProps): JSX.Element {
       });
 
       console.log("WEBHOOK_INIT");
-      const { data: w, error: ew } = await morphConnection.webhook().create({
-        model: "genericContact",
-        trigger: "created",
-      });
+      const { data: w, error: ew } = await morphConnection
+        .webhook()
+        .unsubscribe({
+          events: ["genericContact::updated", "genericContact::created"],
+        });
 
       console.log("WEBHOOK", w);
       console.log("WEBHOOK_ERROR", ew);

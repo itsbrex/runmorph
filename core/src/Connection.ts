@@ -135,7 +135,7 @@ export class ConnectionClient<
     const { data: connectionids, error } = this.getConnectionIds();
     if (error) return { error };
     const { ownerId, connectorId } = connectionids;
-    this.morph.𝙢_.logger?.debug("Creating connection", {
+    this.morph.m_.logger?.debug("Creating connection", {
       params,
       connectorId,
       ownerId,
@@ -145,7 +145,7 @@ export class ConnectionClient<
       .connectors()
       .retrieve(connectorId);
     if (connectorError) {
-      this.morph.𝙢_.logger?.error("Failed to retrieve connector", {
+      this.morph.m_.logger?.error("Failed to retrieve connector", {
         error: connectorError,
       });
       return { error: connectorError };
@@ -153,7 +153,7 @@ export class ConnectionClient<
 
     try {
       const connectionAdapter =
-        await this.morph.𝙢_.database.adapter.createConnection({
+        await this.morph.m_.database.adapter.createConnection({
           connectorId: connectorId,
           ownerId: ownerId,
           status: "unauthorized",
@@ -163,13 +163,13 @@ export class ConnectionClient<
           updatedAt: new Date(),
         });
 
-      this.morph.𝙢_.logger?.info("Connection created successfully", {
+      this.morph.m_.logger?.info("Connection created successfully", {
         connectorId,
         ownerId,
       });
       return { data: connectionAdapterToConnectionData(connectionAdapter) };
     } catch (e) {
-      this.morph.𝙢_.logger?.error("Failed to create connection", { error: e });
+      this.morph.m_.logger?.error("Failed to create connection", { error: e });
       return {
         error: {
           code: "MORPH::CONNECTION::CREATION_FAILED",
@@ -185,7 +185,7 @@ export class ConnectionClient<
     const { data: connectionids, error } = this.getConnectionIds();
     if (error) return { error };
     const { ownerId, connectorId } = connectionids;
-    this.morph.𝙢_.logger?.debug("Updating connection", {
+    this.morph.m_.logger?.debug("Updating connection", {
       params,
       connectorId,
       ownerId,
@@ -194,7 +194,7 @@ export class ConnectionClient<
     const { data: currentConnection, error: retrieveError } =
       await this.retrieve();
     if (retrieveError) {
-      this.morph.𝙢_.logger?.error("Failed to retrieve connection for update", {
+      this.morph.m_.logger?.error("Failed to retrieve connection for update", {
         error: retrieveError,
       });
       return { error: retrieveError };
@@ -207,12 +207,12 @@ export class ConnectionClient<
 
     try {
       const updatedConnectionAdapter =
-        await this.morph.𝙢_.database.adapter.updateConnection(
+        await this.morph.m_.database.adapter.updateConnection(
           { connectorId, ownerId },
           { operations: updatedOperations, updatedAt: new Date() }
         );
 
-      this.morph.𝙢_.logger?.info("Connection updated successfully", {
+      this.morph.m_.logger?.info("Connection updated successfully", {
         connectorId,
         ownerId,
       });
@@ -220,7 +220,7 @@ export class ConnectionClient<
         data: connectionAdapterToConnectionData(updatedConnectionAdapter),
       };
     } catch (e) {
-      this.morph.𝙢_.logger?.error("Failed to update connection", { error: e });
+      this.morph.m_.logger?.error("Failed to update connection", { error: e });
       return {
         error: {
           code: "MORPH::CONNECTION::UPDATE_FAILED",
@@ -255,7 +255,7 @@ export class ConnectionClient<
   async retrieve(): Promise<EitherDataOrError<ConnectionData>> {
     const { data: connectionids, error } = this.getConnectionIds();
     if (error) {
-      this.morph.𝙢_.logger?.error(
+      this.morph.m_.logger?.error(
         "isConnector : Failed to get connection ids",
         {
           error,
@@ -265,20 +265,20 @@ export class ConnectionClient<
     }
 
     const { ownerId, connectorId } = connectionids;
-    this.morph.𝙢_.logger?.debug("Retrieving connection", {
+    this.morph.m_.logger?.debug("Retrieving connection", {
       connectorId,
       ownerId,
     });
 
     try {
       const connectionAdapter =
-        await this.morph.𝙢_.database.adapter.retrieveConnection({
+        await this.morph.m_.database.adapter.retrieveConnection({
           connectorId,
           ownerId,
         });
 
       if (!connectionAdapter) {
-        this.morph.𝙢_.logger?.warn("Connection not found", {
+        this.morph.m_.logger?.warn("Connection not found", {
           connectorId,
           ownerId,
         });
@@ -290,13 +290,13 @@ export class ConnectionClient<
         };
       }
 
-      this.morph.𝙢_.logger?.debug("Connection retrieved successfully", {
+      this.morph.m_.logger?.debug("Connection retrieved successfully", {
         connectorId,
         ownerId,
       });
       return { data: connectionAdapterToConnectionData(connectionAdapter) };
     } catch (e) {
-      this.morph.𝙢_.logger?.error("Failed to retrieve connection", {
+      this.morph.m_.logger?.error("Failed to retrieve connection", {
         error: e,
         connectorId,
         ownerId,
@@ -313,7 +313,7 @@ export class ConnectionClient<
   async delete(): Promise<ErrorOrVoid> {
     const { data: connectionids, error } = this.getConnectionIds();
     if (error) {
-      this.morph.𝙢_.logger?.error(
+      this.morph.m_.logger?.error(
         "isConnector : Failed to get connection ids",
         {
           error,
@@ -323,23 +323,23 @@ export class ConnectionClient<
     }
 
     const { ownerId, connectorId } = connectionids;
-    this.morph.𝙢_.logger?.debug("Deleting connection", {
+    this.morph.m_.logger?.debug("Deleting connection", {
       connectorId,
       ownerId,
     });
 
     try {
-      await this.morph.𝙢_.database.adapter.deleteConnection({
+      await this.morph.m_.database.adapter.deleteConnection({
         connectorId,
         ownerId,
       });
-      this.morph.𝙢_.logger?.info("Connection deleted successfully", {
+      this.morph.m_.logger?.info("Connection deleted successfully", {
         connectorId,
         ownerId,
       });
       return {};
     } catch (e) {
-      this.morph.𝙢_.logger?.error("Failed to delete connection", {
+      this.morph.m_.logger?.error("Failed to delete connection", {
         error: e,
         connectorId,
         ownerId,
@@ -358,7 +358,7 @@ export class ConnectionClient<
   ): Promise<EitherDataOrError<ConnectionAuthorizationData>> {
     const { data: connectionids, error } = this.getConnectionIds();
     if (error) {
-      this.morph.𝙢_.logger?.error(
+      this.morph.m_.logger?.error(
         "isConnector : Failed to get connection ids",
         {
           error,
@@ -369,7 +369,7 @@ export class ConnectionClient<
 
     const { ownerId, connectorId } = connectionids;
 
-    this.morph.𝙢_.logger?.debug("Starting authorization process", {
+    this.morph.m_.logger?.debug("Starting authorization process", {
       connectorId,
       ownerId,
       params,
@@ -379,19 +379,19 @@ export class ConnectionClient<
       const redirectUrl = params?.redirectUrl;
       const scopes = params?.scopes || [];
 
-      const connector = this.morph.𝙢_.connectors[connectorId] as C;
-      this.morph.𝙢_.logger?.debug("Processing scopes", {
+      const connector = this.morph.m_.connectors[connectorId] as C;
+      this.morph.m_.logger?.debug("Processing scopes", {
         initialScopes: scopes,
       });
 
       const connection =
-        await this.morph.𝙢_.database.adapter.retrieveConnection({
+        await this.morph.m_.database.adapter.retrieveConnection({
           connectorId,
           ownerId,
         });
 
       if (!connection) {
-        this.morph.𝙢_.logger?.error(
+        this.morph.m_.logger?.error(
           "Connection not found during authorization",
           {
             connectorId,
@@ -447,7 +447,7 @@ export class ConnectionClient<
         settings: settings,
       };
 
-      await this.morph.𝙢_.database.adapter.updateConnection(
+      await this.morph.m_.database.adapter.updateConnection(
         {
           connectorId: connectorId,
           ownerId: ownerId,
@@ -477,7 +477,7 @@ export class ConnectionClient<
         authorizationUrl,
       };
 
-      this.morph.𝙢_.logger?.info("Authorization process completed", {
+      this.morph.m_.logger?.info("Authorization process completed", {
         connectorId,
         ownerId,
         scopes,
@@ -485,7 +485,7 @@ export class ConnectionClient<
       });
       return { data: decryptJson(connectionAuthorizationData) };
     } catch (error) {
-      this.morph.𝙢_.logger?.error("Authorization process failed", {
+      this.morph.m_.logger?.error("Authorization process failed", {
         error,
         connectorId,
         ownerId,
@@ -509,7 +509,7 @@ export class ConnectionClient<
     const { data: connectionids, error } = this.getConnectionIds();
     if (error) return { error };
     const { ownerId, connectorId } = connectionids;
-    const tracer = this.morph.𝙢_.logger?.newTracer("connection::proxy", {
+    const tracer = this.morph.m_.logger?.newTracer("connection::proxy", {
       request: { ...params },
     });
     tracer?.debug("Starting proxy request", {
@@ -554,7 +554,7 @@ export class ConnectionClient<
         this.morph,
         connectorId,
         ownerId,
-        this.morph.𝙢_.logger
+        this.morph.m_.logger
       );
 
       // Prepare the request config
@@ -676,7 +676,7 @@ export class ConnectionClient<
   > | null {
     const { data: ids, error } = this.getConnectionIds();
     if (error) {
-      this.morph.𝙢_.logger?.error(
+      this.morph.m_.logger?.error(
         "isConnector : Failed to get connection ids",
         {
           error,
@@ -697,7 +697,7 @@ export class ConnectionClient<
   isOwner(...ownerIds: string[]): ConnectionClient<C, CA> | null {
     const { data: ids, error } = this.getConnectionIds();
     if (error) {
-      this.morph.𝙢_.logger?.error(
+      this.morph.m_.logger?.error(
         "isConnector : Failed to get connection ids",
         {
           error,

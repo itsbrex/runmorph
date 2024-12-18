@@ -32,7 +32,7 @@ export function Morph<
 export class MorphClient<
   TConnectorBundleArray extends ConnectorBundle<any, any, any, any, any>[],
 > {
-  𝙢_: {
+  m_: {
     connectors: ArrayToIndexedObject<TConnectorBundleArray, "id">;
     database: {
       adapter: Adapter;
@@ -41,7 +41,7 @@ export class MorphClient<
   };
   //public static instance: MorphClient<any>;
   constructor(options: MorphConfig<TConnectorBundleArray>) {
-    this.𝙢_ = {
+    this.m_ = {
       database: options.database,
       connectors: options.connectors.reduce(
         (acc, connector) => {
@@ -67,9 +67,9 @@ export class MorphClient<
   }
 
   setLogger(logger: Logger): void {
-    this.𝙢_.logger = logger;
-    Object.keys(this.𝙢_.connectors).forEach((ci) =>
-      this.𝙢_.connectors[ci as keyof typeof this.𝙢_.connectors].setLogger(
+    this.m_.logger = logger;
+    Object.keys(this.m_.connectors).forEach((ci) =>
+      this.m_.connectors[ci as keyof typeof this.m_.connectors].setLogger(
         logger
       )
     );

@@ -23,7 +23,7 @@ export class ClientConnector<
       ArrayToIndexedObject<TConnectorBundleArray, "id">[TConnectorId]
     >
   > {
-    const connector = this.morph.𝙢_.connectors[id];
+    const connector = this.morph.m_.connectors[id];
 
     if (!connector) {
       return {
