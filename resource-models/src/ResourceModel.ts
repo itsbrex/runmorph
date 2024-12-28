@@ -1,7 +1,11 @@
 import { z, zMoprhResource } from "./ZodExtensions";
 
 export type ResourceModelFieldKeys<
-  RT extends ResourceModel<string, Record<string, z.ZodTypeAny>>,
+  RT extends ResourceModel<
+    string,
+    Record<string, z.ZodTypeAny>,
+    Record<string, z.ZodTypeAny>
+  >,
 > = keyof z.infer<ReturnType<RT["schema"]>>;
 
 type ResourceModelExpandableFiedCheck =
@@ -11,7 +15,11 @@ type ResourceModelExpandableFiedCheck =
   | undefined;
 
 export type ResourceModelExpandableFieldKeys<
-  RT extends ResourceModel<string, Record<string, z.ZodTypeAny>>,
+  RT extends ResourceModel<
+    string,
+    Record<string, z.ZodTypeAny>,
+    Record<string, z.ZodTypeAny>
+  >,
 > = {
   [K in keyof z.infer<ReturnType<RT["schema"]>>]: z.infer<
     ReturnType<RT["schema"]>
@@ -23,21 +31,34 @@ export type ResourceModelExpandableFieldKeys<
     : never;
 }[keyof z.infer<ReturnType<RT["schema"]>>];
 
+export type ExtractResponseSchemaFromResourceModel<RM> =
+  RM extends ResourceModel<any, any, infer RSS> ? RSS : never;
+
+export type InferredSchemaOutput<T extends Record<string, z.ZodTypeAny>> = {
+  [K in keyof T]: z.infer<T[K]>;
+};
+
 export class ResourceModel<
   I extends string,
   RFS extends Record<string, z.ZodTypeAny>,
+  RRS extends Record<string, z.ZodTypeAny>,
 > {
   public id: I;
   public schema: (zInstance?: typeof z) => z.ZodObject<RFS>;
+  public responseSchema?: (zInstance?: typeof z) => z.ZodObject<RRS>;
 
   constructor({
     id,
     schema,
+    response,
   }: {
     id: I;
     schema: (
       zodInstance: typeof z & { morph: { resource: zMoprhResource } }
     ) => RFS;
+    response?: (
+      zodInstance: typeof z & { morph: { resource: zMoprhResource } }
+    ) => RRS;
   }) {
     this.id = id;
     this.schema = (zInstance?: typeof z): z.ZodObject<RFS> => {
@@ -48,11 +69,28 @@ export class ResourceModel<
         })
       );
     };
+    if (response) {
+      this.responseSchema = (zInstance?: typeof z): z.ZodObject<RRS> => {
+        return z.object(
+          response({
+            ...(zInstance ? zInstance : z),
+            ...{ morph: { resource: zMoprhResource } },
+          })
+        );
+      };
+    }
   }
 }
 
 export class ResourceModelMap<
-  T extends Record<string, ResourceModel<string, Record<string, z.ZodTypeAny>>>,
+  T extends Record<
+    string,
+    ResourceModel<
+      string,
+      Record<string, z.ZodTypeAny>,
+      Record<string, z.ZodTypeAny>
+    >
+  >,
 > {
   constructor(private resourceModelsMap: T) {}
 
@@ -87,12 +125,13 @@ export class ResourceModelMap<
   public addResourceModel<
     I extends string,
     RFS extends Record<string, z.ZodTypeAny>,
+    RRS extends Record<string, z.ZodTypeAny>,
   >(
-    resourceModel: ResourceModel<I, RFS>
-  ): ResourceModelMap<T & Record<I, ResourceModel<I, RFS>>> {
+    resourceModel: ResourceModel<I, RFS, RRS>
+  ): ResourceModelMap<T & Record<I, ResourceModel<I, RFS, RRS>>> {
     if (!resourceModel?.id) {
       return this as unknown as ResourceModelMap<
-        T & Record<I, ResourceModel<I, RFS>>
+        T & Record<I, ResourceModel<I, RFS, RRS>>
       >;
     }
     if (!this.resourceModelsMap) {

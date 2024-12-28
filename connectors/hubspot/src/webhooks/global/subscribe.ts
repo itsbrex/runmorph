@@ -149,7 +149,12 @@ export default new SubscribeToGlobalEvent({
       }
 
       return {
-        identifierKey: `${appId}::${portalId}::${globalRoute}::${model}::${trigger}`,
+        identifierKey: `${portalId}-${globalRoute}-${model}-${trigger}`, // TODO: define identierKey composable (portalId, globalRoute, ...) so it become typesafe across sub and mapper
+      };
+    }
+    if (globalRoute === "cardView") {
+      return {
+        identifierKey: `${portalId}-${globalRoute}-widgetCardViewRequest-created`, // TODO: define identierKey composable (portalId, globalRoute, ...) so it become typesafe across sub and mapper
       };
     } else {
       // TODO : if route infered proeperly, this shouldn't be necessary

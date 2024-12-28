@@ -1,7 +1,7 @@
-import { EventType, GlobalEventMapper, ResourceEvents } from "@runmorph/cdk";
+import { GlobalEventMapper } from "@runmorph/cdk";
 
 import HubSpotContactMapper from "../../resources/genericContact/mapper";
-
+import HubSpotCardViewMapper from "../../resources/widgetCardViewRequest/mapper";
 type HubSpotEventType = "contact.propertyChange";
 
 export type HubSpotWebhookEvent = {
@@ -39,33 +39,55 @@ type HubSpotRequest = {
   body: HubSpotWebhookEvent[];
 };
 
+type HubSpotCardViewQuery = {
+  portalId?: string;
+  associatedObjectType?: string;
+  hs_object_id?: string;
+};
+
 export default new GlobalEventMapper({
   eventRouter: {
     main: {
       genericContact: ["updated", "created"],
     },
+    cardView: {
+      widgetCardViewRequest: ["created"],
+    },
   },
   handler: async (request, globalRoute) => {
-    const { body } = request as HubSpotRequest;
     switch (globalRoute) {
-      case "main":
-        return body.map((event) => {
-          const [objectType, eventType] = event.subscriptionType.split(".");
+      case "main": {
+        const { body } = request as HubSpotRequest;
+        return body.map((hubspotEvent) => {
+          const [objectType, eventType] =
+            hubspotEvent.subscriptionType.split(".");
 
           const trigger = hubspotEventType[eventType as HSEventType];
           const model = hubspotObjectProperties[objectType as HSObjectType];
 
-          console.log("model", model);
           return {
             mapper: HubSpotContactMapper,
             trigger: trigger,
             resourceRef: {
-              id: event.objectId.toString(),
+              id: hubspotEvent.objectId.toString(),
             },
-            identifierKey: `${event.appId}::${event.portalId}::${globalRoute}::${model}::${trigger}`,
-            idempotencyKey: event.eventId.toString(),
+            identifierKey: `${hubspotEvent.portalId}-${globalRoute}-${model}-${trigger}`,
+            idempotencyKey: hubspotEvent.eventId.toString(),
           };
         });
+      }
+      case "cardView": {
+        const { query } = request as { query: HubSpotCardViewQuery };
+        return [
+          {
+            mapper: HubSpotCardViewMapper,
+            trigger: "created",
+            rawResource: query,
+            identifierKey: `${query.portalId}-${globalRoute}-widgetCardViewRequest-created`,
+            idempotencyKey: `${query.portalId}-${globalRoute}-${query.associatedObjectType}-${query.hs_object_id}-${Date.now()}`,
+          },
+        ];
+      }
     }
   },
 });

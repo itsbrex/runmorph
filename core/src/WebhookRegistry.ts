@@ -13,7 +13,14 @@ import type {
   EitherTypeOrError,
   Settings,
 } from "@runmorph/cdk";
-import { ResourceModel, ResourceModelId } from "@runmorph/resource-models";
+import {
+  ExtractResponseSchemaFromResourceModel,
+  InferredSchemaOutput,
+  ResourceModel,
+  ResourceModelId,
+  resourceModels,
+  z,
+} from "@runmorph/resource-models";
 
 import { ConnectionClient } from "./Connection";
 import { MorphClient } from "./Morph";
@@ -21,18 +28,28 @@ import { MorphClient } from "./Morph";
 export type WebhookCallback<
   RTI extends ResourceModelId,
   CON extends ConnectionClient<any, any>,
+  R extends Record<string, z.ZodTypeAny> | undefined,
 > = (
   connection: CON,
   event: {
     model: RTI;
     trigger: EventTrigger;
     idempotencyKey: string;
-    data: ResourceData<ResourceModel<RTI, any>>;
+    data: ResourceData<
+      ResourceModel<
+        RTI,
+        any,
+        R extends undefined ? Record<string, z.ZodTypeAny> : R
+      >
+    >;
   }
-) => Awaitable<void | {
-  processed: boolean;
-  data?: unknown;
-}>;
+) => Awaitable<
+  R extends Record<string, z.ZodTypeAny>
+    ? R extends Record<string, never>
+      ? void | { processed: boolean; data?: unknown }
+      : { processed: boolean; data: InferredSchemaOutput<R> }
+    : void | { processed: boolean; data?: unknown }
+>;
 
 export class WebhookRegistry<
   CA extends ConnectorBundle<
@@ -58,9 +75,14 @@ export class WebhookRegistry<
     return WebhookRegistry.instance;
   }
 
-  onEvents<RTI extends ResourceModelId>(
+  onEvents<
+    RTI extends ResourceModelId,
+    R extends (typeof resourceModels)[RTI]["responseSchema"] extends undefined
+      ? undefined
+      : ExtractResponseSchemaFromResourceModel<(typeof resourceModels)[RTI]>,
+  >(
     eventName: EventType<RTI> | EventType<RTI>[],
-    callback: WebhookCallback<RTI, ConnectionClient<any, any>>
+    callback: WebhookCallback<RTI, ConnectionClient<any, any>, R>
   ): void {
     if (typeof eventName === "string") {
       this.eventEmitter.on(eventName, callback);
@@ -189,7 +211,7 @@ export class WebhookRegistry<
         const ownerId = webhookAdapter.ownerId;
         if ("rawResource" in event) {
           mappedResource = event.mapper.read(event.rawResource) as ResourceData<
-            ResourceModel<keyof typeof resourceModelOperations, any>
+            ResourceModel<keyof typeof resourceModelOperations, any, any>
           >;
         } else if ("resourceRef" in event) {
           const resourceId = event.resourceRef.id;
@@ -256,7 +278,7 @@ export class WebhookRegistry<
 
   private async porcesseEvent<
     RTI extends ResourceModelId,
-    RD extends ResourceData<ResourceModel<RTI, any>>,
+    RD extends ResourceData<ResourceModel<RTI, any, any>>,
   >(params: {
     connectorId: CA[number]["id"];
     ownerId: string;
@@ -288,10 +310,10 @@ export class WebhookRegistry<
       // Get both specific and wildcard listeners
       const specificListeners = this.eventEmitter.listeners(
         eventType
-      ) as WebhookCallback<typeof model, typeof connection>[];
+      ) as WebhookCallback<typeof model, typeof connection, any>[];
       const wildcardListeners = this.eventEmitter.listeners(
         "*"
-      ) as WebhookCallback<typeof model, typeof connection>[];
+      ) as WebhookCallback<typeof model, typeof connection, any>[];
 
       try {
         // Execute all listeners and collect results

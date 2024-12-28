@@ -291,9 +291,9 @@ async function main() {
     morph
       .webhooks()
       .onEvents(
-        "crmOpportunity::updated",
+        "widgetCardViewRequest::created",
         (connection, { model, trigger, data }) => {
-          model === "crmOpportunity";
+          model === "widgetCardViewRequest";
           // @ts-expect-error
           model === "genericContact";
 
@@ -304,6 +304,27 @@ async function main() {
           data.fields.name;
           // SHOULD FAILED
           data.fields.missingField;
+
+          return {
+            processed: true,
+            data: {
+              cards: [
+                {
+                  title: "Title",
+                  contents: [
+                    {
+                      label: "Proprety",
+                      type: "text",
+                      value: "Foo",
+                    },
+                  ],
+                },
+              ],
+              root: {
+                actions: [],
+              },
+            },
+          };
         }
       );
     morph.webhooks().requestHandler({
