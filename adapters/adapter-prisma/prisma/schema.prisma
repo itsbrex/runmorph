@@ -8,19 +8,28 @@ generator client {
 }
 
 model Connection {
-
   connectorId         String @map("connector_id")
   ownerId             String @map("owner_id")
   status              String 
-
   operations          String[]
   authorizationType   String  @map("authorization_type")
   authorizationData   String? @map("authorization_data")
-
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @default(now()) @updatedAt @map("updated_at")
-
-
   @@id([connectorId, ownerId])
   @@map("connections") 
+}
+
+model Webhook {
+  connectorId       String   @map("connector_id")
+  ownerId           String   @map("owner_id")  
+  model             String
+  trigger           String
+  type              String
+  identifierKey     String?  @map("identifier_key") @unique
+  meta              String?
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at")
+  @@id([connectorId, ownerId, model, trigger])
+  @@map("webhooks")
 }

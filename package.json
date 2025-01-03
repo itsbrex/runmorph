@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
+    "build-package": "turbo run build --filter=",
     "clean": "turbo run clean",
     "dev": "turbo run dev",
     "validate": "run-s validate:*",
@@ -19,15 +20,18 @@
   },
   "packageManager": "yarn@1.22.22",
   "workspaces": [
+    "packages/*",
+    "cli",
+    "cdk",
     "core",
     "adapters/*",
-    "packages/*",
     "connectors/*",
     "resource-models",
     "frameworks/*",
     "examples/*"
   ],
   "dependencies": {
+    "@runmorph/cli": "^0.0.1",
     "dotenv": "^16.4.5",
     "eslint-config-turbo": "^2.0.6"
   },

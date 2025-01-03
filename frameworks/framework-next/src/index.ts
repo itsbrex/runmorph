@@ -6,6 +6,8 @@ import type {
   MorphResource,
   MorphClient,
   ResourceModelId,
+  WebhookOperations,
+  ResourceEvents,
 } from "@runmorph/core";
 import { Morph, resourceModelIds } from "@runmorph/core";
 
@@ -15,12 +17,11 @@ export { NextMorphClient } from "./morph-next-client";
 export type { MorphResource, ResourceModelId };
 export { resourceModelIds };
 export function NextMorph<
-  A extends Adapter,
-  CA extends ConnectorBundle<string, ResourceModelOperations>[],
+  TConnectorBundleArray extends ConnectorBundle<any, any, any, any, any>[],
 >(
-  config: MorphConfig<A, CA>
+  config: MorphConfig<TConnectorBundleArray>
 ): {
-  morph: MorphClient<A, CA>;
+  morph: MorphClient<TConnectorBundleArray>;
   handlers: ReturnType<NextMorphHandlers>;
 } {
   const morph = Morph(config);

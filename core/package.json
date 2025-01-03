@@ -1,10 +1,14 @@
 {
   "name": "@runmorph/core",
-  "version": "0.0.17",
+  "version": "0.0.20",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
-    ".": "./dist/index.js"
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
   },
   "scripts": {
     "build": "tsc",
@@ -20,8 +24,8 @@
     "publish": "yarn run build && yarn publish --access public"
   },
   "dependencies": {
-    "@runmorph/cdk": "^0.0.23",
-    "@runmorph/resource-models": "^0.0.5",
+    "@runmorph/cdk": "^0.0.26",
+    "@runmorph/resource-models": "^0.0.7",
     "axios": "^0.21.1",
     "jsonwebtoken": "^9.0.2",
     "uuid": "^10.0.0"

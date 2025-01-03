@@ -2,7 +2,11 @@ import { writeFileSync, readFileSync, mkdirSync, existsSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
 
-import type { Adapter, AdapterConnection } from "@runmorph/core";
+import type {
+  Adapter,
+  AdapterConnection,
+  AdapterWebhook,
+} from "@runmorph/core";
 
 /**
  * Storage configuration for local connections
@@ -20,11 +24,28 @@ const STORAGE_CONFIG = {
 let connectionsCache = new Map<string, AdapterConnection>();
 
 /**
+ * In-memory cache for webhooks
+ * @private
+ */
+let webhooksCache = new Map<string, AdapterWebhook>();
+
+/**
  * Creates a composite key for storing connections
  * @private
  */
 const createKey = (connectorId: string, ownerId: string): string =>
   `${connectorId}:${ownerId}`;
+
+/**
+ * Creates a composite key for storing webhooks
+ * @private
+ */
+const createWebhookKey = (
+  connectorId: string,
+  ownerId: string,
+  model: string,
+  trigger: string
+): string => `${connectorId}:${ownerId}:${model}:${trigger}`;
 
 /**
  * Initializes the storage directory and loads existing connections
@@ -42,12 +63,14 @@ const initializeStorage = (): void => {
   try {
     if (existsSync(storagePath)) {
       const data = readFileSync(storagePath, "utf8");
-      const connections = JSON.parse(data);
-      connectionsCache = new Map(Object.entries(connections));
+      const { connections, webhooks } = JSON.parse(data);
+      connectionsCache = new Map(Object.entries(connections || {}));
+      webhooksCache = new Map(Object.entries(webhooks || {}));
     }
   } catch (error) {
-    console.warn("Failed to load existing connections:", error);
+    console.warn("Failed to load existing data:", error);
     connectionsCache = new Map();
+    webhooksCache = new Map();
   }
 };
 
@@ -58,10 +81,13 @@ const initializeStorage = (): void => {
 const persistConnections = (): void => {
   try {
     const storagePath = join(STORAGE_CONFIG.dir, STORAGE_CONFIG.file);
-    const data = Object.fromEntries(connectionsCache);
+    const data = {
+      connections: Object.fromEntries(connectionsCache),
+      webhooks: Object.fromEntries(webhooksCache),
+    };
     writeFileSync(storagePath, JSON.stringify(data, null, 2));
   } catch (error) {
-    console.error("Failed to persist connections:", error);
+    console.error("Failed to persist data:", error);
   }
 };
 
@@ -150,6 +176,91 @@ export function LocalAdapter(): Adapter {
     deleteConnection: async ({ connectorId, ownerId }) => {
       const key = createKey(connectorId, ownerId);
       connectionsCache.delete(key);
+      persistConnections();
+    },
+
+    // Webhook methods
+    createWebhook: async (webhook) => {
+      const key = createWebhookKey(
+        webhook.connectorId,
+        webhook.ownerId,
+        webhook.model,
+        webhook.trigger
+      );
+
+      if (webhooksCache.has(key)) {
+        throw new Error("Webhook already exists");
+      }
+
+      webhooksCache.set(key, webhook);
+      persistConnections();
+
+      return {
+        ...webhook,
+        createdAt: new Date(webhook.createdAt),
+        updatedAt: new Date(webhook.updatedAt),
+      };
+    },
+
+    retrieveWebhook: async ({ connectorId, ownerId, model, trigger }) => {
+      const key = createWebhookKey(connectorId, ownerId, model, trigger);
+      const webhook = webhooksCache.get(key);
+
+      if (!webhook) {
+        return null;
+      }
+
+      return {
+        ...webhook,
+        createdAt: new Date(webhook.createdAt),
+        updatedAt: new Date(webhook.updatedAt),
+      };
+    },
+
+    retrieveWebhookByIdentifierKey: async (identifierKey) => {
+      const webhook = Array.from(webhooksCache.values()).find(
+        (w) => w.identifierKey === identifierKey
+      );
+
+      if (!webhook) {
+        return null;
+      }
+
+      return {
+        ...webhook,
+        createdAt: new Date(webhook.createdAt),
+        updatedAt: new Date(webhook.updatedAt),
+      };
+    },
+
+    updateWebhook: async ({ connectorId, ownerId, model, trigger }, data) => {
+      const key = createWebhookKey(connectorId, ownerId, model, trigger);
+      const existing = webhooksCache.get(key);
+
+      if (!existing) {
+        throw new Error("Webhook not found");
+      }
+
+      const updated: AdapterWebhook = {
+        ...existing,
+        ...data,
+        createdAt: existing.createdAt,
+        updatedAt: new Date(),
+      };
+
+      webhooksCache.set(key, updated);
+      persistConnections();
+
+      return {
+        ...updated,
+        createdAt: new Date(updated.createdAt),
+        updatedAt: new Date(updated.updatedAt),
+      };
+    },
+
+    deleteWebhook: async ({ connectorId, ownerId, model, trigger }) => {
+      const key = createWebhookKey(connectorId, ownerId, model, trigger);
+      webhooksCache.delete(key);
       persistConnections();
     },
   };

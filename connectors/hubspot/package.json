@@ -1,7 +1,7 @@
 {
   "name": "@runmorph/connector-hubspot",
   "author": "HenriChabrand",
-  "version": "0.0.16",
+  "version": "0.0.17",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -16,14 +16,15 @@
     "fix:lint": "eslint --fix src/",
     "fix:format": "prettier --write \"**/*.{ts,tsx,md}\" --ignore-path ../../.gitignore",
     "prepublishOnly": "yarn run build",
-    "_publish": "yarn run build && yarn publish --access public"
+    "publish": "yarn run build && yarn publish --access public"
   },
   "devDependencies": {
-    "@runmorph/cdk": "^0.0.23",
-    "@runmorph/resource-models": "^0.0.5"
+    "@runmorph/cli": "^0.0.1",
+    "@runmorph/cdk": "^0.0.26",
+    "@runmorph/resource-models": "^0.0.7"
   },
   "peerDependencies": {
-    "@runmorph/cdk": "^0.0.23",
-    "@runmorph/resource-models": "^0.0.5"
+    "@runmorph/cdk": "^0.0.26",
+    "@runmorph/resource-models": "^0.0.7"
   }
 }

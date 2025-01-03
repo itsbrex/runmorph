@@ -1,5 +1,5 @@
 {
-  "name": "next-app",
+  "name": "morph-next-app",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,9 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@runmorph/framework-next": "^0.0.3",
+    "@runmorph/framework-next": "^0.0.7",
     "@runmorph/adapter-memory": "^0.0.1",
-    "@runmorph/connector-hubspot": "^0.0.15",
+    "@runmorph/connector-hubspot": "0.0.17",
     "next": "15.0.3",
     "@radix-ui/react-slot": "^1.1.0",
     "class-variance-authority": "^0.7.0",

@@ -13,6 +13,10 @@ public/dist
 tests
 postgres-data
 
+# TO open source later on
+cdk
+cli
+
 
 # MVP
 playground

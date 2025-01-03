@@ -1,28 +1,29 @@
 import {
   ConnectorBundle,
-  ResourceModelOperations,
   Awaitable,
   EitherDataOrError,
+  ArrayToIndexedObject,
 } from "@runmorph/cdk";
 
 import { MorphClient } from "./Morph";
-import { Adapter } from "./types/adapter";
 
 export class ClientConnector<
-  A extends Adapter,
-  C extends ConnectorBundle<I, ResourceModelOperations>[],
-  I extends string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  TConnectorBundleArray extends ConnectorBundle<any, any, any, any, any>[],
 > {
-  private morph: MorphClient<A, C>;
-
-  constructor(morph: MorphClient<A, C>) {
+  private morph: MorphClient<TConnectorBundleArray>;
+  constructor(morph: MorphClient<TConnectorBundleArray>) {
     this.morph = morph;
   }
 
-  retrieve<T extends I>(
-    id: T
-  ): Awaitable<EitherDataOrError<ConnectorBundle<T, ResourceModelOperations>>> {
-    const connector = this.morph.𝙢_.connectors[id];
+  retrieve<TConnectorId extends TConnectorBundleArray[number]["id"]>(
+    id: TConnectorId,
+  ): Awaitable<
+    EitherDataOrError<
+      ArrayToIndexedObject<TConnectorBundleArray, "id">[TConnectorId]
+    >
+  > {
+    const connector = this.morph.m_.connectors[id];
 
     if (!connector) {
       return {
@@ -34,7 +35,10 @@ export class ClientConnector<
     }
 
     return {
-      data: connector as unknown as ConnectorBundle<T, ResourceModelOperations>,
+      data: connector as ArrayToIndexedObject<
+        TConnectorBundleArray,
+        "id"
+      >[TConnectorId],
     };
   }
 }

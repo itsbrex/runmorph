@@ -10,10 +10,7 @@
     "declaration": true,
     "declarationDir": "./dist",
     "baseUrl": ".",
-    "paths": {
-      "@runmorph/core/*": ["src/*"]
-    },
     "resolveJsonModule": true
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*"]
 }

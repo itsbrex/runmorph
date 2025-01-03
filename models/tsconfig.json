@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "rootDir": "src",
+    "outDir": "dist",
+    "strict": true,
+    "esModuleInterop": true,
+    "declaration": true,
+    "declarationDir": "./dist",
+    "baseUrl": ".",
+    "paths": {
+      "@runmorph/resource-models/*": ["src/*"]
+    },
+    "resolveJsonModule": true
+  },
+  "include": ["src/**/*.ts"]
+}

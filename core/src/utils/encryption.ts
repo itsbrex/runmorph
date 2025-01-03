@@ -114,3 +114,15 @@ function getEncryptionKey(): Buffer {
   // Hash the ENCRYPTION_KEY to ensure it's always 32 bytes
   return crypto.createHash("sha256").update(String(ENCRYPTION_KEY)).digest();
 }
+
+/**
+ * Generates a unique ID with a given prefix and random string
+ * @param prefix - The prefix to prepend to the ID (e.g. "whk")
+ * @param length - The length of the random string portion (default: 50)
+ * @returns A string in the format "{prefix}_{random}"
+ */
+export function generateId(prefix: string, length = 50): string {
+  const randomBytes = crypto.randomBytes(Math.ceil(length / 2));
+  const randomString = randomBytes.toString("hex").slice(0, length);
+  return `${prefix}_${randomString}`;
+}

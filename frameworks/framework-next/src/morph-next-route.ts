@@ -6,7 +6,12 @@ import type {
   ResourceModelOperations,
   CreateAuthorizationParams,
   ResourceModelId,
+  WebhookOperations,
+  ResourceEvents,
+  RawEventRequest,
+  Settings,
 } from "@runmorph/core";
+import { WebhookRegistry } from "@runmorph/core";
 import type { NextRequest } from "next/server";
 
 interface ApiRequestPayload<T = unknown> {
@@ -27,8 +32,14 @@ interface MorphNextRoutes {
 
 export function NextMorphHandlers<
   A extends Adapter,
-  CA extends ConnectorBundle<string, ResourceModelOperations>[],
->(morph: MorphClient<A, CA>): MorphNextRoutes {
+  TConnectorBundleArray extends ConnectorBundle<
+    string,
+    Settings,
+    Settings,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
+  >[],
+>(morph: MorphClient<TConnectorBundleArray>): MorphNextRoutes {
   async function handleConnection(request: NextRequest) {
     const sessionToken = request.headers
       .get("Authorization")
@@ -113,7 +124,10 @@ export function NextMorphHandlers<
     const payload = (await request.json()) as ApiRequestPayload;
     const connection = morph.connections({ sessionToken });
     const resource = connection.resources(
-      resourceModelId as ConnectorEntityIds<CA, CA[number]["id"]>
+      resourceModelId as ConnectorEntityIds<
+        TConnectorBundleArray,
+        TConnectorBundleArray[number]["id"]
+      >
     );
 
     try {
@@ -172,6 +186,118 @@ export function NextMorphHandlers<
         { status: 500 }
       );
     }
+  }
+
+  async function handleWebhook(request: NextRequest) {
+    const sessionToken = request.headers
+      .get("Authorization")
+      ?.split("Bearer ")[1];
+    if (!sessionToken) {
+      return Response.json(
+        {
+          error: {
+            code: "UNAUTHORIZED",
+            message: "Missing or invalid session token",
+          },
+        },
+        { status: 401 }
+      );
+    }
+
+    const payload = (await request.json()) as any;
+    const connection = morph.connections({ sessionToken });
+    const webhook = connection.webhooks();
+
+    try {
+      switch (payload.action) {
+        case "subscribe":
+          return Response.json(await webhook.subscribe(payload.data));
+
+        case "unsubscribe":
+          return Response.json(await webhook.unsubscribe(payload.data));
+
+        default:
+          return Response.json(
+            {
+              error: {
+                code: "INVALID_ACTION",
+                message: `Invalid action: ${payload.action}`,
+              },
+            },
+            { status: 400 }
+          );
+      }
+    } catch (error) {
+      console.error("Server error:", error);
+      return Response.json(
+        {
+          error: {
+            code: "INTERNAL_SERVER_ERROR",
+            message:
+              error instanceof Error
+                ? error.message
+                : "An unknown error occurred",
+          },
+        },
+        { status: 500 }
+      );
+    }
+  }
+
+  async function handleHook(request: NextRequest, hookPath: string[]) {
+    console.log("Hook path:", hookPath.join("/"));
+    const [connectorId, webhookType, webhookTokenOrGlobalRoute] = hookPath;
+
+    if (!["subscription", "global"].includes(webhookType)) {
+      console.log(`Webhook type ${webhookType} not supported.`);
+      return Response.json({ status: "failed" });
+    }
+
+    const body = await request.json().catch(() => null);
+    const headers = Object.fromEntries(request.headers.entries());
+    const query = Object.fromEntries(request.nextUrl.searchParams.entries());
+    const url = request.nextUrl.toString();
+    const method = request.method;
+
+    const response = await morph.webhooks().requestHandler({
+      connectorId,
+      ...(webhookType === "subscription"
+        ? {
+            webhookType: "subscription",
+            webhookToken: webhookTokenOrGlobalRoute,
+          }
+        : { webhookType: "global", globalRoute: webhookTokenOrGlobalRoute }),
+      request: {
+        body,
+        headers,
+        query,
+        url,
+        method,
+      },
+    });
+    console.log("response", response);
+    if (response) {
+      const { processed, data, error } = response;
+
+      if (error) {
+        return Response.json(
+          {
+            error: response.error,
+          },
+          { status: 400 }
+        );
+      }
+
+      if (data) {
+        return Response.json(data, { status: processed ? 200 : 400 });
+      }
+
+      if (typeof processed === "boolean") {
+        return Response.json({ processed }, { status: processed ? 200 : 400 });
+      }
+    }
+
+    return Response.json({ processed: true });
   }
 
   function generateCallbackHTML(success: boolean, error?: string) {
@@ -276,10 +402,9 @@ export function NextMorphHandlers<
     }
 
     try {
-      const { error } = await morph.connections().callback({
+      const { error } = await morph.callbacks("oauth").handle({
         code,
         state,
-        type: "oauth",
       });
 
       if (error) {
@@ -303,6 +428,9 @@ export function NextMorphHandlers<
       const [s, endpoint, ...rest] = runmorph;
 
       if (s !== "s") {
+        if (s === "hook") {
+          return handleHook(request, [endpoint, ...rest]);
+        }
         return Response.json(
           {
             error: {
@@ -317,12 +445,13 @@ export function NextMorphHandlers<
       switch (endpoint) {
         case "connection":
           return handleConnection(request);
-
         case "resources":
           if (rest[0]) {
             return handleResource(request, rest[0] as ResourceModelId);
           }
           break;
+        case "webhooks":
+          return handleWebhook(request);
       }
 
       return Response.json(
@@ -341,10 +470,12 @@ export function NextMorphHandlers<
       { params }: { params: Promise<{ runmorph: string[] }> }
     ) => {
       const { runmorph } = await params;
-      const endpoint = runmorph[0];
+      const [endpoint, ...rest] = runmorph;
 
       if (endpoint === "callback") {
         return handleCallback(request);
+      } else if (endpoint === "hook") {
+        return handleHook(request, rest);
       }
 
       return Response.json(

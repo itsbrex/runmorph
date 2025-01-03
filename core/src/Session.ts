@@ -3,6 +3,9 @@ import type {
   ResourceModelOperations,
   Awaitable,
   EitherDataOrError,
+  WebhookOperations,
+  ResourceEvents,
+  Settings,
 } from "@runmorph/cdk";
 import { config } from "dotenv";
 import { sign, verify } from "jsonwebtoken";
@@ -18,19 +21,26 @@ const JWT_SECRET = process.env.MORPH_ENCRYPTION_KEY;
 const TOKEN_EXPIRATION = process.env.MORPH_SESSION_DURATION || "30m"; // 30 minutes
 
 export class Session<
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   A extends Adapter,
-  C extends ConnectorBundle<I, ResourceModelOperations>[],
+  TConnectorBundleArray extends ConnectorBundle<
+    I,
+    Settings,
+    Settings,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
+  >[],
   I extends string,
 > {
-  private morph: MorphClient<A, C>;
+  private morph: MorphClient<TConnectorBundleArray>;
 
-  constructor(morph: MorphClient<A, C>) {
+  constructor(morph: MorphClient<TConnectorBundleArray>) {
     this.morph = morph;
   }
 
   create(
-    params: SessionCreateParams<C, I>
-  ): Awaitable<EitherDataOrError<SessionData<C, I>>> {
+    params: SessionCreateParams<TConnectorBundleArray, I>,
+  ): Awaitable<EitherDataOrError<SessionData<TConnectorBundleArray, I>>> {
     if (!JWT_SECRET) {
       return {
         error: {
@@ -43,10 +53,10 @@ export class Session<
     const { expiresIn, ...createSessionParams } = params;
 
     const expiresAt = new Date(
-      Date.now() + (expiresIn || 30 * 60) * 1000
+      Date.now() + (expiresIn || 30 * 60) * 1000,
     ).toISOString();
 
-    const sessionData: SessionData<C, I> = {
+    const sessionData: SessionData<TConnectorBundleArray, I> = {
       object: "session",
       ...createSessionParams,
       expiresAt,
@@ -58,7 +68,9 @@ export class Session<
     return { data: sessionData };
   }
 
-  verify(sessionToken: string): EitherDataOrError<SessionData<C, I>> {
+  verify(
+    sessionToken: string,
+  ): EitherDataOrError<SessionData<TConnectorBundleArray, I>> {
     if (!JWT_SECRET) {
       return {
         error: {
@@ -70,8 +82,8 @@ export class Session<
     try {
       const decodedSessionData = verify(
         sessionToken,
-        JWT_SECRET
-      ) as SessionData<C, I> & {
+        JWT_SECRET,
+      ) as SessionData<TConnectorBundleArray, I> & {
         jti: string;
       };
 

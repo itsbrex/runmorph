@@ -17,11 +17,19 @@ declare module "zod" {
   > {
     // Méthode pour ajouter des métadonnées
     asMorphResource: (
-      resourceModel: ResourceModel<string, Record<string, z.ZodTypeAny>>,
+      resourceModel: ResourceModel<
+        string,
+        Record<string, z.ZodTypeAny>,
+        Record<string, z.ZodTypeAny>
+      >,
     ) => this;
     // Méthode pour récupérer les métadonnées
     isMorphResource: () =>
-      | ResourceModel<string, Record<string, z.ZodTypeAny>>
+      | ResourceModel<
+          string,
+          Record<string, z.ZodTypeAny>,
+          Record<string, z.ZodTypeAny>
+        >
       | undefined;
   }
 }
@@ -29,7 +37,11 @@ declare module "zod" {
 // 3. Implémenter l'extension de la méthode dans le prototype de ZodObject
 function extendZodWithMorph(zodInstance: typeof z): void {
   zodInstance.ZodObject.prototype.asMorphResource = function (
-    resourceModel: ResourceModel<string, Record<string, z.ZodTypeAny>>,
+    resourceModel: ResourceModel<
+      string,
+      Record<string, z.ZodTypeAny>,
+      Record<string, z.ZodTypeAny>
+    >,
   ) {
     // Conversion via unknown, puis en Record<symbol, any>
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -55,7 +67,11 @@ extendZodWithMorph(z);
 export { z, extendZodWithMorph };
 
 function zMoprhResource<
-  RM extends ResourceModel<string, Record<string, z.ZodTypeAny>>,
+  RM extends ResourceModel<
+    string,
+    Record<string, z.ZodTypeAny>,
+    Record<string, z.ZodTypeAny>
+  >,
 >(
   resourceModelId: RM["id"],
 ): z.ZodEffects<

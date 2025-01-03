@@ -1,5 +1,5 @@
 import HubSpotConnector from "@runmorph/connector-hubspot";
-import { type Adapter } from "@runmorph/core";
+import { MorphClient, type Adapter } from "@runmorph/core";
 import { NextMorph } from "@runmorph/framework-next";
 
 // Conditional import based on environment
@@ -12,16 +12,40 @@ const getAdapter = async (): Promise<Adapter> => {
   return MemoryAdapter();
 };
 
+// Validate required environment variables
+if (!process.env.MORPH_CONNECTOR_HUBSPOT_CLIENT_ID) {
+  throw new Error(
+    "Missing MORPH_CONNECTOR_HUBSPOT_CLIENT_ID environment variable"
+  );
+}
+if (!process.env.MORPH_CONNECTOR_HUBSPOT_CLIENT_SECRET) {
+  throw new Error(
+    "Missing MORPH_CONNECTOR_HUBSPOT_CLIENT_SECRET environment variable"
+  );
+}
+if (!process.env.MORPH_CONNECTOR_HUBSPOT_APP_ID) {
+  throw new Error(
+    "Missing MORPH_CONNECTOR_HUBSPOT_APP_ID environment variable"
+  );
+}
+if (!process.env.MORPH_CONNECTOR_HUBSPOT_DEV_API_KEY) {
+  throw new Error(
+    "Missing MORPH_CONNECTOR_HUBSPOT_DEV_API_KEY environment variable"
+  );
+}
+
+const hubspot = HubSpotConnector({
+  clientId: process.env.MORPH_CONNECTOR_HUBSPOT_CLIENT_ID,
+  clientSecret: process.env.MORPH_CONNECTOR_HUBSPOT_CLIENT_SECRET,
+  appId: process.env.MORPH_CONNECTOR_HUBSPOT_APP_ID,
+  hapikey: process.env.MORPH_CONNECTOR_HUBSPOT_DEV_API_KEY,
+});
+
 const initializeMorph = async () => {
   const adapter = await getAdapter();
 
   return NextMorph({
-    connectors: [
-      HubSpotConnector({
-        clientId: process.env.MORPH_CONNECTOR_HUBSPOT_CLIENT_ID,
-        clientSecret: process.env.MORPH_CONNECTOR_HUBSPOT_CLIENT_SECRET,
-      }),
-    ],
+    connectors: [hubspot],
     database: { adapter },
     logger: {
       debug: () => {},
@@ -39,6 +63,21 @@ const initializeMorph = async () => {
 };
 
 const { morph, handlers } = await initializeMorph();
+
+morph
+  .webhooks()
+  .onEvents(
+    "genericContact::updated",
+    async (connection, { model, trigger, data, idempotencyKey }) => {
+      console.log("ON_EVENT_CALLBACK", model, trigger, data, idempotencyKey);
+
+      return { processed: true };
+    }
+  );
+
+morph.webhooks().onEvents("*", async (connection, { model, trigger, data }) => {
+  // console.log("SECOND_CALLBACK", model, trigger, data);
+});
 
 export { morph, handlers };
 export type morph = typeof morph;

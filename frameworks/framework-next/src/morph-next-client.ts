@@ -3,7 +3,10 @@ import type {
   ConnectorBundle,
   MorphClient,
   ResourceClient,
+  ResourceEvents,
   ResourceModelOperations,
+  Settings,
+  WebhookOperations,
 } from "@runmorph/core";
 
 interface ApiRequestPayload<TData = unknown> {
@@ -40,10 +43,15 @@ class ApiClient {
 }
 
 class ResourceNextClient<
-  A extends Adapter,
-  CA extends ConnectorBundle<string, ResourceModelOperations>[],
+  CA extends ConnectorBundle<
+    string,
+    Settings,
+    Settings,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
+  >[],
   TResourceModelId extends Parameters<
-    ReturnType<MorphClient<A, CA>["connections"]>["resources"]
+    ReturnType<MorphClient<CA>["connections"]>["resources"]
   >[0],
 > extends ApiClient {
   private resourceModelId: TResourceModelId;
@@ -58,14 +66,10 @@ class ResourceNextClient<
   }
 
   async list(
-    options?: Parameters<
-      ResourceClient<any, any, any, TResourceModelId>["list"]
-    >[0]
-  ): Promise<
-    ReturnType<ResourceClient<any, any, any, TResourceModelId>["list"]>
-  > {
+    options?: Parameters<ResourceClient<any, any, TResourceModelId>["list"]>[0]
+  ): Promise<ReturnType<ResourceClient<any, any, TResourceModelId>["list"]>> {
     return this.post<
-      ReturnType<ResourceClient<any, any, any, TResourceModelId>["list"]>
+      ReturnType<ResourceClient<any, any, TResourceModelId>["list"]>
     >(`s/resources/${String(this.resourceModelId)}`, {
       action: "list",
       data: options,
@@ -75,13 +79,13 @@ class ResourceNextClient<
   async retrieve(
     id: string,
     options?: Parameters<
-      ResourceClient<any, any, any, TResourceModelId>["retrieve"]
+      ResourceClient<any, any, TResourceModelId>["retrieve"]
     >[1]
   ): Promise<
-    ReturnType<ResourceClient<any, any, any, TResourceModelId>["retrieve"]>
+    ReturnType<ResourceClient<any, any, TResourceModelId>["retrieve"]>
   > {
     return this.post<
-      ReturnType<ResourceClient<any, any, any, TResourceModelId>["retrieve"]>
+      ReturnType<ResourceClient<any, any, TResourceModelId>["retrieve"]>
     >(`s/resources/${String(this.resourceModelId)}`, {
       action: "retrieve",
       data: { id, ...options },
@@ -89,14 +93,10 @@ class ResourceNextClient<
   }
 
   async create(
-    data: Parameters<
-      ResourceClient<any, any, any, TResourceModelId>["create"]
-    >[0]
-  ): Promise<
-    ReturnType<ResourceClient<any, any, any, TResourceModelId>["create"]>
-  > {
+    data: Parameters<ResourceClient<any, any, TResourceModelId>["create"]>[0]
+  ): Promise<ReturnType<ResourceClient<any, any, TResourceModelId>["create"]>> {
     return this.post<
-      ReturnType<ResourceClient<any, any, any, TResourceModelId>["create"]>
+      ReturnType<ResourceClient<any, any, TResourceModelId>["create"]>
     >(`s/resources/${String(this.resourceModelId)}`, {
       action: "create",
       data,
@@ -105,14 +105,10 @@ class ResourceNextClient<
 
   async update(
     id: string,
-    data: Parameters<
-      ResourceClient<any, any, any, TResourceModelId>["update"]
-    >[1]
-  ): Promise<
-    ReturnType<ResourceClient<any, any, any, TResourceModelId>["update"]>
-  > {
+    data: Parameters<ResourceClient<any, any, TResourceModelId>["update"]>[1]
+  ): Promise<ReturnType<ResourceClient<any, any, TResourceModelId>["update"]>> {
     return this.post<
-      ReturnType<ResourceClient<any, any, any, TResourceModelId>["update"]>
+      ReturnType<ResourceClient<any, any, TResourceModelId>["update"]>
     >(`s/resources/${String(this.resourceModelId)}`, {
       action: "update",
       data: { id, ...data },
@@ -121,11 +117,9 @@ class ResourceNextClient<
 
   async delete(
     id: string
-  ): Promise<
-    ReturnType<ResourceClient<any, any, any, TResourceModelId>["delete"]>
-  > {
+  ): Promise<ReturnType<ResourceClient<any, any, TResourceModelId>["delete"]>> {
     return this.post<
-      ReturnType<ResourceClient<any, any, any, TResourceModelId>["delete"]>
+      ReturnType<ResourceClient<any, any, TResourceModelId>["delete"]>
     >(`s/resources/${String(this.resourceModelId)}`, {
       action: "delete",
       data: { id },
@@ -133,9 +127,74 @@ class ResourceNextClient<
   }
 }
 
+class WebhookNextClient<
+  TConnectorBundleArray extends ConnectorBundle<
+    string,
+    Settings,
+    Settings,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
+  >[],
+> extends ApiClient {
+  constructor(sessionToken: string, baseUrl: string) {
+    super(baseUrl, sessionToken);
+  }
+
+  async subscribe(
+    params: Parameters<
+      ReturnType<
+        ReturnType<
+          MorphClient<TConnectorBundleArray>["connections"]
+        >["webhooks"]
+      >["subscribe"]
+    >[0]
+  ): Promise<
+    ReturnType<
+      ReturnType<
+        ReturnType<
+          MorphClient<TConnectorBundleArray>["connections"]
+        >["webhooks"]
+      >["subscribe"]
+    >
+  > {
+    return this.post("s/webhooks", {
+      action: "subscribe",
+      data: params,
+    });
+  }
+
+  async unsubscribe(
+    params: Parameters<
+      ReturnType<
+        ReturnType<
+          MorphClient<TConnectorBundleArray>["connections"]
+        >["webhooks"]
+      >["unsubscribe"]
+    >[0]
+  ): Promise<
+    ReturnType<
+      ReturnType<
+        ReturnType<
+          MorphClient<TConnectorBundleArray>["connections"]
+        >["webhooks"]
+      >["unsubscribe"]
+    >
+  > {
+    return this.post("s/webhooks", {
+      action: "unsubscribe",
+      data: params,
+    });
+  }
+}
+
 class ConnectionsNextClient<
-  A extends Adapter,
-  CA extends ConnectorBundle<string, ResourceModelOperations>[],
+  TConnectorBundleArray extends ConnectorBundle<
+    string,
+    Settings,
+    Settings,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
+  >[],
 > extends ApiClient {
   constructor(sessionToken: string, baseUrl: string) {
     super(baseUrl, sessionToken);
@@ -143,13 +202,19 @@ class ConnectionsNextClient<
 
   async authorize(
     options?: Parameters<
-      ReturnType<MorphClient<A, CA>["connections"]>["authorize"]
+      ReturnType<MorphClient<TConnectorBundleArray>["connections"]>["authorize"]
     >[0]
   ): Promise<
-    ReturnType<ReturnType<MorphClient<A, CA>["connections"]>["authorize"]>
+    ReturnType<
+      ReturnType<MorphClient<TConnectorBundleArray>["connections"]>["authorize"]
+    >
   > {
     return this.post<
-      ReturnType<ReturnType<MorphClient<A, CA>["connections"]>["authorize"]>
+      ReturnType<
+        ReturnType<
+          MorphClient<TConnectorBundleArray>["connections"]
+        >["authorize"]
+      >
     >("s/connection", {
       action: "authorize",
       data: options,
@@ -157,20 +222,30 @@ class ConnectionsNextClient<
   }
 
   async retrieve(): Promise<
-    ReturnType<ReturnType<MorphClient<A, CA>["connections"]>["retrieve"]>
+    ReturnType<
+      ReturnType<MorphClient<TConnectorBundleArray>["connections"]>["retrieve"]
+    >
   > {
     return this.post<
-      ReturnType<ReturnType<MorphClient<A, CA>["connections"]>["retrieve"]>
+      ReturnType<
+        ReturnType<
+          MorphClient<TConnectorBundleArray>["connections"]
+        >["retrieve"]
+      >
     >("s/connection", {
       action: "retrieve",
     });
   }
 
   async delete(): Promise<
-    ReturnType<ReturnType<MorphClient<A, CA>["connections"]>["delete"]>
+    ReturnType<
+      ReturnType<MorphClient<TConnectorBundleArray>["connections"]>["delete"]
+    >
   > {
     return this.post<
-      ReturnType<ReturnType<MorphClient<A, CA>["connections"]>["delete"]>
+      ReturnType<
+        ReturnType<MorphClient<TConnectorBundleArray>["connections"]>["delete"]
+      >
     >("s/connection", {
       action: "delete",
     });
@@ -178,38 +253,49 @@ class ConnectionsNextClient<
 
   resources<
     TResourceModelId extends Parameters<
-      ReturnType<MorphClient<A, CA>["connections"]>["resources"]
+      ReturnType<MorphClient<TConnectorBundleArray>["connections"]>["resources"]
     >[0],
   >(
     resourceModelId: TResourceModelId
-  ): ResourceNextClient<A, CA, TResourceModelId> {
+  ): ResourceNextClient<TConnectorBundleArray, TResourceModelId> {
     return new ResourceNextClient(
       resourceModelId,
       this.sessionToken!,
       this.baseUrl
     );
   }
+
+  webhook(): WebhookNextClient<TConnectorBundleArray> {
+    return new WebhookNextClient(this.sessionToken!, this.baseUrl);
+  }
 }
 
 class MorphNextClient<
-  A extends Adapter,
-  CA extends ConnectorBundle<string, ResourceModelOperations>[],
+  TConnectorBundleArray extends ConnectorBundle<
+    string,
+    Settings,
+    Settings,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
+  >[],
 > extends ApiClient {
   constructor(baseUrl: string) {
     super(baseUrl);
   }
 
-  connections(options: { sessionToken: string }): ConnectionsNextClient<A, CA> {
-    return new ConnectionsNextClient<A, CA>(options.sessionToken, this.baseUrl);
+  connections(options: {
+    sessionToken: string;
+  }): ConnectionsNextClient<TConnectorBundleArray> {
+    return new ConnectionsNextClient<TConnectorBundleArray>(
+      options.sessionToken,
+      this.baseUrl
+    );
   }
 }
 
 export function NextMorphClient<
-  TMorphClient extends MorphClient<any, any>,
->(): MorphNextClient<
-  TMorphClient extends MorphClient<infer A, any> ? A : never,
-  TMorphClient extends MorphClient<any, infer CA> ? CA : never
-> {
+  TMorphClient extends MorphClient<any>,
+>(): MorphNextClient<TMorphClient extends MorphClient<infer CA> ? CA : never> {
   const baseUrl =
     (typeof process !== "undefined" &&
       process.env.NEXT_PUBLIC_MORPH_API_BASE_URL) ||
@@ -222,13 +308,8 @@ export function NextMorphClient<
     );
   }
 
-  type ExtractAdapter<T> = T extends MorphClient<infer A, any> ? A : never;
-  type ExtractConnectorBundle<T> =
-    T extends MorphClient<any, infer CA> ? CA : never;
-
   return new MorphNextClient<
-    ExtractAdapter<TMorphClient>,
-    ExtractConnectorBundle<TMorphClient>
+    TMorphClient extends MorphClient<infer CA> ? CA : never
   >(baseUrl);
 }
 export type NextMorphClient = typeof NextMorphClient;

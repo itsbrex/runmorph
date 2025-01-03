@@ -1,7 +1,19 @@
-import { ConnectorBundle, ResourceModelOperations } from "@runmorph/cdk";
+import {
+  ConnectorBundle,
+  ResourceEvents,
+  ResourceModelOperations,
+  Settings,
+  WebhookOperations,
+} from "@runmorph/cdk";
 
 export type GenerateAuthorizationUrlParams = {
-  connector: ConnectorBundle<string, ResourceModelOperations>;
+  connector: ConnectorBundle<
+    string,
+    Settings,
+    Settings,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
+  >;
   ownerId: string;
   scopes?: string[];
   redirectUrl?: string;
@@ -14,12 +26,24 @@ export type CreateAuthorizationParams = {
 };
 
 export type ExchangeCodeForTokenParams = {
-  connector: ConnectorBundle<string, ResourceModelOperations>;
+  connector: ConnectorBundle<
+    string,
+    Settings,
+    Settings,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
+  >;
   code: string;
 };
 
 export type RefreshAccessTokenParams = {
-  connector: ConnectorBundle<string, ResourceModelOperations>;
+  connector: ConnectorBundle<
+    string,
+    Settings,
+    Settings,
+    ResourceModelOperations,
+    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
+  >;
   refreshToken: string;
 };
 
@@ -31,6 +55,11 @@ export type TokenResponse = {
 
 export type AuthorizeParams = {
   type: "oauth";
+  code: string;
+  state: string;
+};
+
+export type AuthorizeHadleParams = {
   code: string;
   state: string;
 };
