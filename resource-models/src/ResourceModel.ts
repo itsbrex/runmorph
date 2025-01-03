@@ -32,6 +32,7 @@ export type ResourceModelExpandableFieldKeys<
 }[keyof z.infer<ReturnType<RT["schema"]>>];
 
 export type ExtractResponseSchemaFromResourceModel<RM> =
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   RM extends ResourceModel<any, any, infer RSS> ? RSS : never;
 
 export type InferredSchemaOutput<T extends Record<string, z.ZodTypeAny>> = {
@@ -54,10 +55,10 @@ export class ResourceModel<
   }: {
     id: I;
     schema: (
-      zodInstance: typeof z & { morph: { resource: zMoprhResource } }
+      zodInstance: typeof z & { morph: { resource: zMoprhResource } },
     ) => RFS;
     response?: (
-      zodInstance: typeof z & { morph: { resource: zMoprhResource } }
+      zodInstance: typeof z & { morph: { resource: zMoprhResource } },
     ) => RRS;
   }) {
     this.id = id;
@@ -66,7 +67,7 @@ export class ResourceModel<
         schema({
           ...(zInstance ? zInstance : z),
           ...{ morph: { resource: zMoprhResource } },
-        })
+        }),
       );
     };
     if (response) {
@@ -75,7 +76,7 @@ export class ResourceModel<
           response({
             ...(zInstance ? zInstance : z),
             ...{ morph: { resource: zMoprhResource } },
-          })
+          }),
         );
       };
     }
@@ -127,7 +128,7 @@ export class ResourceModelMap<
     RFS extends Record<string, z.ZodTypeAny>,
     RRS extends Record<string, z.ZodTypeAny>,
   >(
-    resourceModel: ResourceModel<I, RFS, RRS>
+    resourceModel: ResourceModel<I, RFS, RRS>,
   ): ResourceModelMap<T & Record<I, ResourceModel<I, RFS, RRS>>> {
     if (!resourceModel?.id) {
       return this as unknown as ResourceModelMap<

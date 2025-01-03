@@ -5,7 +5,6 @@ import type {
   ResourceEvents,
   EitherDataOrError,
   Logger,
-  ArrayToIndexedObject,
   GetWebhookModels,
   EventTrigger,
   WebhookData,
@@ -18,8 +17,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import { ConnectionClient } from "./Connection";
 import { MorphClient } from "./Morph";
-import { Adapter, AdapterWebhook } from "./types";
-import { generateId } from "./utils/encryption";
+import { AdapterWebhook } from "./types";
 
 export function generateHookUrl(params: {
   connectorId: string;
@@ -162,7 +160,7 @@ export class WebhookClient<
         if (error) {
           this.logger?.error(
             "Failed to create webhook with subscription method. Checking global webhook.",
-            { error }
+            { error },
           );
         } else {
           webhookResponse = {
@@ -176,7 +174,7 @@ export class WebhookClient<
       // Try global webhook if subscription failed or wasn't available
       if (!webhookResponse && webhookGlobalOperations?.mapper?.eventRouter) {
         const foundEntry = Object.entries(
-          webhookGlobalOperations.mapper.eventRouter
+          webhookGlobalOperations.mapper.eventRouter,
         ).find(([_route, events]) => events[model]);
 
         if (foundEntry && webhookGlobalOperations?.subscribe) {
@@ -188,7 +186,7 @@ export class WebhookClient<
               trigger,
               globalRoute,
               settings: this.connector.connector.getOptions(),
-            }
+            },
           );
 
           if (error) {
@@ -252,7 +250,7 @@ export class WebhookClient<
             {
               ...webhook,
               updatedAt: new Date(),
-            }
+            },
           );
         } else {
           createdWebhook =
@@ -333,7 +331,7 @@ export class WebhookClient<
         }
 
         const foundEntry = Object.entries(
-          webhookGlobalOperations.mapper.eventRouter
+          webhookGlobalOperations.mapper.eventRouter,
         ).find(([_route, events]) => events[model]);
 
         if (!foundEntry) {
@@ -354,7 +352,7 @@ export class WebhookClient<
             trigger,
             globalRoute,
             settings: this.connector.connector.getOptions(),
-          }
+          },
         );
 
         if (error) {

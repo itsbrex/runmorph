@@ -21,6 +21,7 @@ const JWT_SECRET = process.env.MORPH_ENCRYPTION_KEY;
 const TOKEN_EXPIRATION = process.env.MORPH_SESSION_DURATION || "30m"; // 30 minutes
 
 export class Session<
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   A extends Adapter,
   TConnectorBundleArray extends ConnectorBundle<
     I,
@@ -38,7 +39,7 @@ export class Session<
   }
 
   create(
-    params: SessionCreateParams<TConnectorBundleArray, I>
+    params: SessionCreateParams<TConnectorBundleArray, I>,
   ): Awaitable<EitherDataOrError<SessionData<TConnectorBundleArray, I>>> {
     if (!JWT_SECRET) {
       return {
@@ -52,7 +53,7 @@ export class Session<
     const { expiresIn, ...createSessionParams } = params;
 
     const expiresAt = new Date(
-      Date.now() + (expiresIn || 30 * 60) * 1000
+      Date.now() + (expiresIn || 30 * 60) * 1000,
     ).toISOString();
 
     const sessionData: SessionData<TConnectorBundleArray, I> = {
@@ -68,7 +69,7 @@ export class Session<
   }
 
   verify(
-    sessionToken: string
+    sessionToken: string,
   ): EitherDataOrError<SessionData<TConnectorBundleArray, I>> {
     if (!JWT_SECRET) {
       return {
@@ -81,7 +82,7 @@ export class Session<
     try {
       const decodedSessionData = verify(
         sessionToken,
-        JWT_SECRET
+        JWT_SECRET,
       ) as SessionData<TConnectorBundleArray, I> & {
         jti: string;
       };

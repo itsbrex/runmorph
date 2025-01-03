@@ -16,7 +16,6 @@ import type {
   EitherTypeOrError,
   MorphError,
   ConnectionStatus,
-  Logger,
   WebhookOperations,
   ResourceEvents,
   ArrayToIndexedObject,
@@ -26,19 +25,16 @@ import axios, { AxiosRequestConfig } from "axios";
 
 import { MorphClient } from "./Morph";
 import { ResourceClient } from "./Resource";
-import type {
-  Adapter,
-  AdapterConnection,
-  CreateAuthorizationParams,
-} from "./types";
+import type { AdapterConnection, CreateAuthorizationParams } from "./types";
 import { decryptJson, encryptJson } from "./utils/encryption";
 import {
   generateAuthorizationUrl,
   getAuthorizationHeader,
 } from "./utils/oauth";
 import { WebhookClient } from "./Webhook";
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 type ConnectorResourceModelId<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   C extends ConnectorBundle<any, any, any, any, any>,
 > = keyof C["resourceModelOperations"];
 
@@ -51,8 +47,9 @@ function validateAuthorizationSettings(
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >,
   settings: Record<string, string>,
-  strict: boolean = true
+  strict: boolean = true,
 ): EitherTypeOrError<{ settings: Record<string, string> }> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const finalSettings = { ...settings } as Record<string, any>;
   const missingSettings: string[] = [];
 
@@ -71,7 +68,7 @@ function validateAuthorizationSettings(
       error: {
         code: "MORPH::CONNECTION::MISSING_REQUIRED_AUTHORIZATION_SETTINGS",
         message: `Missing required authorization settings: ${missingSettings.join(
-          ", "
+          ", ",
         )}`,
       },
     };
@@ -81,14 +78,14 @@ function validateAuthorizationSettings(
 }
 
 function connectionAdapterToConnectionData(
-  adapterConnection: AdapterConnection
+  adapterConnection: AdapterConnection,
 ): ConnectionData {
   return {
     object: "connection",
     connectorId: adapterConnection.connectorId,
     ownerId: adapterConnection.ownerId,
     status: connectionStatus.includes(
-      adapterConnection.status as ConnectionStatus
+      adapterConnection.status as ConnectionStatus,
     )
       ? (adapterConnection.status as ConnectionStatus)
       : "unauthorized",
@@ -115,7 +112,7 @@ export class ConnectionClient<
 
   constructor(
     morph: MorphClient<CA>,
-    params: (ConnectionIds<C["id"]> | { sessionToken: string }) & {}
+    params: ConnectionIds<C["id"]> | { sessionToken: string },
   ) {
     this.morph = morph;
 
@@ -130,7 +127,7 @@ export class ConnectionClient<
   }
 
   async create(
-    params?: ConnectionCreateParams<[C]>
+    params?: ConnectionCreateParams<[C]>,
   ): Promise<EitherDataOrError<ConnectionData>> {
     const { data: connectionids, error } = this.getConnectionIds();
     if (error) return { error };
@@ -180,7 +177,7 @@ export class ConnectionClient<
   }
 
   async update(
-    params?: ConnectionUpdateParams<[C]>
+    params?: ConnectionUpdateParams<[C]>,
   ): Promise<EitherDataOrError<ConnectionData>> {
     const { data: connectionids, error } = this.getConnectionIds();
     if (error) return { error };
@@ -209,7 +206,7 @@ export class ConnectionClient<
       const updatedConnectionAdapter =
         await this.morph.m_.database.adapter.updateConnection(
           { connectorId, ownerId },
-          { operations: updatedOperations, updatedAt: new Date() }
+          { operations: updatedOperations, updatedAt: new Date() },
         );
 
       this.morph.m_.logger?.info("Connection updated successfully", {
@@ -231,11 +228,8 @@ export class ConnectionClient<
   }
 
   async updateOrCreate(
-    params?: ConnectionCreateParams<[C]>
+    params?: ConnectionCreateParams<[C]>,
   ): Promise<EitherDataOrError<ConnectionData>> {
-    const { data: connectionids, error } = this.getConnectionIds();
-    if (error) return { error };
-    const { ownerId, connectorId } = connectionids;
     // First, try to retrieve the existing connection
     const { error: retrieveError } = await this.retrieve();
 
@@ -259,7 +253,7 @@ export class ConnectionClient<
         "isConnector : Failed to get connection ids",
         {
           error,
-        }
+        },
       );
       return { error };
     }
@@ -317,7 +311,7 @@ export class ConnectionClient<
         "isConnector : Failed to get connection ids",
         {
           error,
-        }
+        },
       );
       return { error };
     }
@@ -354,7 +348,7 @@ export class ConnectionClient<
   }
 
   async authorize(
-    params?: CreateAuthorizationParams
+    params?: CreateAuthorizationParams,
   ): Promise<EitherDataOrError<ConnectionAuthorizationData>> {
     const { data: connectionids, error } = this.getConnectionIds();
     if (error) {
@@ -362,7 +356,7 @@ export class ConnectionClient<
         "isConnector : Failed to get connection ids",
         {
           error,
-        }
+        },
       );
       return { error };
     }
@@ -396,7 +390,7 @@ export class ConnectionClient<
           {
             connectorId,
             ownerId,
-          }
+          },
         );
         return {
           error: {
@@ -419,8 +413,8 @@ export class ConnectionClient<
             entityOperations[operationType as "retrieve"]?.scopes || [];
           scopes.push(
             ...operationScopes.filter(
-              (scope: string) => !scopes.includes(scope)
-            )
+              (scope: string) => !scopes.includes(scope),
+            ),
           );
         }
       });
@@ -428,7 +422,7 @@ export class ConnectionClient<
       console.log("scope – after op", scopes);
       const { settings, error } = validateAuthorizationSettings(
         connector,
-        params?.settings || {}
+        params?.settings || {},
       );
 
       if (error) return { error };
@@ -454,10 +448,10 @@ export class ConnectionClient<
         },
         {
           authorizationData: JSON.stringify(
-            encryptJson(authorizationStoredData)
+            encryptJson(authorizationStoredData),
           ),
           updatedAt: new Date(),
-        }
+        },
       );
 
       const authorizationUrl = generateAuthorizationUrl({
@@ -504,7 +498,7 @@ export class ConnectionClient<
   }
 
   async proxy<T = unknown>(
-    params: ConnectionProxyParams
+    params: ConnectionProxyParams,
   ): Promise<EitherDataOrError<T>> {
     const { data: connectionids, error } = this.getConnectionIds();
     if (error) return { error };
@@ -554,7 +548,7 @@ export class ConnectionClient<
         this.morph,
         connectorId,
         ownerId,
-        this.morph.m_.logger
+        this.morph.m_.logger,
       );
 
       // Prepare the request config
@@ -663,7 +657,7 @@ export class ConnectionClient<
   }
 
   resources<LocalResourceModelId extends ConnectorResourceModelId<C>>(
-    resourceModelId: LocalResourceModelId
+    resourceModelId: LocalResourceModelId,
   ): ResourceClient<C, CA, LocalResourceModelId> {
     return new ResourceClient(this.morph, this, resourceModelId);
   }
@@ -680,7 +674,7 @@ export class ConnectionClient<
         "isConnector : Failed to get connection ids",
         {
           error,
-        }
+        },
       );
       return null;
     }
@@ -701,7 +695,7 @@ export class ConnectionClient<
         "isConnector : Failed to get connection ids",
         {
           error,
-        }
+        },
       );
       return null;
     }
@@ -741,7 +735,7 @@ export class ConnectionClient<
 
   private serializeQuery(
     query: Record<string, unknown>,
-    prefix: string = ""
+    prefix: string = "",
   ): string {
     const queryParts: string[] = [];
 
@@ -762,7 +756,7 @@ export class ConnectionClient<
         queryParts.push(
           `${encodeURIComponent(parentKey)}=${obj
             .map((v) => encodeURIComponent(String(v)))
-            .join(",")}`
+            .join(",")}`,
         );
       } else {
         queryParts.push(encode(parentKey, obj));

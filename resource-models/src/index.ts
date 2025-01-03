@@ -9,7 +9,7 @@ import { default as GenericCompany } from "./ResourceModels/GenericCompany";
 import { default as GenericContact } from "./ResourceModels/GenericContact";
 import { default as GenericUser } from "./ResourceModels/GenericUser";
 import { default as GenericWorkspace } from "./ResourceModels/GenericWorkspace";
-import { default as WidgetCardViewRequest } from "./ResourceModels/WidgetCardViewRequest";
+import { default as WidgetCardView } from "./ResourceModels/WidgetCardView";
 
 const resourceModelMap = new ResourceModelMap({})
   .addResourceModel(GenericCompany)
@@ -19,7 +19,7 @@ const resourceModelMap = new ResourceModelMap({})
   .addResourceModel(CrmOpportunity)
   .addResourceModel(CrmStage)
   .addResourceModel(CrmPipeline)
-  .addResourceModel(WidgetCardViewRequest);
+  .addResourceModel(WidgetCardView);
 
 const resourceModels = resourceModelMap.getResourceModelMap();
 const resourceModelIds = resourceModelMap.getResourceModelIds();

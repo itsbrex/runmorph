@@ -1,8 +1,4 @@
-import type {
-  Adapter,
-  AdapterConnection,
-  AdapterWebhook,
-} from "../types/adapter";
+import type { Adapter } from "../types/adapter";
 
 const testAdapter: Adapter = {
   createConnection: async () => ({

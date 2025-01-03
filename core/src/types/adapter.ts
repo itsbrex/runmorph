@@ -35,7 +35,7 @@ export type Adapter = {
     { connectorId, ownerId }: ConnectionIds<string>,
     connection: Partial<AdapterConnection> & {
       updatedAt: Date;
-    }
+    },
   ): Awaitable<AdapterConnection>;
   deleteConnection({
     connectorId,
@@ -53,7 +53,7 @@ export type Adapter = {
     trigger: string;
   }): Awaitable<AdapterWebhook | null>;
   retrieveWebhookByIdentifierKey(
-    identifierKey: string
+    identifierKey: string,
   ): Awaitable<AdapterWebhook | null>;
   updateWebhook(
     {
@@ -67,7 +67,7 @@ export type Adapter = {
     },
     webhook: Partial<AdapterWebhook> & {
       updatedAt: Date;
-    }
+    },
   ): Awaitable<AdapterWebhook>;
   deleteWebhook({
     connectorId,

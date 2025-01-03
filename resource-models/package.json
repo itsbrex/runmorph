@@ -1,11 +1,11 @@
 {
   "name": "@runmorph/resource-models",
-  "version": "0.0.5",
+  "version": "0.0.7",
   "description": "Morph – Resource Models",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "yarn clean & tsc",
     "dev": "tsc --watch",
     "prepublishOnly": "npm run build",
     "debug": "node --inspect-brk ./dist/cli.js",

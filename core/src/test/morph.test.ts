@@ -18,7 +18,7 @@ const morph = Morph({
   },
 });
 
-async function main() {
+async function main(): Promise<void> {
   // Initialize Morph instance
 
   try {
@@ -35,7 +35,7 @@ async function main() {
     });
 
     // Connections callback handler with invalid input ❌
-    // @ts-expect-error
+    // @ts-expect-error – test
     morph.callbacks("oauth").handle({});
 
     /**
@@ -59,8 +59,9 @@ async function main() {
     connectionOk.resources("crmOpportunity");
 
     // Connection instance with missing conenctor  ✅
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const connectionKo = morph.connections({
-      // @ts-expect-error
+      // @ts-expect-error – test
       connectorId: "soem-fake-connector-id",
       ownerId: "foo",
     });
@@ -69,9 +70,9 @@ async function main() {
     connectionSessionOk.isConnector("test", "test-2");
 
     // isConnector with missing conenctor id  ❌
-    // @ts-expect-error
+    // @ts-expect-error – test
     connectionSessionOk.isConnector("fake-connector-id");
-    // @ts-expect-error
+    // @ts-expect-error – test
     connectionSessionOk.isConnector("test", "fake-connector-id");
 
     // isOwner with valid input  ✅
@@ -84,13 +85,13 @@ async function main() {
 
     // Create connection with invalid operation ❌
     response = await connectionSessionOk.create({
-      // @ts-expect-error
+      // @ts-expect-error – test
       operations: ["missingModel::create"],
     });
 
     // Create connection with invalid operation ❌
     response = await connectionSessionOk.create({
-      // @ts-expect-error
+      // @ts-expect-error – test
       operations: ["genericContact::invalidOperation"],
     });
 
@@ -110,13 +111,13 @@ async function main() {
 
     // Update connection with invalid operation ❌
     response = await connectionSessionOk.update({
-      // @ts-expect-error
+      // @ts-expect-error – test
       operations: ["missingModel::create"],
     });
 
     // Update connection with invalid operation ❌
     response = await connectionSessionOk.update({
-      // @ts-expect-error
+      // @ts-expect-error – test
       operations: ["genericContact::invalidOperation"],
     });
 
@@ -127,13 +128,13 @@ async function main() {
 
     // UpdateOrCreate connection with invalid operation ❌
     response = await connectionSessionOk.updateOrCreate({
-      // @ts-expect-error
+      // @ts-expect-error – test
       operations: ["missingModel::create"],
     });
 
     // UpdateOrCreate connection with invalid operation ❌
     response = await connectionSessionOk.updateOrCreate({
-      // @ts-expect-error
+      // @ts-expect-error – test
       operations: ["genericContact::invalidOperation"],
     });
 
@@ -164,18 +165,18 @@ async function main() {
     response = await connectionSessionOk
       .resources("genericContact")
       .retrieve("foo", {
-        // @ts-expect-error
+        // @ts-expect-error – test
         fields: ["someFakeField"],
       });
 
     // Retrieve missing model ❌
     response = await connectionSessionOk
-      // @ts-expect-error
+      // @ts-expect-error – test
       .resources("someFakeModel");
 
     // Resource not present on both connector ❌
     response = await connectionSessionOk
-      // @ts-expect-error
+      // @ts-expect-error – test
       .resources("crmOpportunity");
 
     // List available model ✅
@@ -193,7 +194,7 @@ async function main() {
 
     // Create with invalid fields ❌
     response = await connectionSessionOk.resources("genericContact").create({
-      // @ts-expect-error
+      // @ts-expect-error – test
       invalidField: "John",
     });
 
@@ -209,7 +210,7 @@ async function main() {
     response = await connectionSessionOk
       .resources("genericContact")
       .update("contact_id", {
-        // @ts-expect-error
+        // @ts-expect-error – test
         invalidField: "value",
       });
 
@@ -235,22 +236,22 @@ async function main() {
     });
 
     // Proxy with missing required path ❌
-    // @ts-expect-error
+    // @ts-expect-error – test
     response = await connectionSessionOk.proxy({
       method: "GET",
     });
 
     // Proxy with invalid input ❌
     response = await connectionSessionOk.proxy({
-      // @ts-expect-error
+      // @ts-expect-error – test
       method: "INVALID",
-      // @ts-expect-error
+      // @ts-expect-error – test
       path: undefined,
       headers: {
-        // @ts-expect-error
+        // @ts-expect-error – test
         foo: { bar: "baz" },
       },
-      // @ts-expect-error
+      // @ts-expect-error – test
       query: true,
     });
 
@@ -265,12 +266,12 @@ async function main() {
 
     // Create webhook with invalid parameter ❌
     response = await connectionSessionOk.webhooks().subscribe({
-      // @ts-expect-error
+      // @ts-expect-error – test
       events: ["invalidModel::created"],
     });
 
     // Create webhook without required parameters ❌
-    // @ts-expect-error
+    // @ts-expect-error – test
     response = await connectionSessionOk.webhooks().subscribe({});
 
     // Unsubscribe webhook with valid params ✅
@@ -280,21 +281,21 @@ async function main() {
 
     // Unsubscribe webhook with invalid parameter ❌
     response = await connectionSessionOk.webhooks().unsubscribe({
-      // @ts-expect-error
+      // @ts-expect-error – test
       events: ["invalidModel::created"],
     });
 
     // Unsubscribe webhook without required parameters ❌
-    // @ts-expect-error
+    // @ts-expect-error – test
     response = await connectionSessionOk.webhooks().unsubscribe({});
 
     morph
       .webhooks()
       .onEvents(
-        "widgetCardViewRequest::created",
+        "widgetCardView::created",
         (connection, { model, trigger, data }) => {
-          model === "widgetCardViewRequest";
-          // @ts-expect-error
+          model === "widgetCardView";
+          // @ts-expect-error – test
           model === "genericContact";
 
           trigger === "updated";
@@ -325,7 +326,7 @@ async function main() {
               },
             },
           };
-        }
+        },
       );
     morph.webhooks().requestHandler({
       webhookType: "subscription",
@@ -357,7 +358,7 @@ async function main() {
     morph.webhooks().requestHandler({
       webhookType: "subscription",
       webhookToken: "token",
-      // @ts-expect-error
+      // @ts-expect-error – test
       connectorId: "missingConnectorId",
       handler: async () => {},
     });
@@ -391,16 +392,17 @@ async function main() {
     const validId: validId = true;
 
     type invalidId = typeof connectorId extends "invalid" ? true : false;
-    // @ts-expect-error
+    // @ts-expect-error – test
     const invalidId: invalidId = true;
 
     // Retrieve connector with invalid ID ❌
-    // @ts-expect-error
+    // @ts-expect-error – test
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const invalidResponse = await morph.connectors().retrieve("invalid-id");
 
     morph.m_.connectors["test-2"].resourceModelOperations.crmOpportunity;
     morph.m_.connectors["test-2"].resourceModelOperations.genericContact;
-    // @ts-expect-error
+    // @ts-expect-error – test
     morph.m_.connectors["test"].resourceModelOperations.crmOpportunity;
   } catch (error) {
     console.error("Unexpected error:", error);

@@ -42,7 +42,7 @@ type HubspotEvent = keyof typeof hubspotEventType;
 async function subscribeToEvent(
   appId: string,
   hapikey: string,
-  body: any
+  body: unknown,
 ): Promise<Response> {
   const response = await fetch(
     `https://api.hubapi.com/webhooks/v1/${appId}/subscriptions?hapikey=${hapikey}`,
@@ -52,7 +52,7 @@ async function subscribeToEvent(
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
-    }
+    },
   );
   return response;
 }
@@ -64,18 +64,6 @@ export default new SubscribeToGlobalEvent({
       settings as ExtractConnectorSettings<HubSpotConnector>;
 
     console.log("settings", settings);
-    // Type guard to ensure model is HubspotModel
-    if (!(model in hubspotObjectProperties)) {
-      return {
-        error: {
-          code: "CONNECTOR::WEBHOOKS_NOT_SUPPORTED",
-          message: `Model '${model}' not supported for HubSpot global webhook`,
-        },
-      };
-    }
-
-    const object = hubspotObjectProperties[model as HubspotModel];
-    const eventType = hubspotEventType[trigger as HubspotEvent];
 
     // TODO : get portalId from connection.getMeta("portalId")
     const { data: accountData, error } = await connection.proxy<{
@@ -94,7 +82,20 @@ export default new SubscribeToGlobalEvent({
     // TODO : fix type inference
     if (globalRoute === "main") {
       try {
-        let responses: any[] = [];
+        // Type guard to ensure model is HubspotModel
+        if (!(model in hubspotObjectProperties)) {
+          return {
+            error: {
+              code: "CONNECTOR::WEBHOOKS_NOT_SUPPORTED",
+              message: `Model '${model}' not supported for HubSpot global webhook`,
+            },
+          };
+        }
+
+        const object = hubspotObjectProperties[model as HubspotModel];
+        const eventType = hubspotEventType[trigger as HubspotEvent];
+
+        let responses: Response[] = [];
         if (eventType === "propertyChange") {
           responses = await Promise.all(
             object.properties.map((p) => {
@@ -106,7 +107,7 @@ export default new SubscribeToGlobalEvent({
                 },
               };
               return subscribeToEvent(appId, hapikey, body);
-            })
+            }),
           );
         } else {
           const body = {
@@ -154,7 +155,7 @@ export default new SubscribeToGlobalEvent({
     }
     if (globalRoute === "cardView") {
       return {
-        identifierKey: `${portalId}-${globalRoute}-widgetCardViewRequest-created`, // TODO: define identierKey composable (portalId, globalRoute, ...) so it become typesafe across sub and mapper
+        identifierKey: `${portalId}-${globalRoute}-widgetCardView-created`, // TODO: define identierKey composable (portalId, globalRoute, ...) so it become typesafe across sub and mapper
       };
     } else {
       // TODO : if route infered proeperly, this shouldn't be necessary

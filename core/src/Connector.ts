@@ -17,7 +17,7 @@ export class ClientConnector<
   }
 
   retrieve<TConnectorId extends TConnectorBundleArray[number]["id"]>(
-    id: TConnectorId
+    id: TConnectorId,
   ): Awaitable<
     EitherDataOrError<
       ArrayToIndexedObject<TConnectorBundleArray, "id">[TConnectorId]

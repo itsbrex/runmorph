@@ -83,21 +83,6 @@ const TestContactMapper = new Mapper<
   },
 });
 
-// Sample opportunity data
-const testOpportunity = {
-  id: "opp_123",
-  properties: {
-    name: "Enterprise Deal",
-    amount: 50000,
-    stage: "Negotiation",
-    probability: 75,
-    expectedCloseDate: "2024-06-30",
-    description: "Large enterprise software deal",
-  },
-  createdAt: "2024-01-15T10:30:00Z",
-  updatedAt: "2024-01-16T15:45:00Z",
-};
-
 // Define the opportunity type
 type TestOpportunity = {
   id: string;
@@ -181,12 +166,16 @@ const connectorTest2 = new Connector({
 
 // Define the list operation
 const listContacts = (
-  mapper: typeof TestOpportunityMapper | typeof TestContactMapper
-) =>
+  mapper: typeof TestOpportunityMapper | typeof TestContactMapper,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): any =>
   new List({
     scopes: ["contacts.read"],
     mapper: mapper,
-    handler: async (connection, { limit, cursor, fields, filters }) => {
+    handler: async (
+      _connection,
+      { limit: _l, cursor: _c, fields: _f, filters: _fl },
+    ) => {
       // Mock implementation for listing contacts
       return {
         data: [testContact], // Return an empty array for simplicity
@@ -197,12 +186,13 @@ const listContacts = (
 
 // Define the retrieve operation
 const retrieveContact = (
-  mapper: typeof TestOpportunityMapper | typeof TestContactMapper
-) =>
+  mapper: typeof TestOpportunityMapper | typeof TestContactMapper,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): any =>
   new Retrieve({
     scopes: ["contacts.read"],
     mapper: mapper,
-    handler: async (connection, { id, fields }) => {
+    handler: async (_connection, { id: _i, fields: _f }) => {
       // Mock implementation for retrieving a contact
       return testContact;
     },
@@ -210,12 +200,13 @@ const retrieveContact = (
 
 // Define the create operation
 const createContact = (
-  mapper: typeof TestOpportunityMapper | typeof TestContactMapper
-) =>
+  mapper: typeof TestOpportunityMapper | typeof TestContactMapper,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): any =>
   new Create({
     scopes: ["contacts.write"],
     mapper: mapper,
-    handler: async (connection, { data }) => {
+    handler: async (_connection, { data }) => {
       // Mock implementation for creating a contact
       const retrunedContact = { ...testContact, ...{ propeeties: data } };
       return retrunedContact;
@@ -224,12 +215,13 @@ const createContact = (
 
 // Define the update operation
 const updateContact = (
-  mapper: typeof TestOpportunityMapper | typeof TestContactMapper
-) =>
+  mapper: typeof TestOpportunityMapper | typeof TestContactMapper,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): any =>
   new Update({
     scopes: ["contacts.write"],
     mapper: mapper,
-    handler: async (connection, { id, data }) => {
+    handler: async (connection, { id: _i, data }) => {
       // Mock implementation for updating a contact
       const retrunedContact = { ...testContact, ...{ propeeties: data } };
       return retrunedContact;
@@ -245,7 +237,7 @@ const TestWebhookGlobalMapper = new GlobalEventMapper({
       crmOpportunity: ["created", "updated"],
     },
   },
-  handler: async (request, globalRoute) => {
+  handler: async (_request, _globalRoute) => {
     return [
       {
         mapper: TestOpportunityMapper,
@@ -262,7 +254,7 @@ const TestWebhookSubscriptionMapper = new EventMapper({
   events: {
     genericContact: ["created", "updated", "deleted"],
   },
-  handler(request) {
+  handler(_request) {
     return {
       mapper: TestContactMapper,
       trigger: "created",
@@ -283,7 +275,7 @@ const TestWebhookGlobalSubscribe = new SubscribeToGlobalEvent({
 
 const TestWebhookSubscription = new SubscribeToEvent({
   eventMapper: TestWebhookSubscriptionMapper,
-  handler: async (connection, { model, trigger, url }) => {
+  handler: async (_connection, { model: _m, trigger: _t, url: _u }) => {
     return {
       id: "whk_test",
       meta: {
@@ -296,8 +288,8 @@ const TestWebhookSubscription = new SubscribeToEvent({
 const TestWebhookGlobalUnsubscribe = new UnsubscribeFromGlobalEvent({
   globalEventMapper: TestWebhookGlobalMapper,
   handler: (
-    connection,
-    { identifierKey }
+    _connection,
+    { identifierKey: _ },
   ): UnsubscribeFromGlobalEventHandlerResult => {},
 });
 
@@ -314,6 +306,8 @@ const connectorBundleTest = new ConnectorBundle({
   },
   webhookOperations: {
     subscription: {
+      // TO REFACTOR
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mapper: TestWebhookSubscriptionMapper as any,
       subscribe: TestWebhookSubscription,
     },
@@ -340,6 +334,8 @@ const connectorBundleTest2 = new ConnectorBundle({
   },
   webhookOperations: {
     global: {
+      // TO REFACTOR
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mapper: TestWebhookGlobalMapper as any,
       subscribe: TestWebhookGlobalSubscribe,
       unsubscribe: TestWebhookGlobalUnsubscribe,

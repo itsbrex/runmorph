@@ -1,7 +1,7 @@
 import { GlobalEventMapper } from "@runmorph/cdk";
 
 import HubSpotContactMapper from "../../resources/genericContact/mapper";
-import HubSpotCardViewMapper from "../../resources/widgetCardViewRequest/mapper";
+import HubSpotCardViewMapper from "../../resources/widgetCardView/mapper";
 type HubSpotEventType = "contact.propertyChange";
 
 export type HubSpotWebhookEvent = {
@@ -51,7 +51,7 @@ export default new GlobalEventMapper({
       genericContact: ["updated", "created"],
     },
     cardView: {
-      widgetCardViewRequest: ["created"],
+      widgetCardView: ["created"],
     },
   },
   handler: async (request, globalRoute) => {
@@ -83,7 +83,7 @@ export default new GlobalEventMapper({
             mapper: HubSpotCardViewMapper,
             trigger: "created",
             rawResource: query,
-            identifierKey: `${query.portalId}-${globalRoute}-widgetCardViewRequest-created`,
+            identifierKey: `${query.portalId}-${globalRoute}-widgetCardView-created`,
             idempotencyKey: `${query.portalId}-${globalRoute}-${query.associatedObjectType}-${query.hs_object_id}-${Date.now()}`,
           },
         ];

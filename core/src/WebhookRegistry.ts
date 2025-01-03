@@ -27,6 +27,7 @@ import { MorphClient } from "./Morph";
 
 export type WebhookCallback<
   RTI extends ResourceModelId,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   CON extends ConnectionClient<any, any>,
   R extends Record<string, z.ZodTypeAny> | undefined,
 > = (
@@ -38,11 +39,12 @@ export type WebhookCallback<
     data: ResourceData<
       ResourceModel<
         RTI,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         any,
         R extends undefined ? Record<string, z.ZodTypeAny> : R
       >
     >;
-  }
+  },
 ) => Awaitable<
   R extends Record<string, z.ZodTypeAny>
     ? R extends Record<string, never>
@@ -60,6 +62,7 @@ export class WebhookRegistry<
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
 > {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static instance: WebhookRegistry<any>;
   private eventEmitter: EventEmitter;
   private morph: MorphClient<CA>;
@@ -67,7 +70,7 @@ export class WebhookRegistry<
     this.morph = morph;
     this.eventEmitter = new EventEmitter();
   }
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static getInstance(morph: MorphClient<any>): WebhookRegistry<any> {
     if (!WebhookRegistry.instance) {
       WebhookRegistry.instance = new WebhookRegistry(morph);
@@ -82,7 +85,8 @@ export class WebhookRegistry<
       : ExtractResponseSchemaFromResourceModel<(typeof resourceModels)[RTI]>,
   >(
     eventName: EventType<RTI> | EventType<RTI>[],
-    callback: WebhookCallback<RTI, ConnectionClient<any, any>, R>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    callback: WebhookCallback<RTI, ConnectionClient<any, any>, R>,
   ): void {
     if (typeof eventName === "string") {
       this.eventEmitter.on(eventName, callback);
@@ -124,7 +128,7 @@ export class WebhookRegistry<
           connectorId: I;
           request: RawEventRequest;
           //  handler: (request: RawEventRequest) => Awaitable<void>;
-        }
+        },
   ): Promise<EitherTypeOrError<{ processed: boolean; data?: unknown }>> => {
     const { connectorId, webhookType, request } = params;
 
@@ -139,7 +143,6 @@ export class WebhookRegistry<
       throw "Connector not found : " + connectorId;
     }
 
-    const webhookOperations = connector.webhookOperations;
     const resourceModelOperations = connector.resourceModelOperations;
 
     const results = [];
@@ -198,7 +201,7 @@ export class WebhookRegistry<
 
         const webhookAdapter =
           await this.morph.m_.database.adapter.retrieveWebhookByIdentifierKey(
-            identifierKey
+            identifierKey,
           );
 
         console.log("identifierKey", identifierKey, webhookAdapter);
@@ -211,6 +214,7 @@ export class WebhookRegistry<
         const ownerId = webhookAdapter.ownerId;
         if ("rawResource" in event) {
           mappedResource = event.mapper.read(event.rawResource) as ResourceData<
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             ResourceModel<keyof typeof resourceModelOperations, any, any>
           >;
         } else if ("resourceRef" in event) {
@@ -228,6 +232,8 @@ export class WebhookRegistry<
           mappedResource = data;
         }
 
+        console.log("mappedResource", mappedResource);
+
         if (!mappedResource) {
           return {
             error: {
@@ -236,6 +242,35 @@ export class WebhookRegistry<
                 "Could retrieve the resource related to this webhook event.",
             },
           };
+        }
+
+        console.log("Expect repsonse", event.mapper.expectResponse());
+        if (event.mapper.expectResponse()) {
+          const processedEvent = await this.porcesseEvent({
+            connectorId,
+            ownerId,
+            model,
+            trigger,
+            mappedResource: mappedResource,
+            idempotencyKey: event.idempotencyKey,
+          });
+          console.log("processedEvent", processedEvent);
+
+          if (
+            processedEvent.processed &&
+            processedEvent.data &&
+            !processedEvent.error
+          ) {
+            const mappedEventResponse = event.mapper.writeResponse(
+              processedEvent.data,
+            );
+
+            console.log("mappedEventResponse", mappedEventResponse);
+
+            return { data: mappedEventResponse, processed: true };
+          }
+
+          return processedEvent;
         }
 
         return this.porcesseEvent({
@@ -278,6 +313,7 @@ export class WebhookRegistry<
 
   private async porcesseEvent<
     RTI extends ResourceModelId,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     RD extends ResourceData<ResourceModel<RTI, any, any>>,
   >(params: {
     connectorId: CA[number]["id"];
@@ -309,20 +345,22 @@ export class WebhookRegistry<
       const eventType: EventType<typeof model> = `${model}::${trigger}`;
       // Get both specific and wildcard listeners
       const specificListeners = this.eventEmitter.listeners(
-        eventType
+        eventType,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ) as WebhookCallback<typeof model, typeof connection, any>[];
       const wildcardListeners = this.eventEmitter.listeners(
-        "*"
+        "*",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ) as WebhookCallback<typeof model, typeof connection, any>[];
 
       try {
         // Execute all listeners and collect results
         const results = await Promise.all([
           ...specificListeners.map((listener) =>
-            listener(connection, eventPayload)
+            listener(connection, eventPayload),
           ),
           ...wildcardListeners.map((listener) =>
-            listener(connection, eventPayload)
+            listener(connection, eventPayload),
           ),
         ]);
 

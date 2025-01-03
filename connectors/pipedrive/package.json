@@ -20,10 +20,10 @@
   },
   "devDependencies": {
     "@runmorph/cdk": "^0.0.26",
-    "@runmorph/resource-models": "^0.0.5"
+    "@runmorph/resource-models": "^0.0.7"
   },
   "peerDependencies": {
     "@runmorph/cdk": "^0.0.26",
-    "@runmorph/resource-models": "^0.0.5"
+    "@runmorph/resource-models": "^0.0.7"
   }
 }

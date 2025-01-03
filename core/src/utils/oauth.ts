@@ -43,10 +43,10 @@ export function generateAuthorizationUrl({
       timestamp: Date.now(),
       redirectUrl,
     },
-    true
+    true,
   );
   const url = new URL(
-    connector.connector.auth.generateAuthorizeUrl({}).toString()
+    connector.connector.auth.generateAuthorizeUrl({}).toString(),
   );
   url.searchParams.append("client_id", clientId);
   url.searchParams.append("redirect_uri", redirectUri);
@@ -78,7 +78,7 @@ export async function exchangeCodeForToken({
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
-    }
+    },
   );
 
   return response.data;
@@ -91,7 +91,7 @@ export function getConnectorOAuthCredentials(
     Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
-  >
+  >,
 ): {
   clientId: string;
   clientSecret: string;
@@ -113,7 +113,7 @@ export function getConnectorCallbackUrl(connectorId: string): string {
 }
 
 export async function fetchOAuthToken(
-  params: FetchOAuthTokenParams
+  params: FetchOAuthTokenParams,
 ): Promise<OAuthToken> {
   const { clientId, clientSecret, code, accessTokenUrl, callbackUrl } = params;
 
@@ -135,7 +135,8 @@ export async function fetchOAuthToken(
 }
 
 export async function oautCallback<
-  A extends Adapter,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _A extends Adapter,
   C extends ConnectorBundle<
     I,
     Settings,
@@ -146,13 +147,13 @@ export async function oautCallback<
   I extends string,
 >(
   morph: MorphClient<C>,
-  { state, code }: AuthorizeParams
+  { state, code }: AuthorizeParams,
 ): Promise<
   EitherTypeOrError<{ connection: ConnectionData; redirectUrl: string }>
 > {
   const { connectorId, ownerId, redirectUrl } = decryptJson(
     JSON.parse(state),
-    true
+    true,
   );
 
   const connection = morph.connections({
@@ -205,7 +206,7 @@ export async function oautCallback<
           ? new Date(tokenResponse.expires_at * 1000).toISOString()
           : tokenResponse.expires_in
             ? new Date(
-                Date.now() + tokenResponse.expires_in * 1000
+                Date.now() + tokenResponse.expires_in * 1000,
               ).toISOString()
             : null,
       };
@@ -220,7 +221,7 @@ export async function oautCallback<
 
       if (currentConnectiondData?.authorizationData) {
         const currentAuthorizationStoredData = JSON.parse(
-          currentConnectiondData.authorizationData
+          currentConnectiondData.authorizationData,
         );
 
         newAuthorizationStoredData = currentAuthorizationStoredData;
@@ -229,7 +230,7 @@ export async function oautCallback<
       newAuthorizationStoredData.oauth = authorizationOAuthData;
 
       const stringEncryptedAuthorizationStoredData = JSON.stringify(
-        newAuthorizationStoredData
+        newAuthorizationStoredData,
       );
 
       await morph.m_.database.adapter.updateConnection(
@@ -241,7 +242,7 @@ export async function oautCallback<
           status: "authorized",
           authorizationData: stringEncryptedAuthorizationStoredData,
           updatedAt: new Date(),
-        }
+        },
       );
       const { data: updatedConnection, error: updatedConnectionError } =
         await morph.connections({ connectorId, ownerId }).retrieve();
@@ -260,7 +261,7 @@ export async function oautCallback<
       {
         status: "unauthorized",
         updatedAt: new Date(),
-      }
+      },
     );
     const { data: unauthorizedConnection, error: unauthorizedConnectionError } =
       await morph.connections({ connectorId, ownerId }).retrieve();
@@ -280,6 +281,7 @@ export async function oautCallback<
 }
 
 export async function getAuthorizationHeader<
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   A extends Adapter,
   C extends ConnectorBundle<
     I,
@@ -293,7 +295,8 @@ export async function getAuthorizationHeader<
   morph: MorphClient<C>,
   connectorId: I,
   ownerId: string,
-  logger?: Logger
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  logger?: Logger,
 ): Promise<string | null> {
   const { data: connectorData, error: connectorError } = await morph
     .connectors()
@@ -320,13 +323,14 @@ export async function getAuthorizationHeader<
   let authorizationData: ConnectionAuthorizationStoredData;
   try {
     authorizationData = decryptJson(
-      JSON.parse(connectionAdapter.authorizationData!)
+      JSON.parse(connectionAdapter.authorizationData!),
     ) as ConnectionAuthorizationStoredData;
   } catch (e) {
     throw {
       code: "MORPH::ADAPTER::AUTHORIZATION_DATA_INVALID",
       message:
         "Failed to decrypt or parse authorization data:" +
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (e as any).toString(),
     };
   }
@@ -340,7 +344,7 @@ export async function getAuthorizationHeader<
       morph,
       connectorId,
       ownerId,
-      authorizationData
+      authorizationData,
     );
   }
 
@@ -355,6 +359,7 @@ export async function getAuthorizationHeader<
 }
 
 export async function refreshAccessToken<
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   A extends Adapter,
   C extends ConnectorBundle<
     I,
@@ -368,7 +373,7 @@ export async function refreshAccessToken<
   morph: MorphClient<C>,
   connectorId: I,
   ownerId: string,
-  authorizationData: ConnectionAuthorizationStoredData
+  authorizationData: ConnectionAuthorizationStoredData,
 ): Promise<ConnectionAuthorizationStoredData> {
   const { data: connectorData, error: connectorError } = await morph
     .connectors()
@@ -401,7 +406,7 @@ export async function refreshAccessToken<
       params.toString(),
       {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      }
+      },
     );
     const newAuthorizationOAuthData: ConnectionAuthorizationOAuthData = {
       _accessToken: response.data.access_token,
@@ -422,7 +427,7 @@ export async function refreshAccessToken<
 
     if (currentConnectiondData?.authorizationData) {
       const currentAuthorizationStoredData = JSON.parse(
-        currentConnectiondData.authorizationData
+        currentConnectiondData.authorizationData,
       );
 
       newAuthorizationStoredData = currentAuthorizationStoredData;
@@ -431,7 +436,7 @@ export async function refreshAccessToken<
     newAuthorizationStoredData.oauth = newAuthorizationOAuthData;
 
     const stringEncryptedAuthorizationStoredData = JSON.stringify(
-      newAuthorizationStoredData
+      newAuthorizationStoredData,
     );
 
     await morph.m_.database.adapter.updateConnection(
@@ -439,7 +444,7 @@ export async function refreshAccessToken<
       {
         authorizationData: stringEncryptedAuthorizationStoredData,
         updatedAt: new Date(),
-      }
+      },
     );
 
     return { ...authorizationData, oauth: newAuthorizationOAuthData };
@@ -448,7 +453,7 @@ export async function refreshAccessToken<
     throw {
       code: "MORPH::CONNECTION::REFRESHING_TOKEN_FAILED",
       message: `Failed to refresh access token. Details: ${JSON.stringify(
-        error
+        error,
       )}`,
     };
   }
@@ -471,7 +476,7 @@ function getConnectorClientId(
     Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
-  >
+  >,
 ): string {
   const options = connector.connector.getOptions();
   if (!options) {
@@ -501,7 +506,7 @@ function getConnectorClientSecret(
     Settings,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
-  >
+  >,
 ): string {
   const options = connector.connector.getOptions();
   if (!options) {
@@ -517,7 +522,7 @@ function getConnectorClientSecret(
     process.env[`MORPH_${connector.connector.id.toUpperCase()}_CLIENT_SECRET`];
   if (!envClientSecret) {
     throw new Error(
-      `MORPH_${connector.connector.id.toUpperCase()}_CLIENT_SECRET missing.`
+      `MORPH_${connector.connector.id.toUpperCase()}_CLIENT_SECRET missing.`,
     );
   }
   return envClientSecret;
