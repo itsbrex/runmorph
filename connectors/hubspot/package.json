@@ -16,7 +16,8 @@
     "fix:lint": "eslint --fix src/",
     "fix:format": "prettier --write \"**/*.{ts,tsx,md}\" --ignore-path ../../.gitignore",
     "prepublishOnly": "yarn run build",
-    "publish": "yarn run build && yarn publish --access public"
+    "publish": "yarn run build && yarn publish --access public",
+    "prepare": "yarn link @runmorph/cli"
   },
   "devDependencies": {
     "@runmorph/cli": "^0.0.2",

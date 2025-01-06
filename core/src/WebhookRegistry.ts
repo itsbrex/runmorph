@@ -44,7 +44,7 @@ export type WebhookCallback<
         R extends undefined ? Record<string, z.ZodTypeAny> : R
       >
     >;
-  },
+  }
 ) => Awaitable<
   R extends Record<string, z.ZodTypeAny>
     ? R extends Record<string, never>
@@ -86,7 +86,7 @@ export class WebhookRegistry<
   >(
     eventName: EventType<RTI> | EventType<RTI>[],
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    callback: WebhookCallback<RTI, ConnectionClient<any, any>, R>,
+    callback: WebhookCallback<RTI, ConnectionClient<any, any>, R>
   ): void {
     if (typeof eventName === "string") {
       this.eventEmitter.on(eventName, callback);
@@ -128,7 +128,7 @@ export class WebhookRegistry<
           connectorId: I;
           request: RawEventRequest;
           //  handler: (request: RawEventRequest) => Awaitable<void>;
-        },
+        }
   ): Promise<EitherTypeOrError<{ processed: boolean; data?: unknown }>> => {
     const { connectorId, webhookType, request } = params;
 
@@ -145,6 +145,8 @@ export class WebhookRegistry<
 
     const resourceModelOperations = connector.resourceModelOperations;
 
+    console.log("webhookType:", webhookType);
+    console.log("resourceModelOperations:", resourceModelOperations);
     const results = [];
 
     if (webhookType === "subscription") {
@@ -181,17 +183,18 @@ export class WebhookRegistry<
       results.push(response);*/
     } else if (webhookType === "global") {
       const { globalRoute } = params;
+      console.log("connector.webhookOperations", connector.webhookOperations);
       const globalMapper =
         connector.webhookOperations[webhookType as "global"]?.mapper;
-
+      console.log("globalMapper", globalMapper);
       if (!globalMapper) {
         throw "Connector has no global mapper : " + connectorId;
       }
       const mappedEvent = await globalMapper.run(request, globalRoute);
-
+      console.log("mappedEvent", mappedEvent);
       // Handle case where mappedEvent can be single event or array of events
       const events = Array.isArray(mappedEvent) ? mappedEvent : [mappedEvent];
-
+      console.log("events", events);
       // Replace forEach with Promise.all + map
       const eventPromises = events.map(async (event) => {
         const model = event.mapper
@@ -201,7 +204,7 @@ export class WebhookRegistry<
 
         const webhookAdapter =
           await this.morph.m_.database.adapter.retrieveWebhookByIdentifierKey(
-            identifierKey,
+            identifierKey
           );
 
         console.log("identifierKey", identifierKey, webhookAdapter);
@@ -262,7 +265,7 @@ export class WebhookRegistry<
             !processedEvent.error
           ) {
             const mappedEventResponse = event.mapper.writeResponse(
-              processedEvent.data,
+              processedEvent.data
             );
 
             console.log("mappedEventResponse", mappedEventResponse);
@@ -345,11 +348,11 @@ export class WebhookRegistry<
       const eventType: EventType<typeof model> = `${model}::${trigger}`;
       // Get both specific and wildcard listeners
       const specificListeners = this.eventEmitter.listeners(
-        eventType,
+        eventType
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ) as WebhookCallback<typeof model, typeof connection, any>[];
       const wildcardListeners = this.eventEmitter.listeners(
-        "*",
+        "*"
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ) as WebhookCallback<typeof model, typeof connection, any>[];
 
@@ -357,10 +360,10 @@ export class WebhookRegistry<
         // Execute all listeners and collect results
         const results = await Promise.all([
           ...specificListeners.map((listener) =>
-            listener(connection, eventPayload),
+            listener(connection, eventPayload)
           ),
           ...wildcardListeners.map((listener) =>
-            listener(connection, eventPayload),
+            listener(connection, eventPayload)
           ),
         ]);
 

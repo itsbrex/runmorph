@@ -166,7 +166,7 @@ const connectorTest2 = new Connector({
 
 // Define the list operation
 const listContacts = (
-  mapper: typeof TestOpportunityMapper | typeof TestContactMapper,
+  mapper: typeof TestOpportunityMapper | typeof TestContactMapper
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any =>
   new List({
@@ -174,7 +174,7 @@ const listContacts = (
     mapper: mapper,
     handler: async (
       _connection,
-      { limit: _l, cursor: _c, fields: _f, filters: _fl },
+      { limit: _l, cursor: _c, fields: _f, filters: _fl }
     ) => {
       // Mock implementation for listing contacts
       return {
@@ -186,7 +186,7 @@ const listContacts = (
 
 // Define the retrieve operation
 const retrieveContact = (
-  mapper: typeof TestOpportunityMapper | typeof TestContactMapper,
+  mapper: typeof TestOpportunityMapper | typeof TestContactMapper
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any =>
   new Retrieve({
@@ -200,7 +200,7 @@ const retrieveContact = (
 
 // Define the create operation
 const createContact = (
-  mapper: typeof TestOpportunityMapper | typeof TestContactMapper,
+  mapper: typeof TestOpportunityMapper | typeof TestContactMapper
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any =>
   new Create({
@@ -215,7 +215,7 @@ const createContact = (
 
 // Define the update operation
 const updateContact = (
-  mapper: typeof TestOpportunityMapper | typeof TestContactMapper,
+  mapper: typeof TestOpportunityMapper | typeof TestContactMapper
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any =>
   new Update({
@@ -289,7 +289,7 @@ const TestWebhookGlobalUnsubscribe = new UnsubscribeFromGlobalEvent({
   globalEventMapper: TestWebhookGlobalMapper,
   handler: (
     _connection,
-    { identifierKey: _ },
+    { identifierKey: _ }
   ): UnsubscribeFromGlobalEventHandlerResult => {},
 });
 
