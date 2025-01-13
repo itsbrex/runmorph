@@ -150,6 +150,12 @@ async function main(): Promise<void> {
       },
     });
 
+    // Test coonection settings and metadata
+    const connectionConnectorTest = connectionSessionOk.isConnector("test")!;
+    response = await connectionConnectorTest.getMetadata("meta1");
+    response = await connectionConnectorTest.getSetting("authmberSeting");
+    response = await connectionConnectorTest.setMetadata("meta1", "jjjj");
+
     /**
      * RESOURCES
      */
@@ -326,7 +332,7 @@ async function main(): Promise<void> {
               },
             },
           };
-        },
+        }
       );
     morph.webhooks().requestHandler({
       webhookType: "subscription",

@@ -9,7 +9,7 @@ import { MorphClient } from "./Morph";
 
 export class ClientConnector<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  TConnectorBundleArray extends ConnectorBundle<any, any, any, any, any>[],
+  TConnectorBundleArray extends ConnectorBundle<any, any, any, any, any, any>[],
 > {
   private morph: MorphClient<TConnectorBundleArray>;
   constructor(morph: MorphClient<TConnectorBundleArray>) {
@@ -17,7 +17,7 @@ export class ClientConnector<
   }
 
   retrieve<TConnectorId extends TConnectorBundleArray[number]["id"]>(
-    id: TConnectorId,
+    id: TConnectorId
   ): Awaitable<
     EitherDataOrError<
       ArrayToIndexedObject<TConnectorBundleArray, "id">[TConnectorId]

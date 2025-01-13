@@ -54,7 +54,7 @@ export default new GlobalEventMapper({
       widgetCardView: ["created"],
     },
   },
-  handler: async (request, globalRoute) => {
+  handler: async ({ request, globalRoute }) => {
     switch (globalRoute) {
       case "main": {
         const { body } = request as HubSpotRequest;

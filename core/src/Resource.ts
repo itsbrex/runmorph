@@ -30,6 +30,7 @@ export class ResourceClient<
     string,
     Settings,
     Settings,
+    string,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >,
@@ -37,6 +38,7 @@ export class ResourceClient<
     string,
     Settings,
     Settings,
+    string,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
@@ -53,7 +55,7 @@ export class ResourceClient<
   constructor(
     morph: MorphClient<CA>,
     connection: ConnectionClient<C, CA>,
-    entityId: RTI,
+    entityId: RTI
   ) {
     this.morph = morph;
     const { data: ids, error } = connection.getConnectionIds();
@@ -62,7 +64,7 @@ export class ResourceClient<
         "ResourceClient : Failed to get connection ids",
         {
           error,
-        },
+        }
       );
       throw "WebhookClient : Failed to get connection ids";
     }
@@ -95,7 +97,7 @@ export class ResourceClient<
       if (entityRecord.list) {
         const { data, next, error } = await entityRecord.list.run(
           this.m_.connection,
-          params,
+          params
         );
 
         if (error) {
@@ -159,7 +161,7 @@ export class ResourceClient<
           ResourceModels[RTI extends ResourceModelId ? RTI : never]
         >[],
       ];
-    },
+    }
   ): Promise<
     EitherDataOrError<
       ResourceData<ResourceModels[RTI extends ResourceModelId ? RTI : never]>
@@ -181,7 +183,7 @@ export class ResourceClient<
         const { data, error } = await resourceModelRecord.retrieve.run(
           this.m_.connection,
           id,
-          options,
+          options
         );
 
         if (error) {
@@ -194,7 +196,7 @@ export class ResourceClient<
 
         data.fields = await this._expandResourceRefs(
           data.fields,
-          (options?.expand || []) as string[],
+          (options?.expand || []) as string[]
         );
         delete data.rawResource;
 
@@ -233,7 +235,7 @@ export class ResourceClient<
     fields: ResourceData<
       ResourceModels[RTI extends ResourceModelId ? RTI : never]
     >["fields"],
-    options?: { returnResource?: T },
+    options?: { returnResource?: T }
   ): Promise<
     EitherDataOrError<
       T extends true
@@ -260,7 +262,7 @@ export class ResourceClient<
       if (resourceModelRecord.create) {
         const { data, error } = await resourceModelRecord.create.run(
           this.m_.connection,
-          fields,
+          fields
         );
 
         if (error) {
@@ -323,7 +325,7 @@ export class ResourceClient<
         ResourceModels[RTI extends ResourceModelId ? RTI : never]
       >["fields"]
     >,
-    options?: { returnResource?: T },
+    options?: { returnResource?: T }
   ): Promise<
     EitherDataOrError<
       T extends true
@@ -345,7 +347,7 @@ export class ResourceClient<
         const { data, error } = await resourceModelRecord.update.run(
           this.m_.connection,
           id,
-          fields,
+          fields
         );
 
         if (error) {
@@ -391,13 +393,13 @@ export class ResourceClient<
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     obj: any,
     expandKeys: string[],
-    parentKey?: string,
+    parentKey?: string
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<any> => {
     if (Array.isArray(obj)) {
       this.m_.logger?.debug("Expanding array of resource refs");
       return Promise.all(
-        obj.map((o) => this._expandResourceRefs(o, expandKeys, parentKey)),
+        obj.map((o) => this._expandResourceRefs(o, expandKeys, parentKey))
       );
     } else if (typeof obj === "object" && obj !== null) {
       if (obj.object === "resourceRef" && obj.model && obj.id) {
@@ -455,7 +457,7 @@ export class ResourceClient<
         entries.map(async ([key, value]) => [
           key,
           await this._expandResourceRefs(value, expandKeys, key),
-        ]),
+        ])
       );
 
       return Object.fromEntries(processedEntries);

@@ -58,6 +58,7 @@ export class WebhookRegistry<
     string,
     Settings,
     Settings,
+    string,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
@@ -190,7 +191,15 @@ export class WebhookRegistry<
       if (!globalMapper) {
         throw "Connector has no global mapper : " + connectorId;
       }
-      const mappedEvent = await globalMapper.run(request, globalRoute);
+      const { error, data: mappedEvent } = await globalMapper.run({
+        request,
+        globalRoute,
+        connector: connector.connector,
+      });
+
+      if (error) {
+        return { error };
+      }
       console.log("mappedEvent", mappedEvent);
       // Handle case where mappedEvent can be single event or array of events
       const events = Array.isArray(mappedEvent) ? mappedEvent : [mappedEvent];

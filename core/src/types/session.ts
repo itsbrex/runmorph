@@ -13,6 +13,7 @@ type SessionConnectionParams<
     I,
     Settings,
     Settings,
+    string,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
@@ -24,6 +25,7 @@ export type SessionCreateParams<
     I,
     Settings,
     Settings,
+    string,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
@@ -39,6 +41,7 @@ export type SessionData<
     I,
     Settings,
     Settings,
+    string,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],

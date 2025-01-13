@@ -27,12 +27,13 @@ import {
 
 import { decryptJson, encryptJson } from "./encryption";
 
-export function generateAuthorizationUrl({
+export async function generateAuthorizationUrl({
   connector,
   ownerId,
   scopes,
+  settings,
   redirectUrl,
-}: GenerateAuthorizationUrlParams): string {
+}: GenerateAuthorizationUrlParams): Promise<string> {
   const connectorId = connector.connector.id;
   const clientId = getConnectorClientId(connector);
   const redirectUri = getConnectorCallbackUrl(connectorId);
@@ -43,10 +44,31 @@ export function generateAuthorizationUrl({
       timestamp: Date.now(),
       redirectUrl,
     },
-    true,
+    true
   );
   const url = new URL(
-    connector.connector.auth.generateAuthorizeUrl({}).toString(),
+    (
+      await connector.connector.auth.generateAuthorizeUrl({
+        connector: {
+          getSetting: async (key) => {
+            const connectorOptions = connector.connector.getOptions();
+            if (!connectorOptions) {
+              return undefined;
+            }
+            return connectorOptions[
+              key as keyof typeof connectorOptions
+            ] as any;
+          },
+        },
+        connection: {
+          getMetadata: async () => undefined,
+          getSetting: async (key) =>
+            settings
+              ? (settings[key as keyof typeof settings] as any)
+              : undefined,
+        },
+      })
+    ).toString()
   );
   url.searchParams.append("client_id", clientId);
   url.searchParams.append("redirect_uri", redirectUri);
@@ -66,7 +88,9 @@ export async function exchangeCodeForToken({
   const clientSecret = getConnectorClientSecret(connector);
   const redirectUri = getConnectorCallbackUrl(connector.connector.id);
   const response = await axios.post(
-    connector.connector.auth.generateAccessTokenUrl({}).toString(),
+    (
+      await connector.connector.auth.generateAccessTokenUrl({} as any)
+    ).toString(),
     {
       grant_type: "authorization_code",
       code,
@@ -78,7 +102,7 @@ export async function exchangeCodeForToken({
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
-    },
+    }
   );
 
   return response.data;
@@ -89,9 +113,10 @@ export function getConnectorOAuthCredentials(
     string,
     Settings,
     Settings,
+    string,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
-  >,
+  >
 ): {
   clientId: string;
   clientSecret: string;
@@ -113,7 +138,7 @@ export function getConnectorCallbackUrl(connectorId: string): string {
 }
 
 export async function fetchOAuthToken(
-  params: FetchOAuthTokenParams,
+  params: FetchOAuthTokenParams
 ): Promise<OAuthToken> {
   const { clientId, clientSecret, code, accessTokenUrl, callbackUrl } = params;
 
@@ -141,19 +166,20 @@ export async function oautCallback<
     I,
     Settings,
     Settings,
+    string,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
   I extends string,
 >(
   morph: MorphClient<C>,
-  { state, code }: AuthorizeParams,
+  { state, code }: AuthorizeParams
 ): Promise<
   EitherTypeOrError<{ connection: ConnectionData; redirectUrl: string }>
 > {
   const { connectorId, ownerId, redirectUrl } = decryptJson(
     JSON.parse(state),
-    true,
+    true
   );
 
   const connection = morph.connections({
@@ -192,13 +218,52 @@ export async function oautCallback<
       clientId,
       clientSecret,
       code,
-      accessTokenUrl: connectorData.connector.auth
-        .generateAccessTokenUrl({})
-        .toString(),
+      accessTokenUrl: (
+        await connectorData.connector.auth.generateAccessTokenUrl({
+          connector: {
+            getSetting: async (key) => {
+              const connectorOptions =
+                morph.m_.connectors[connectorId as I].connector.getOptions();
+              if (!connectorOptions) {
+                return undefined;
+              }
+              return connectorOptions[
+                key as keyof typeof connectorOptions
+              ] as any;
+            },
+          },
+          connection,
+        })
+      ).toString(),
       callbackUrl,
     });
 
     if (tokenResponse.access_token) {
+      try {
+        const connector = morph.m_.connectors[connectorId as I];
+        const onTokenExchanged =
+          connector?.connector?.callbacks?.onTokenExchanged;
+        if (onTokenExchanged) {
+          await onTokenExchanged({
+            connection,
+            connector: {
+              getSetting: async (key) => {
+                const connectorOptions =
+                  morph.m_.connectors[connectorId as I].connector.getOptions();
+                if (!connectorOptions) {
+                  return undefined;
+                }
+                return connectorOptions[
+                  key as keyof typeof connectorOptions
+                ] as any;
+              },
+            },
+            rawTokens: tokenResponse,
+          });
+        }
+      } catch (e) {
+        console.error("Failed to execute cllbacks : onTokenExchanged", e);
+      }
       const authorizationOAuthData: ConnectionAuthorizationOAuthData = {
         _accessToken: tokenResponse.access_token,
         _refreshToken: tokenResponse.refresh_token,
@@ -206,7 +271,7 @@ export async function oautCallback<
           ? new Date(tokenResponse.expires_at * 1000).toISOString()
           : tokenResponse.expires_in
             ? new Date(
-                Date.now() + tokenResponse.expires_in * 1000,
+                Date.now() + tokenResponse.expires_in * 1000
               ).toISOString()
             : null,
       };
@@ -221,7 +286,7 @@ export async function oautCallback<
 
       if (currentConnectiondData?.authorizationData) {
         const currentAuthorizationStoredData = JSON.parse(
-          currentConnectiondData.authorizationData,
+          currentConnectiondData.authorizationData
         );
 
         newAuthorizationStoredData = currentAuthorizationStoredData;
@@ -230,7 +295,7 @@ export async function oautCallback<
       newAuthorizationStoredData.oauth = authorizationOAuthData;
 
       const stringEncryptedAuthorizationStoredData = JSON.stringify(
-        newAuthorizationStoredData,
+        newAuthorizationStoredData
       );
 
       await morph.m_.database.adapter.updateConnection(
@@ -242,7 +307,7 @@ export async function oautCallback<
           status: "authorized",
           authorizationData: stringEncryptedAuthorizationStoredData,
           updatedAt: new Date(),
-        },
+        }
       );
       const { data: updatedConnection, error: updatedConnectionError } =
         await morph.connections({ connectorId, ownerId }).retrieve();
@@ -261,7 +326,7 @@ export async function oautCallback<
       {
         status: "unauthorized",
         updatedAt: new Date(),
-      },
+      }
     );
     const { data: unauthorizedConnection, error: unauthorizedConnectionError } =
       await morph.connections({ connectorId, ownerId }).retrieve();
@@ -287,6 +352,7 @@ export async function getAuthorizationHeader<
     I,
     Settings,
     Settings,
+    string,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
@@ -296,7 +362,7 @@ export async function getAuthorizationHeader<
   connectorId: I,
   ownerId: string,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  logger?: Logger,
+  logger?: Logger
 ): Promise<string | null> {
   const { data: connectorData, error: connectorError } = await morph
     .connectors()
@@ -323,7 +389,7 @@ export async function getAuthorizationHeader<
   let authorizationData: ConnectionAuthorizationStoredData;
   try {
     authorizationData = decryptJson(
-      JSON.parse(connectionAdapter.authorizationData!),
+      JSON.parse(connectionAdapter.authorizationData!)
     ) as ConnectionAuthorizationStoredData;
   } catch (e) {
     throw {
@@ -344,7 +410,7 @@ export async function getAuthorizationHeader<
       morph,
       connectorId,
       ownerId,
-      authorizationData,
+      authorizationData
     );
   }
 
@@ -365,6 +431,7 @@ export async function refreshAccessToken<
     I,
     Settings,
     Settings,
+    string,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
@@ -373,7 +440,7 @@ export async function refreshAccessToken<
   morph: MorphClient<C>,
   connectorId: I,
   ownerId: string,
-  authorizationData: ConnectionAuthorizationStoredData,
+  authorizationData: ConnectionAuthorizationStoredData
 ): Promise<ConnectionAuthorizationStoredData> {
   const { data: connectorData, error: connectorError } = await morph
     .connectors()
@@ -402,11 +469,13 @@ export async function refreshAccessToken<
     });
 
     const response = await axios.post(
-      connectorData.connector.auth.generateAccessTokenUrl({}).toString(),
+      (
+        await connectorData.connector.auth.generateAccessTokenUrl({} as any)
+      ).toString(),
       params.toString(),
       {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      },
+      }
     );
     const newAuthorizationOAuthData: ConnectionAuthorizationOAuthData = {
       _accessToken: response.data.access_token,
@@ -427,7 +496,7 @@ export async function refreshAccessToken<
 
     if (currentConnectiondData?.authorizationData) {
       const currentAuthorizationStoredData = JSON.parse(
-        currentConnectiondData.authorizationData,
+        currentConnectiondData.authorizationData
       );
 
       newAuthorizationStoredData = currentAuthorizationStoredData;
@@ -436,7 +505,7 @@ export async function refreshAccessToken<
     newAuthorizationStoredData.oauth = newAuthorizationOAuthData;
 
     const stringEncryptedAuthorizationStoredData = JSON.stringify(
-      newAuthorizationStoredData,
+      newAuthorizationStoredData
     );
 
     await morph.m_.database.adapter.updateConnection(
@@ -444,7 +513,7 @@ export async function refreshAccessToken<
       {
         authorizationData: stringEncryptedAuthorizationStoredData,
         updatedAt: new Date(),
-      },
+      }
     );
 
     return { ...authorizationData, oauth: newAuthorizationOAuthData };
@@ -453,7 +522,7 @@ export async function refreshAccessToken<
     throw {
       code: "MORPH::CONNECTION::REFRESHING_TOKEN_FAILED",
       message: `Failed to refresh access token. Details: ${JSON.stringify(
-        error,
+        error
       )}`,
     };
   }
@@ -474,9 +543,10 @@ function getConnectorClientId(
     string,
     Settings,
     Settings,
+    string,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
-  >,
+  >
 ): string {
   const options = connector.connector.getOptions();
   if (!options) {
@@ -504,9 +574,10 @@ function getConnectorClientSecret(
     string,
     Settings,
     Settings,
+    string,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
-  >,
+  >
 ): string {
   const options = connector.connector.getOptions();
   if (!options) {
@@ -522,7 +593,7 @@ function getConnectorClientSecret(
     process.env[`MORPH_${connector.connector.id.toUpperCase()}_CLIENT_SECRET`];
   if (!envClientSecret) {
     throw new Error(
-      `MORPH_${connector.connector.id.toUpperCase()}_CLIENT_SECRET missing.`,
+      `MORPH_${connector.connector.id.toUpperCase()}_CLIENT_SECRET missing.`
     );
   }
   return envClientSecret;

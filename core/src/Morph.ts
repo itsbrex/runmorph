@@ -23,16 +23,16 @@ export type MorphConfig<CA> = {
 };
 export function Morph<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  TConnectorBundleArray extends ConnectorBundle<any, any, any, any, any>[],
+  TConnectorBundleArray extends ConnectorBundle<any, any, any, any, any, any>[],
 >(
-  options: MorphConfig<TConnectorBundleArray>,
+  options: MorphConfig<TConnectorBundleArray>
 ): MorphClient<TConnectorBundleArray> {
   return new MorphClient(options);
 }
 
 export class MorphClient<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  TConnectorBundleArray extends ConnectorBundle<any, any, any, any, any>[],
+  TConnectorBundleArray extends ConnectorBundle<any, any, any, any, any, any>[],
 > {
   m_: {
     connectors: ArrayToIndexedObject<TConnectorBundleArray, "id">;
@@ -51,7 +51,7 @@ export class MorphClient<
           acc[connector.id] = connector;
           return acc;
         },
-        {} as ArrayToIndexedObject<TConnectorBundleArray, "id">,
+        {} as ArrayToIndexedObject<TConnectorBundleArray, "id">
       ),
     };
 
@@ -72,13 +72,13 @@ export class MorphClient<
     this.m_.logger = logger;
     Object.keys(this.m_.connectors).forEach((ci) =>
       this.m_.connectors[ci as keyof typeof this.m_.connectors].setLogger(
-        logger,
-      ),
+        logger
+      )
     );
   }
 
   connections<I extends TConnectorBundleArray[number]["id"]>(
-    params: ConnectionIds<I> | { sessionToken: string },
+    params: ConnectionIds<I> | { sessionToken: string }
   ): ConnectionClient<
     ArrayToIndexedObject<TConnectorBundleArray, "id">[I],
     TConnectorBundleArray
@@ -109,7 +109,7 @@ export class MorphClient<
     return {
       oauth: {
         handle: (
-          params: AuthorizeHadleParams,
+          params: AuthorizeHadleParams
         ): Awaitable<
           EitherTypeOrError<{ connection: ConnectionData; redirectUrl: string }>
         > => oautCallback(this, { ...params, type: "oauth" }),

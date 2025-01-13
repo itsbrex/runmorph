@@ -20,6 +20,8 @@ import type {
   ResourceEvents,
   ArrayToIndexedObject,
   Settings,
+  ExtractMetadataKeys,
+  SettingFieldsToRecord,
 } from "@runmorph/cdk";
 import axios, { AxiosRequestConfig } from "axios";
 
@@ -35,7 +37,7 @@ import { WebhookClient } from "./Webhook";
 
 type ConnectorResourceModelId<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  C extends ConnectorBundle<any, any, any, any, any>,
+  C extends ConnectorBundle<any, any, any, any, any, any>,
 > = keyof C["resourceModelOperations"];
 
 function validateAuthorizationSettings(
@@ -43,11 +45,12 @@ function validateAuthorizationSettings(
     string,
     Settings,
     Settings,
+    string,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >,
   settings: Record<string, string>,
-  strict: boolean = true,
+  strict: boolean = true
 ): EitherTypeOrError<{ settings: Record<string, string> }> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const finalSettings = { ...settings } as Record<string, any>;
@@ -68,7 +71,7 @@ function validateAuthorizationSettings(
       error: {
         code: "MORPH::CONNECTION::MISSING_REQUIRED_AUTHORIZATION_SETTINGS",
         message: `Missing required authorization settings: ${missingSettings.join(
-          ", ",
+          ", "
         )}`,
       },
     };
@@ -78,14 +81,14 @@ function validateAuthorizationSettings(
 }
 
 function connectionAdapterToConnectionData(
-  adapterConnection: AdapterConnection,
+  adapterConnection: AdapterConnection
 ): ConnectionData {
   return {
     object: "connection",
     connectorId: adapterConnection.connectorId,
     ownerId: adapterConnection.ownerId,
     status: connectionStatus.includes(
-      adapterConnection.status as ConnectionStatus,
+      adapterConnection.status as ConnectionStatus
     )
       ? (adapterConnection.status as ConnectionStatus)
       : "unauthorized",
@@ -97,9 +100,9 @@ function connectionAdapterToConnectionData(
 
 export class ConnectionClient<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  C extends ConnectorBundle<any, any, any, any, any>,
+  C extends ConnectorBundle<any, any, any, any, any, any>,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  CA extends ConnectorBundle<any, any, any, any, any>[],
+  CA extends ConnectorBundle<any, any, any, any, any, any>[],
 > {
   //config: ConnectionClientType<A, C, I>;
 
@@ -112,7 +115,7 @@ export class ConnectionClient<
 
   constructor(
     morph: MorphClient<CA>,
-    params: ConnectionIds<C["id"]> | { sessionToken: string },
+    params: ConnectionIds<C["id"]> | { sessionToken: string }
   ) {
     this.morph = morph;
 
@@ -127,7 +130,7 @@ export class ConnectionClient<
   }
 
   async create(
-    params?: ConnectionCreateParams<[C]>,
+    params?: ConnectionCreateParams<[C]>
   ): Promise<EitherDataOrError<ConnectionData>> {
     const { data: connectionids, error } = this.getConnectionIds();
     if (error) return { error };
@@ -176,8 +179,124 @@ export class ConnectionClient<
     }
   }
 
+  async getSetting<
+    TSettingRecord extends SettingFieldsToRecord<Settings>,
+    TKey extends keyof TSettingRecord,
+  >(key: TKey): Promise<TSettingRecord[TKey] | undefined>;
+  async getSetting(key: string): Promise<any> {
+    const { data: connectionData, error } = await this.retrieveConnectionData();
+    if (error) return undefined;
+
+    try {
+      if (!connectionData.authorizationData) {
+        return undefined;
+      }
+
+      const authorizationJson = JSON.parse(
+        connectionData.authorizationData
+      ) as ConnectionAuthorizationStoredData;
+
+      return authorizationJson.metadata
+        ? authorizationJson.metadata[key]
+        : undefined;
+    } catch (e) {
+      return undefined;
+    }
+  }
+
+  getMetadata: ((key: string) => Promise<string | undefined>) &
+    (<TKey extends ExtractMetadataKeys<C["connector"]>>(
+      key: TKey
+    ) => Promise<string | undefined>) = async (
+    key: string
+  ): Promise<string | undefined> => {
+    const { data: connectionData, error } = await this.retrieveConnectionData();
+    if (error) return undefined;
+
+    try {
+      if (!connectionData.authorizationData) {
+        return undefined;
+      }
+
+      const authorizationJson = JSON.parse(
+        connectionData.authorizationData
+      ) as ConnectionAuthorizationStoredData;
+
+      if (!authorizationJson.metadata) {
+        return undefined;
+      }
+      return authorizationJson.metadata[key];
+    } catch (e) {
+      return undefined;
+    }
+  };
+
+  setMetadata: ((
+    key: string,
+    value: string
+  ) => Promise<EitherTypeOrError<object>>) &
+    (<TKey extends ExtractMetadataKeys<C["connector"]>>(
+      key: TKey,
+      value: string
+    ) => Promise<EitherTypeOrError<object>>) = async (
+    key: string,
+    value: string
+  ): Promise<EitherTypeOrError<object>> => {
+    const { data: connectionids, error } = this.getConnectionIds();
+    if (error) return { error };
+
+    const { ownerId, connectorId } = connectionids;
+    this.morph.m_.logger?.debug("Setting connection metadata", {
+      connectorId,
+      ownerId,
+    });
+
+    const { data: connectionData, error: retrieveError } =
+      await this.retrieveConnectionData();
+    if (retrieveError) return { error: retrieveError };
+
+    try {
+      let authorizationData: ConnectionAuthorizationStoredData = {};
+
+      if (connectionData.authorizationData) {
+        authorizationData = JSON.parse(connectionData.authorizationData);
+      }
+
+      if (!authorizationData.metadata) {
+        authorizationData.metadata = {};
+      }
+
+      authorizationData.metadata[key] = value;
+
+      await this.morph.m_.database.adapter.updateConnection(
+        { connectorId, ownerId },
+        {
+          authorizationData: JSON.stringify(authorizationData),
+          updatedAt: new Date(),
+        }
+      );
+
+      this.morph.m_.logger?.info("Connection metadata updated successfully", {
+        connectorId,
+        ownerId,
+      });
+
+      return {};
+    } catch (e) {
+      this.morph.m_.logger?.error("Failed to update connection metadata", {
+        error: e,
+      });
+      return {
+        error: {
+          code: "MORPH::CONNECTION::UPDATE_FAILED",
+          message: `Failed to update connection metadata: ${JSON.stringify(e)}`,
+        },
+      };
+    }
+  };
+
   async update(
-    params?: ConnectionUpdateParams<[C]>,
+    params?: ConnectionUpdateParams<[C]>
   ): Promise<EitherDataOrError<ConnectionData>> {
     const { data: connectionids, error } = this.getConnectionIds();
     if (error) return { error };
@@ -206,7 +325,7 @@ export class ConnectionClient<
       const updatedConnectionAdapter =
         await this.morph.m_.database.adapter.updateConnection(
           { connectorId, ownerId },
-          { operations: updatedOperations, updatedAt: new Date() },
+          { operations: updatedOperations, updatedAt: new Date() }
         );
 
       this.morph.m_.logger?.info("Connection updated successfully", {
@@ -228,7 +347,7 @@ export class ConnectionClient<
   }
 
   async updateOrCreate(
-    params?: ConnectionCreateParams<[C]>,
+    params?: ConnectionCreateParams<[C]>
   ): Promise<EitherDataOrError<ConnectionData>> {
     // First, try to retrieve the existing connection
     const { error: retrieveError } = await this.retrieve();
@@ -246,14 +365,16 @@ export class ConnectionClient<
     return this.update(params as ConnectionUpdateParams<[C]>);
   }
 
-  async retrieve(): Promise<EitherDataOrError<ConnectionData>> {
+  private async retrieveConnectionData(): Promise<
+    EitherDataOrError<AdapterConnection>
+  > {
     const { data: connectionids, error } = this.getConnectionIds();
     if (error) {
       this.morph.m_.logger?.error(
         "isConnector : Failed to get connection ids",
         {
           error,
-        },
+        }
       );
       return { error };
     }
@@ -288,7 +409,7 @@ export class ConnectionClient<
         connectorId,
         ownerId,
       });
-      return { data: connectionAdapterToConnectionData(connectionAdapter) };
+      return { data: connectionAdapter };
     } catch (e) {
       this.morph.m_.logger?.error("Failed to retrieve connection", {
         error: e,
@@ -304,6 +425,15 @@ export class ConnectionClient<
     }
   }
 
+  async retrieve(): Promise<EitherDataOrError<ConnectionData>> {
+    const { data: connectionData, error } = await this.retrieveConnectionData();
+
+    if (error) {
+      return { error };
+    }
+    return { data: connectionAdapterToConnectionData(connectionData) };
+  }
+
   async delete(): Promise<ErrorOrVoid> {
     const { data: connectionids, error } = this.getConnectionIds();
     if (error) {
@@ -311,7 +441,7 @@ export class ConnectionClient<
         "isConnector : Failed to get connection ids",
         {
           error,
-        },
+        }
       );
       return { error };
     }
@@ -348,7 +478,7 @@ export class ConnectionClient<
   }
 
   async authorize(
-    params?: CreateAuthorizationParams,
+    params?: CreateAuthorizationParams
   ): Promise<EitherDataOrError<ConnectionAuthorizationData>> {
     const { data: connectionids, error } = this.getConnectionIds();
     if (error) {
@@ -356,7 +486,7 @@ export class ConnectionClient<
         "isConnector : Failed to get connection ids",
         {
           error,
-        },
+        }
       );
       return { error };
     }
@@ -374,6 +504,14 @@ export class ConnectionClient<
       const scopes = params?.scopes || [];
 
       const connector = this.morph.m_.connectors[connectorId] as C;
+      const connectorDefaultScopes =
+        connector.connector.auth.getDefaultScopes() || [];
+      scopes.push(
+        ...connectorDefaultScopes.filter(
+          (scope: string) => !scopes.includes(scope)
+        )
+      );
+
       this.morph.m_.logger?.debug("Processing scopes", {
         initialScopes: scopes,
       });
@@ -390,7 +528,7 @@ export class ConnectionClient<
           {
             connectorId,
             ownerId,
-          },
+          }
         );
         return {
           error: {
@@ -413,8 +551,8 @@ export class ConnectionClient<
             entityOperations[operationType as "retrieve"]?.scopes || [];
           scopes.push(
             ...operationScopes.filter(
-              (scope: string) => !scopes.includes(scope),
-            ),
+              (scope: string) => !scopes.includes(scope)
+            )
           );
         }
       });
@@ -422,7 +560,7 @@ export class ConnectionClient<
       console.log("scope – after op", scopes);
       const { settings, error } = validateAuthorizationSettings(
         connector,
-        params?.settings || {},
+        params?.settings || {}
       );
 
       if (error) return { error };
@@ -448,16 +586,17 @@ export class ConnectionClient<
         },
         {
           authorizationData: JSON.stringify(
-            encryptJson(authorizationStoredData),
+            encryptJson(authorizationStoredData)
           ),
           updatedAt: new Date(),
-        },
+        }
       );
 
-      const authorizationUrl = generateAuthorizationUrl({
-        connector: connector,
-        ownerId: ownerId,
-        scopes: scopes,
+      const authorizationUrl = await generateAuthorizationUrl({
+        connector,
+        ownerId,
+        scopes,
+        settings,
         redirectUrl,
       });
 
@@ -498,7 +637,7 @@ export class ConnectionClient<
   }
 
   async proxy<T = unknown>(
-    params: ConnectionProxyParams,
+    params: ConnectionProxyParams
   ): Promise<EitherDataOrError<T>> {
     const { data: connectionids, error } = this.getConnectionIds();
     if (error) return { error };
@@ -523,7 +662,21 @@ export class ConnectionClient<
         return { error: connectorError };
       }
 
-      const baseUrl = connectorData.connector.generateProxyBaseUrl({});
+      const baseUrl = await connectorData.connector.generateProxyBaseUrl({
+        connection: this,
+        connector: {
+          getSetting: async (key) => {
+            const connectorOptions =
+              this.morph.m_.connectors[connectorId].connector.getOptions();
+            if (!connectorOptions) {
+              return undefined;
+            }
+            return connectorOptions[
+              key as keyof typeof connectorOptions
+            ] as any;
+          },
+        },
+      });
       if (!baseUrl) {
         const errorBaseUrl = {
           code: "CONNECTOR::BAD_CONFIGURATION" as const,
@@ -535,7 +688,18 @@ export class ConnectionClient<
         };
       }
 
-      const url = new URL(path, baseUrl);
+      // Assume baseUrl return can include a pre path
+      const baseUrlObj = new URL(baseUrl);
+      const basePath = baseUrlObj.pathname.endsWith("/")
+        ? baseUrlObj.pathname.slice(0, -1)
+        : baseUrlObj.pathname;
+      const cleanPath = path.startsWith("/") ? path : `/${path}`;
+      baseUrlObj.pathname = `${basePath}${cleanPath}`;
+      const url = baseUrlObj;
+
+      tracer?.debug("Proxy request URL", {
+        url,
+      });
 
       // Add query parameters to the URL
       const queryString = this.serializeQuery(query);
@@ -548,7 +712,7 @@ export class ConnectionClient<
         this.morph,
         connectorId,
         ownerId,
-        this.morph.m_.logger,
+        this.morph.m_.logger
       );
 
       // Prepare the request config
@@ -657,7 +821,7 @@ export class ConnectionClient<
   }
 
   resources<LocalResourceModelId extends ConnectorResourceModelId<C>>(
-    resourceModelId: LocalResourceModelId,
+    resourceModelId: LocalResourceModelId
   ): ResourceClient<C, CA, LocalResourceModelId> {
     return new ResourceClient(this.morph, this, resourceModelId);
   }
@@ -674,7 +838,7 @@ export class ConnectionClient<
         "isConnector : Failed to get connection ids",
         {
           error,
-        },
+        }
       );
       return null;
     }
@@ -695,7 +859,7 @@ export class ConnectionClient<
         "isConnector : Failed to get connection ids",
         {
           error,
-        },
+        }
       );
       return null;
     }
@@ -735,7 +899,7 @@ export class ConnectionClient<
 
   private serializeQuery(
     query: Record<string, unknown>,
-    prefix: string = "",
+    prefix: string = ""
   ): string {
     const queryParts: string[] = [];
 
@@ -756,7 +920,7 @@ export class ConnectionClient<
         queryParts.push(
           `${encodeURIComponent(parentKey)}=${obj
             .map((v) => encodeURIComponent(String(v)))
-            .join(",")}`,
+            .join(",")}`
         );
       } else {
         queryParts.push(encode(parentKey, obj));
@@ -779,6 +943,7 @@ export class AllConnectionsClient<
     I,
     Settings,
     Settings,
+    string,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],

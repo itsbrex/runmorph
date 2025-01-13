@@ -51,6 +51,7 @@ export class WebhookClient<
     string,
     Settings,
     Settings,
+    string,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >,
@@ -58,6 +59,7 @@ export class WebhookClient<
     string,
     Settings,
     Settings,
+    string,
     ResourceModelOperations,
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
@@ -160,7 +162,7 @@ export class WebhookClient<
         if (error) {
           this.logger?.error(
             "Failed to create webhook with subscription method. Checking global webhook.",
-            { error },
+            { error }
           );
         } else {
           webhookResponse = {
@@ -174,7 +176,7 @@ export class WebhookClient<
       // Try global webhook if subscription failed or wasn't available
       if (!webhookResponse && webhookGlobalOperations?.mapper?.eventRouter) {
         const foundEntry = Object.entries(
-          webhookGlobalOperations.mapper.eventRouter,
+          webhookGlobalOperations.mapper.eventRouter
         ).find(([_route, events]) => events[model]);
 
         if (foundEntry && webhookGlobalOperations?.subscribe) {
@@ -186,7 +188,7 @@ export class WebhookClient<
               trigger,
               globalRoute,
               settings: this.connector.connector.getOptions(),
-            },
+            }
           );
 
           if (error) {
@@ -250,7 +252,7 @@ export class WebhookClient<
             {
               ...webhook,
               updatedAt: new Date(),
-            },
+            }
           );
         } else {
           createdWebhook =
@@ -331,7 +333,7 @@ export class WebhookClient<
         }
 
         const foundEntry = Object.entries(
-          webhookGlobalOperations.mapper.eventRouter,
+          webhookGlobalOperations.mapper.eventRouter
         ).find(([_route, events]) => events[model]);
 
         if (!foundEntry) {
@@ -352,7 +354,7 @@ export class WebhookClient<
             trigger,
             globalRoute,
             settings: this.connector.connector.getOptions(),
-          },
+          }
         );
 
         if (error) {

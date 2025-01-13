@@ -45,7 +45,7 @@ const WidgetCardView = new ResourceModel({
                     .enum(["default", "success", "warning", "danger", "info"])
                     .describe("Visual style of the status"),
                 }),
-              ]),
+              ])
             )
             .describe("Array of content items to display in the card"),
           actions: z
@@ -56,19 +56,31 @@ const WidgetCardView = new ResourceModel({
                   .describe("Type of action"),
                 label: z.string().describe("Label for the action button"),
                 url: z.string().describe("URL to open when clicked"),
-              }),
+              })
             )
-            .optional()
-            .describe("Optional array of action buttons"),
+            .describe("Optional array of action buttons")
+            .optional(),
           link: z
             .string()
             .describe("URL to open when the card title is clicked")
             .optional(),
-        }),
+        })
       )
       .describe("Array of cards to display in the widget"),
     root: z
       .object({
+        title: z
+          .string()
+          .describe("Main title of the card view widget")
+          .optional(),
+        providerName: z
+          .string()
+          .describe("The card content's provider's name")
+          .optional(),
+        providerLogoUrl: z
+          .string()
+          .describe("URL of the provider's brand logo")
+          .optional(),
         actions: z
           .array(
             z.object({
@@ -77,9 +89,10 @@ const WidgetCardView = new ResourceModel({
                 .describe("Type of root action"),
               label: z.string().describe("Label for the root action button"),
               url: z.string().describe("URL to open when clicked"),
-            }),
+            })
           )
-          .describe("Array of actions available at the root level"),
+          .describe("Array of actions available at the root level")
+          .optional(),
       })
       .describe("Optional root level configuration")
       .optional(),

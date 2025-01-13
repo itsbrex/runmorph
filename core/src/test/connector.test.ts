@@ -135,15 +135,93 @@ const TestOpportunityMapper = new Mapper<
   },
 });
 
-// Define the connector
+// Define the connector with comprehensive settings
 const connectorTest = new Connector({
   id: "test",
   name: "Test Connector",
+  settings: {
+    textSetting: {
+      type: "text",
+      name: "Text Setting",
+      required: true,
+      description: "A test text setting",
+      default: "default-text",
+    },
+    numberSetting: {
+      type: "number",
+      name: "Number Setting",
+      required: false,
+      description: "A test number setting",
+      default: 42,
+    },
+    selectSetting: {
+      type: "select",
+      name: "Select Setting",
+      required: true,
+      description: "A test select setting",
+      options: {
+        option1: "Option 1",
+        option2: "Option 2",
+        option3: "Option 3",
+      },
+      default: "option1",
+    },
+    multiSelectSetting: {
+      type: "multiselect",
+      name: "Multi Select Setting",
+      required: false,
+      description: "A test multiselect setting",
+      options: {
+        choice1: "Choice 1",
+        choice2: "Choice 2",
+        choice3: "Choice 3",
+      },
+      default: ["choice1", "choice2"],
+    },
+  },
   auth: {
     type: "oauth2::authorizationCode",
     authorizeUrl: "https://test.com/oauth/authorize",
     accessTokenUrl: "https://test.com/oauth/token",
     defaultScopes: ["contacts.read"],
+    settings: {
+      authTextSetting: {
+        type: "text",
+        name: "Auth Text Setting",
+        required: true,
+        description: "Authentication text setting",
+      },
+      authNumberSetting: {
+        type: "number",
+        name: "Auth Number Setting",
+        required: false,
+        description: "Authentication number setting",
+        default: 100,
+      },
+      authSelectSetting: {
+        type: "select",
+        name: "Auth Select Setting",
+        required: true,
+        description: "Authentication select setting",
+        options: {
+          auth1: "Auth Option 1",
+          auth2: "Auth Option 2",
+          auth3: "Auth Option 3",
+        },
+      },
+      authMultiSelectSetting: {
+        type: "multiselect",
+        name: "Auth multi-select Setting",
+        required: true,
+        description: "Authentication select setting",
+        options: {
+          auth1: "Auth Option 1",
+          auth2: "Auth Option 2",
+          auth3: "Auth Option 3",
+        },
+      },
+    },
+    metadataKeys: ["meta1", "meta2", "meta3"],
   },
   proxy: {
     baseUrl: "https://api.test.com",
@@ -237,7 +315,7 @@ const TestWebhookGlobalMapper = new GlobalEventMapper({
       crmOpportunity: ["created", "updated"],
     },
   },
-  handler: async (_request, _globalRoute) => {
+  handler: async ({}) => {
     return [
       {
         mapper: TestOpportunityMapper,
