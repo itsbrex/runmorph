@@ -17,14 +17,21 @@ const connector = new Connector({
     cardViewPackageVersionId: {
       name: "Card View Salesforce Package ID",
       type: "text",
-      required: true,
+      required: false,
       description:
         "The package ID that need to be installed to support the widgetCardView model.",
+    },
+    cardViewPackageIframeDomains: {
+      name: "Authorized iFrame Domains",
+      type: "text",
+      required: false,
+      description:
+        "Comma separated domains e.g. https://example.com,https://corp.co",
     },
     _cardViewPackageSecret: {
       name: "Card View Salesforce Package Secret",
       type: "text",
-      required: true,
+      required: false,
       description: "The package secret used to secured the request.",
     },
   },
