@@ -231,6 +231,8 @@ export class WebhookClient<
         updatedAt: new Date(),
       };
 
+      console.log("[AdapterWebhook]", webhook);
+
       try {
         let createdWebhook: AdapterWebhook;
         const existingWebhook =
@@ -244,13 +246,16 @@ export class WebhookClient<
         if (existingWebhook) {
           createdWebhook = await this.morph.m_.database.adapter.updateWebhook(
             {
-              connectorId: existingWebhook.connectorId,
-              ownerId: existingWebhook.ownerId,
+              connectorId: webhook.connectorId,
+              ownerId: webhook.ownerId,
               model,
               trigger,
             },
             {
-              ...webhook,
+              ...(webhook.identifierKey
+                ? { identifierKey: webhook.identifierKey }
+                : {}),
+              ...(webhook.type ? { type: webhook.type } : {}),
               updatedAt: new Date(),
             }
           );

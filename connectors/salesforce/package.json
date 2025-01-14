@@ -19,6 +19,7 @@
     "_publish": "yarn run build && yarn publish --access public"
   },
   "devDependencies": {
+    "@runmorph/cli": "^0.0.2",
     "@runmorph/cdk": "^0.0.26",
     "@runmorph/resource-models": "^0.0.7"
   },

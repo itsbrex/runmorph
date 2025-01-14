@@ -108,7 +108,7 @@ export function ConnectionButton({
       const height = 900;
       const left = window.screenX + (window.outerWidth - width) / 2;
       const top = window.screenY + (window.outerHeight - height) / 2;
-
+      console.log("authorizationUrl", data.authorizationUrl);
       const popup = window.open(
         data.authorizationUrl,
         "ConnectWithMorph",
@@ -137,11 +137,8 @@ export function ConnectionButton({
   if (status === "connected") {
     return (
       <div className="flex gap-2">
-        <Button
-          variant="outline"
-          disabled={isLoading || status === "connected"}
-        >
-          Connected
+        <Button variant="outline" disabled={isLoading} onClick={handleConnect}>
+          Re-Authorize
         </Button>
         <Button
           variant="destructive"

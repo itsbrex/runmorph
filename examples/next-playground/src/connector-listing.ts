@@ -17,4 +17,10 @@ export const connectorListing: ConnectorListingEntry[] = [
       "Public test credentials: \n→ conscience-limousines0f@icloud.com \n→ faqcir-butvo2-xynbEs",
     logo: "/connectors/hubspot.svg",
   },
+  {
+    id: "salesforce",
+    name: "Salesforce",
+    description: "Connect your Salesforce instance to sync data",
+    logo: "/connectors/salesforce.svg",
+  },
 ];

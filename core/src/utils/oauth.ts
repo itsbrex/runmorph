@@ -274,6 +274,7 @@ export async function oautCallback<
                 Date.now() + tokenResponse.expires_in * 1000
               ).toISOString()
             : null,
+        // new Date(Date.now() + 20 * 60 * 1000).toISOString(),
       };
 
       let newAuthorizationStoredData: ConnectionAuthorizationStoredData = {};
@@ -467,10 +468,27 @@ export async function refreshAccessToken<
       client_id: clientId,
       client_secret: clientSecret,
     });
-
+    const connection = morph.connections({
+      connectorId,
+      ownerId,
+    });
     const response = await axios.post(
       (
-        await connectorData.connector.auth.generateAccessTokenUrl({} as any)
+        await connectorData.connector.auth.generateAccessTokenUrl({
+          connector: {
+            getSetting: async (key) => {
+              const connectorOptions =
+                morph.m_.connectors[connectorId as I].connector.getOptions();
+              if (!connectorOptions) {
+                return undefined;
+              }
+              return connectorOptions[
+                key as keyof typeof connectorOptions
+              ] as any;
+            },
+          },
+          connection,
+        })
       ).toString(),
       params.toString(),
       {
@@ -483,7 +501,8 @@ export async function refreshAccessToken<
         response.data.refresh_token || authorizationData.oauth?._refreshToken,
       expiresAt: response.data.expires_in
         ? calculateExpiresAt(response.data.expires_in)
-        : undefined,
+        : null,
+      // new Date(Date.now() + 20 * 60 * 1000).toISOString(),
     };
 
     let newAuthorizationStoredData: ConnectionAuthorizationStoredData = {};
@@ -508,7 +527,7 @@ export async function refreshAccessToken<
       newAuthorizationStoredData
     );
 
-    await morph.m_.database.adapter.updateConnection(
+    const updatedConnection = await morph.m_.database.adapter.updateConnection(
       { connectorId, ownerId },
       {
         authorizationData: stringEncryptedAuthorizationStoredData,
@@ -518,7 +537,6 @@ export async function refreshAccessToken<
 
     return { ...authorizationData, oauth: newAuthorizationOAuthData };
   } catch (error) {
-    console.log("ERROR", error);
     throw {
       code: "MORPH::CONNECTION::REFRESHING_TOKEN_FAILED",
       message: `Failed to refresh access token. Details: ${JSON.stringify(

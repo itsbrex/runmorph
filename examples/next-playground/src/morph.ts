@@ -1,4 +1,5 @@
 import HubSpotConnector from "@runmorph/connector-hubspot";
+import SalesforceConnector from "@runmorph/connector-salesforce";
 import { MorphClient, type Adapter } from "@runmorph/core";
 import { NextMorph } from "@runmorph/framework-next";
 
@@ -34,6 +35,32 @@ if (!process.env.MORPH_CONNECTOR_HUBSPOT_DEV_API_KEY) {
   );
 }
 
+if (!process.env.MORPH_CONNECTOR_SALESFORCE_CLIENT_ID) {
+  throw new Error(
+    "Missing MORPH_CONNECTOR_SALESFORCE_CLIENT_ID environment variable"
+  );
+}
+if (!process.env.MORPH_CONNECTOR_SALESFORCE_CLIENT_SECRET) {
+  throw new Error(
+    "Missing MORPH_CONNECTOR_SALESFORCE_CLIENT_SECRET environment variable"
+  );
+}
+if (!process.env.MORPH_CONNECTOR_SALESFORCE_CARD_VIEW_PACKAGE_VERSION_ID) {
+  throw new Error(
+    "Missing MORPH_CONNECTOR_SALESFORCE_CARD_VIEW_PACKAGE_VERSION_ID environment variable"
+  );
+}
+if (!process.env.MORPH_CONNECTOR_SALESFORCE_CARD_VIEW_PACKAGE_IFRAME_DOMAINS) {
+  throw new Error(
+    "Missing MORPH_CONNECTOR_SALESFORCE_CARD_VIEW_PACKAGE_IFRAME_DOMAINS environment variable"
+  );
+}
+if (!process.env.MORPH_CONNECTOR_SALESFORCE_CARD_VIEW_PACKAGE_SECRET) {
+  throw new Error(
+    "Missing MORPH_CONNECTOR_SALESFORCE_CARD_VIEW_PACKAGE_SECRET environment variable"
+  );
+}
+
 const hubspot = HubSpotConnector({
   clientId: process.env.MORPH_CONNECTOR_HUBSPOT_CLIENT_ID,
   clientSecret: process.env.MORPH_CONNECTOR_HUBSPOT_CLIENT_SECRET,
@@ -41,11 +68,22 @@ const hubspot = HubSpotConnector({
   hapikey: process.env.MORPH_CONNECTOR_HUBSPOT_DEV_API_KEY,
 });
 
+const salesforce = SalesforceConnector({
+  clientId: process.env.MORPH_CONNECTOR_SALESFORCE_CLIENT_ID,
+  clientSecret: process.env.MORPH_CONNECTOR_SALESFORCE_CLIENT_SECRET,
+  cardViewPackageVersionId:
+    process.env.MORPH_CONNECTOR_SALESFORCE_CARD_VIEW_PACKAGE_VERSION_ID,
+  _cardViewPackageSecret:
+    process.env.MORPH_CONNECTOR_SALESFORCE_CARD_VIEW_PACKAGE_SECRET,
+  cardViewPackageIframeDomains:
+    process.env.MORPH_CONNECTOR_SALESFORCE_CARD_VIEW_PACKAGE_IFRAME_DOMAINS,
+});
+
 const initializeMorph = async () => {
   const adapter = await getAdapter();
 
   return NextMorph({
-    connectors: [hubspot],
+    connectors: [hubspot, salesforce],
     database: { adapter },
     logger: {
       debug: () => {},

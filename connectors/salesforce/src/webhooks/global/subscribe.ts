@@ -250,10 +250,6 @@ async function whitelistTrustedSite({
   });
 
   if (!trustedSiteIsWhitelisted) {
-    console.log(
-      `[whitelistTrustedSite] Creating new trusted site for: ${trustedSite.url}`,
-    );
-
     const { data, error } =
       await connection.proxy<WhitelistTrustedSiteResponse>({
         path: "/tooling/sobjects/CspTrustedSite",
@@ -275,19 +271,8 @@ async function whitelistTrustedSite({
       });
 
     if (error || !data.success) {
-      console.log(
-        `[whitelistTrustedSite] Failed to create trusted site:`,
-        error || data,
-      );
       return false;
     }
-    console.log(
-      `[whitelistTrustedSite] Successfully created trusted site with ID: ${data.id}`,
-    );
-  } else {
-    console.log(
-      `[whitelistTrustedSite] Trusted site already exists for: ${trustedSite.url}`,
-    );
   }
   return true;
 }
@@ -301,8 +286,6 @@ async function whitelistMorphAPI({
   const description = "Morph Public API (runmorph.dev)";
   const url = "https://api.runmorph.dev";
 
-  console.log("[whitelistMorphAPI] Starting whitelisting process for:", url);
-
   // Whitelist as remote site
   const remoteSuccess = await whitelistRemoteSite({
     connection,
@@ -312,10 +295,6 @@ async function whitelistMorphAPI({
       url,
     },
   });
-  console.log(
-    "[whitelistMorphAPI] Remote site whitelisting:",
-    remoteSuccess ? "SUCCESS" : "FAILED",
-  );
 
   // Whitelist as trusted site with required permissions
   const trustedSuccess = await whitelistTrustedSite({
@@ -327,10 +306,6 @@ async function whitelistMorphAPI({
       applicableTo: ["connectSrc", "frameSrc", "imgSrc"],
     },
   });
-  console.log(
-    "[whitelistMorphAPI] Trusted site whitelisting:",
-    trustedSuccess ? "SUCCESS" : "FAILED",
-  );
 
   return remoteSuccess && trustedSuccess;
 }
@@ -342,15 +317,7 @@ export default new SubscribeToGlobalEvent({
       const { cardViewPackageVersionId, cardViewPackageIframeDomains } =
         settings as ExtractConnectorSettings<SalesforceConnector>;
 
-      console.log(
-        "[cardView] Starting setup with package ID:",
-        cardViewPackageVersionId,
-      );
-
       if (!cardViewPackageVersionId) {
-        console.log(
-          "[cardView] ERROR: Missing cardViewPackageVersionId setting",
-        );
         return {
           error: {
             code: "CONNECTOR::BAD_CONFIGURATION",
@@ -364,23 +331,27 @@ export default new SubscribeToGlobalEvent({
         connection,
         cardViewPackageVersionId,
       );
-      console.log(
-        "[cardView] Package installation:",
-        packageInstalled ? "SUCCESS" : "FAILED",
-      );
+      if (!packageInstalled) {
+        return {
+          error: {
+            code: "CONNECTOR::WEBHOOK::SUBSCRIPTION_FAILED",
+            message: `Couldn't install cardViewPackageVersionId ${cardViewPackageVersionId}`,
+          },
+        };
+      }
 
       // Whitelist morph public API
       const morphApiWhitelisted = await whitelistMorphAPI({ connection });
-      console.log(
-        "[cardView] Morph API whitelisting:",
-        morphApiWhitelisted ? "SUCCESS" : "FAILED",
-      );
+      if (!morphApiWhitelisted) {
+        return {
+          error: {
+            code: "CONNECTOR::WEBHOOK::SUBSCRIPTION_FAILED",
+            message: `Couldn't withelist Morph Public API domain`,
+          },
+        };
+      }
 
       if (cardViewPackageIframeDomains) {
-        console.log(
-          "[cardView] Processing iframe domains:",
-          cardViewPackageIframeDomains,
-        );
         const iframeDomains = cardViewPackageIframeDomains
           .split(",")
           .map((d) => d.trim());
@@ -392,7 +363,6 @@ export default new SubscribeToGlobalEvent({
             .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
             .join("");
 
-          console.log(`[cardView] Whitelisting iframe domain: ${domain}`);
           const iframeWhitelisted = await whitelistTrustedSite({
             connection,
             trustedSite: {
@@ -402,10 +372,14 @@ export default new SubscribeToGlobalEvent({
               applicableTo: ["frameSrc", "imgSrc"],
             },
           });
-          console.log(
-            `[cardView] Iframe domain ${domain} whitelisting:`,
-            iframeWhitelisted ? "SUCCESS" : "FAILED",
-          );
+          if (!iframeWhitelisted) {
+            return {
+              error: {
+                code: "CONNECTOR::WEBHOOK::SUBSCRIPTION_FAILED",
+                message: `Couldn't withelist iframe domain ${domain}`,
+              },
+            };
+          }
         }
       }
 
