@@ -49,42 +49,42 @@ export default new Mapper<
         from(
           "*",
           (sf) =>
-            `${sf.organizationDomain}-${sf.userId}-${sf.recordType}-${sf.recordId}-${Date.now()}`,
+            `${sf.organizationDomain}-${sf.userId}-${sf.recordType}-${sf.recordId}-${Date.now()}`
         ),
     },
     fields: {
       triggeredBy: {
         read: (from) =>
-          from("*", (sf) =>
-            sf.userId
+          from("userId", (userId) =>
+            userId
               ? {
-                  id: sf.userId,
+                  id: userId,
                 }
-              : undefined,
+              : undefined
           ),
       },
       crmOpportunity: {
         read: (from) =>
-          from("*", (sf) =>
-            sf.recordType === "Opportunity" && sf.recordId
-              ? { id: sf.recordId }
-              : undefined,
+          from("recordId", (recordId, sf) =>
+            sf.recordType === "Opportunity" && recordId
+              ? { id: recordId }
+              : undefined
           ),
       },
       genericCompany: {
         read: (from) =>
-          from("*", (sf) =>
-            sf.recordType === "Account" && sf.recordId
-              ? { id: sf.recordId }
-              : undefined,
+          from("recordId", (recordId, sf) =>
+            sf.recordType === "Account" && recordId
+              ? { id: recordId }
+              : undefined
           ),
       },
       genericContact: {
         read: (from) =>
-          from("*", (sf) =>
-            sf.recordType === "Contact" && sf.recordId
-              ? { id: sf.recordId }
-              : undefined,
+          from("recordId", (recordId, sf) =>
+            sf.recordType === "Contact" && recordId
+              ? { id: recordId }
+              : undefined
           ),
       },
     },
@@ -103,5 +103,5 @@ export default new Mapper<
     root: {
       write: (to) => to("root", (root) => root),
     },
-  },
+  }
 );
