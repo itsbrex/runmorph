@@ -53,8 +53,8 @@ export default new Mapper<
         ),
     },
     fields: {
+      // @ts-ignore -- Union too complex during build runtime
       triggeredBy: {
-        // @ts-ignore -- Union too complex during build runtime
         read: (from) =>
           from("userId", (userId) =>
             userId
@@ -64,8 +64,8 @@ export default new Mapper<
               : undefined
           ),
       },
+      // @ts-ignore -- Union too complex during build runtime
       crmOpportunity: {
-        // @ts-ignore -- Union too complex during build runtime
         read: (from) =>
           from("recordId", (recordId, sf) =>
             sf.recordType === "Opportunity" && recordId
@@ -73,8 +73,8 @@ export default new Mapper<
               : undefined
           ),
       },
+      // @ts-ignore -- Union too complex during build runtime
       genericCompany: {
-        // @ts-ignore -- Union too complex during build runtime
         read: (from) =>
           from("recordId", (recordId, sf) =>
             sf.recordType === "Account" && recordId
@@ -82,8 +82,8 @@ export default new Mapper<
               : undefined
           ),
       },
+      // @ts-ignore -- Union too complex during build runtime
       genericContact: {
-        // @ts-ignore -- Union too complex during build runtime
         read: (from) =>
           from("recordId", (recordId, sf) =>
             sf.recordType === "Contact" && recordId

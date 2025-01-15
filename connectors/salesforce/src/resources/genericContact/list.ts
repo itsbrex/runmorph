@@ -41,7 +41,7 @@ export default new List({
     }
 
     // Assume there are more results if the number of records returned equals the limit
-    let next = null;
+    let next: string | null = null;
     if (data.records.length === limit) {
       next = cursor
         ? `${parseInt(cursor) + data.records.length}`
