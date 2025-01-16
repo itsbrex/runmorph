@@ -22,6 +22,7 @@ import type {
   Settings,
   ExtractMetadataKeys,
   SettingFieldsToRecord,
+  ConnectionProxyOptions,
 } from "@runmorph/cdk";
 import axios, { AxiosRequestConfig } from "axios";
 
@@ -637,7 +638,8 @@ export class ConnectionClient<
   }
 
   async proxy<T = unknown>(
-    params: ConnectionProxyParams
+    params: ConnectionProxyParams,
+    options?: ConnectionProxyOptions
   ): Promise<EitherDataOrError<T>> {
     const { data: connectionids, error } = this.getConnectionIds();
     if (error) return { error };
@@ -650,6 +652,7 @@ export class ConnectionClient<
       ...params,
     });
 
+    const { refreshToken } = options || {};
     try {
       const { path, method, data, query = {}, headers = {} } = params;
 
@@ -708,12 +711,13 @@ export class ConnectionClient<
       }
 
       // Get the authorization header
-      const authHeader = await getAuthorizationHeader(
-        this.morph,
+      const authHeader = await getAuthorizationHeader({
+        morph: this.morph,
         connectorId,
         ownerId,
-        this.morph.m_.logger
-      );
+        logger: this.morph.m_.logger,
+        refreshToken,
+      });
 
       // Prepare the request config
       const requestConfig: AxiosRequestConfig = {
@@ -752,23 +756,37 @@ export class ConnectionClient<
                 },
               };
             case 401:
-              return {
-                error: {
-                  code: "MORPH::CONNECTION::PROXY::UNAUTHORIZED",
-                  message: error.response?.data
-                    ? JSON.stringify(error.response?.data, null, 2)
-                    : error.message,
-                },
-              };
+              if (!refreshToken) {
+                return await this.proxy(params, {
+                  ...options,
+                  refreshToken: true,
+                });
+              } else {
+                return {
+                  error: {
+                    code: "MORPH::CONNECTION::PROXY::UNAUTHORIZED",
+                    message: error.response?.data
+                      ? JSON.stringify(error.response?.data, null, 2)
+                      : error.message,
+                  },
+                };
+              }
             case 403:
-              return {
-                error: {
-                  code: "MORPH::CONNECTION::PROXY::FORBIDDEN",
-                  message: error.response?.data
-                    ? JSON.stringify(error.response?.data, null, 2)
-                    : error.message,
-                },
-              };
+              if (!refreshToken) {
+                return await this.proxy(params, {
+                  ...options,
+                  refreshToken: true,
+                });
+              } else {
+                return {
+                  error: {
+                    code: "MORPH::CONNECTION::PROXY::FORBIDDEN",
+                    message: error.response?.data
+                      ? JSON.stringify(error.response?.data, null, 2)
+                      : error.message,
+                  },
+                };
+              }
             case 404:
               return {
                 error: {

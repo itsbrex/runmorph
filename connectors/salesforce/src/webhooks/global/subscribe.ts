@@ -20,11 +20,11 @@ type InstalledSubscriberPackageQueryResponse = {
 
 async function isPackageVersionInstalled(
   connection: RuntimeConnection<any, any>,
-  packageVersionId: string
+  packageVersionId: string,
 ): Promise<boolean> {
   console.log(
     "[isPackageVersionInstalled] Checking package:",
-    packageVersionId
+    packageVersionId,
   );
 
   const { data, error } =
@@ -53,11 +53,11 @@ type PackageInstallRequestResponse = {
 
 async function installPackageVersion(
   connection: RuntimeConnection<any, any>,
-  packageVersionId: string
+  packageVersionId: string,
 ): Promise<boolean> {
   const packageVersionIsinstalled = await isPackageVersionInstalled(
     connection,
-    packageVersionId
+    packageVersionId,
   );
   if (!packageVersionIsinstalled) {
     const { data, error } =
@@ -329,7 +329,7 @@ export default new SubscribeToGlobalEvent({
       // Install card view package
       const packageInstalled = await installPackageVersion(
         connection,
-        cardViewPackageVersionId
+        cardViewPackageVersionId,
       );
       if (!packageInstalled) {
         return {

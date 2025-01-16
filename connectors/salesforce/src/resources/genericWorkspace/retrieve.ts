@@ -26,7 +26,7 @@ export default new Retrieve({
       if (!data.records?.[0]) {
         return {
           error: {
-            code: "CONNECTOR::OPERATION::RESOURCE_NOT_FOUND",
+            code: "CONNECTOR::OPERATION::RESOURCE_NOT_FOUND" as const,
             message: "Organization not found",
           },
         };

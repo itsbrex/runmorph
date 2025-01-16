@@ -358,13 +358,20 @@ export async function getAuthorizationHeader<
     WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
   >[],
   I extends string,
->(
-  morph: MorphClient<C>,
-  connectorId: I,
-  ownerId: string,
+>({
+  morph,
+  connectorId,
+  ownerId,
+  logger,
+  refreshToken,
+}: {
+  morph: MorphClient<C>;
+  connectorId: I;
+  ownerId: string;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  logger?: Logger
-): Promise<string | null> {
+  logger?: Logger;
+  refreshToken?: boolean;
+}): Promise<string | null> {
   const { data: connectorData, error: connectorError } = await morph
     .connectors()
     .retrieve(connectorId);
@@ -403,8 +410,9 @@ export async function getAuthorizationHeader<
   }
 
   if (
-    authorizationData.oauth?.expiresAt &&
-    isTokenExpired(new Date(authorizationData.oauth.expiresAt))
+    (authorizationData.oauth?.expiresAt &&
+      isTokenExpired(new Date(authorizationData.oauth.expiresAt))) ||
+    refreshToken
   ) {
     // logger?.trace("connection::auth_refresh");
     authorizationData = await refreshAccessToken(

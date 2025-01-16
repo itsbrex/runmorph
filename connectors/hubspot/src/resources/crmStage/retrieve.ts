@@ -11,7 +11,7 @@ export default new Retrieve({
     if (!pipelineId || !stageId) {
       return {
         error: {
-          code: "CONNECTOR::OPERATION::BAD_REQUEST",
+          code: "CONNECTOR::OPERATION::BAD_REQUEST" as const,
           message: `Malformed id : should be pipelineId::stageId but got "${id}"`,
         },
       };

@@ -49,7 +49,7 @@ export default new Mapper<
         from(
           "*",
           (sf) =>
-            `${sf.organizationDomain}-${sf.userId}-${sf.recordType}-${sf.recordId}-${Date.now()}`
+            `${sf.organizationDomain}-${sf.userId}-${sf.recordType}-${sf.recordId}-${Date.now()}`,
         ),
     },
     fields: {
@@ -61,7 +61,7 @@ export default new Mapper<
               ? {
                   id: userId,
                 }
-              : undefined
+              : undefined,
           ),
       },
       // @ts-ignore -- Union too complex during build runtime
@@ -70,7 +70,7 @@ export default new Mapper<
           from("recordId", (recordId, sf) =>
             sf.recordType === "Opportunity" && recordId
               ? { id: recordId }
-              : undefined
+              : undefined,
           ),
       },
       // @ts-ignore -- Union too complex during build runtime
@@ -79,7 +79,7 @@ export default new Mapper<
           from("recordId", (recordId, sf) =>
             sf.recordType === "Account" && recordId
               ? { id: recordId }
-              : undefined
+              : undefined,
           ),
       },
       // @ts-ignore -- Union too complex during build runtime
@@ -88,7 +88,7 @@ export default new Mapper<
           from("recordId", (recordId, sf) =>
             sf.recordType === "Contact" && recordId
               ? { id: recordId }
-              : undefined
+              : undefined,
           ),
       },
     },
@@ -107,5 +107,5 @@ export default new Mapper<
     root: {
       write: (to) => to("root", (root) => root),
     },
-  }
+  },
 );
