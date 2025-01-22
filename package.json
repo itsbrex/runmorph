@@ -31,7 +31,7 @@
     "examples/*"
   ],
   "dependencies": {
-    "@runmorph/cli": "^0.0.2",
+    "@runmorph/cli": "^0.0.3",
     "dotenv": "^16.4.5",
     "eslint-config-turbo": "^2.0.6"
   },
