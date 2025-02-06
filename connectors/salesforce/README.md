@@ -1,9 +1,9 @@
-# HubSpot Connector
+# Salesforce Connector
 
-This TypeScript connector allows you to interact with HubSpot with @runmorph/core.
+This TypeScript connector allows you to interact with Salesforce with @runmorph/core.
 
 ## Installation
 
 ```bash
-npm install @runmorph/connector-hubspot
+npm install @runmorph/connector-salesforce
 ```
