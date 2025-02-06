@@ -299,6 +299,7 @@ export class ConnectionClient<
   async update(
     params?: ConnectionUpdateParams<[C]>
   ): Promise<EitherDataOrError<ConnectionData>> {
+    console.log({ params });
     const { data: connectionids, error } = this.getConnectionIds();
     if (error) return { error };
     const { ownerId, connectorId } = connectionids;
@@ -500,6 +501,10 @@ export class ConnectionClient<
       params,
     });
 
+    console.log("core.authorize", {
+      params,
+    });
+
     try {
       const redirectUrl = params?.redirectUrl;
       const scopes = params?.scopes || [];
@@ -539,8 +544,8 @@ export class ConnectionClient<
         };
       }
 
+      // First, calculate all required scopes from operations
       const operations = connection.operations || [];
-
       operations.forEach(function (operation) {
         const [resourceModelId, operationType] = operation.split("::");
         const entityOperations =
@@ -558,13 +563,151 @@ export class ConnectionClient<
         }
       });
 
-      console.log("scope – after op", scopes);
-      const { settings, error } = validateAuthorizationSettings(
+      // If connection is already authorized, check if we need to update authorization
+      if (connection.status === "authorized" && connection.authorizationData) {
+        try {
+          this.morph.m_.logger?.debug(
+            "Attempting to parse authorization data",
+            {
+              connectorId,
+              ownerId,
+              authorizationData: connection.authorizationData,
+            }
+          );
+
+          const existingAuthData = JSON.parse(connection.authorizationData);
+
+          this.morph.m_.logger?.debug(
+            "Successfully parsed authorization data",
+            {
+              connectorId,
+              ownerId,
+              existingAuthData,
+            }
+          );
+
+          // Convert scopes to array if it's an object
+          const existingScopes = Array.isArray(existingAuthData.scopes)
+            ? existingAuthData.scopes
+            : Object.values(existingAuthData.scopes || {});
+          const existingSettings = existingAuthData.settings || {};
+
+          this.morph.m_.logger?.debug("Processed authorization data", {
+            connectorId,
+            ownerId,
+            existingScopes,
+            existingSettings,
+          });
+
+          // Check if we have a valid OAuth access token
+          const hasValidAccessToken =
+            existingAuthData.oauth?._accessToken != null;
+          if (!hasValidAccessToken) {
+            this.morph.m_.logger?.info(
+              "Reauthorizing connection - missing access token",
+              {
+                connectorId,
+                ownerId,
+                hasOauth: !!existingAuthData.oauth,
+                hasAccessToken: !!existingAuthData.oauth?._accessToken,
+              }
+            );
+            // Continue with new authorization by not returning here
+            // This will fall through to the new authorization code below
+          } else {
+            // Check if all required scopes are present in existing authorization
+            const hasAllRequiredScopes = scopes.every((scope) =>
+              existingScopes.includes(scope)
+            );
+
+            // Check if all required settings are present and unchanged
+            const { settings: requiredSettings, error: settingsError } =
+              validateAuthorizationSettings(connector, params?.settings || {});
+            if (settingsError) return { error: settingsError };
+
+            const hasAllRequiredSettings = Object.entries(
+              requiredSettings
+            ).every(([key, value]) => existingSettings[key] === value);
+
+            // If we have all required scopes and settings, preserve the existing authorization
+            if (hasAllRequiredScopes && hasAllRequiredSettings) {
+              const authorizationUrl = await generateAuthorizationUrl({
+                connector,
+                ownerId,
+                scopes: existingScopes,
+                settings: existingSettings,
+                redirectUrl,
+              });
+
+              const connectionAuthorizationData: ConnectionAuthorizationData = {
+                object: "connectionAuthorization",
+                connectorId: connectorId,
+                ownerId: ownerId,
+                status: "authorized",
+                scopes: existingScopes,
+                settings: existingSettings,
+                authorizationUrl,
+              };
+
+              this.morph.m_.logger?.info(
+                "Returning existing authorized connection - all required scopes and settings present",
+                {
+                  connectorId,
+                  ownerId,
+                  existingScopes,
+                  requiredScopes: scopes,
+                  existingSettings,
+                  requiredSettings,
+                }
+              );
+              return { data: decryptJson(connectionAuthorizationData) };
+            } else {
+              this.morph.m_.logger?.info(
+                "Reauthorizing connection - new scopes or settings required",
+                {
+                  connectorId,
+                  ownerId,
+                  existingScopes,
+                  requiredScopes: scopes,
+                  existingSettings,
+                  requiredSettings,
+                  missingScopes: scopes.filter(
+                    (scope) => !existingScopes.includes(scope)
+                  ),
+                  hasAllRequiredScopes,
+                  hasAllRequiredSettings,
+                }
+              );
+            }
+          }
+        } catch (error) {
+          this.morph.m_.logger?.warn(
+            "Failed to parse existing authorization data",
+            {
+              error:
+                error instanceof Error
+                  ? {
+                      name: error.name,
+                      message: error.message,
+                      stack: error.stack,
+                    }
+                  : error,
+              connectorId,
+              ownerId,
+              rawAuthorizationData: connection.authorizationData,
+            }
+          );
+          // Continue with new authorization if parsing existing data fails
+        }
+      }
+
+      // Proceed with new authorization
+      const { settings, error: settingsError } = validateAuthorizationSettings(
         connector,
         params?.settings || {}
       );
 
-      if (error) return { error };
+      if (settingsError) return { error: settingsError };
 
       if (!connector.connector.auth.type.startsWith("oauth2")) {
         return {

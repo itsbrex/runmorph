@@ -387,6 +387,7 @@ export async function getAuthorizationHeader<
     connectorId,
     ownerId,
   });
+  console.log({ log: 0, connectionAdapter });
   if (!connectionAdapter) {
     throw {
       code: "MORPH::ADAPTER::CONNECTION_NOT_FOUND",
@@ -408,7 +409,7 @@ export async function getAuthorizationHeader<
         (e as any).toString(),
     };
   }
-
+  console.log({ log: 1, authorizationData });
   if (
     (authorizationData.oauth?.expiresAt &&
       isTokenExpired(new Date(authorizationData.oauth.expiresAt))) ||
@@ -422,6 +423,7 @@ export async function getAuthorizationHeader<
       authorizationData
     );
   }
+  console.log({ log: 2, authorizationData });
 
   if (!authorizationData.oauth?._accessToken) {
     throw {
@@ -454,7 +456,7 @@ export async function refreshAccessToken<
   const { data: connectorData, error: connectorError } = await morph
     .connectors()
     .retrieve(connectorId);
-
+  console.log({ log: 3, connectorData, connectorError });
   if (connectorError) {
     throw connectorError;
   }
@@ -534,7 +536,7 @@ export async function refreshAccessToken<
     const stringEncryptedAuthorizationStoredData = JSON.stringify(
       newAuthorizationStoredData
     );
-
+    console.log({ log: 4, stringEncryptedAuthorizationStoredData });
     const updatedConnection = await morph.m_.database.adapter.updateConnection(
       { connectorId, ownerId },
       {
@@ -545,6 +547,7 @@ export async function refreshAccessToken<
 
     return { ...authorizationData, oauth: newAuthorizationOAuthData };
   } catch (error) {
+    console.log({ log: 5, error });
     throw {
       code: "MORPH::CONNECTION::REFRESHING_TOKEN_FAILED",
       message: `Failed to refresh access token. Details: ${JSON.stringify(

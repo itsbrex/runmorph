@@ -1,0 +1,182 @@
+"use client";
+
+import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
+import { VariantProps } from "class-variance-authority";
+import { CircleCheck, EllipsisVertical, LoaderCircle } from "lucide-react";
+import { ButtonHTMLAttributes, useEffect, useState } from "react";
+
+import { Button } from "../ui/button";
+import {
+  DropdownMenuItem,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+
+import { ConnectTrigger, type ConnectionCallbacks } from "./connect-trigger";
+import { useMorph } from "./morph-provider";
+
+export interface ConnectProps
+  extends Omit<
+    ButtonHTMLAttributes<HTMLButtonElement>,
+    "children" | "onError"
+  > {
+  sessionToken: string;
+  className?: string;
+  variant?: VariantProps<typeof Button>["variant"];
+  size?: VariantProps<typeof Button>["size"];
+  asChild?: boolean;
+  connectionCallbacks?: ConnectionCallbacks;
+  mode?: "popup" | "redirect";
+  redirectUrl?: string;
+}
+
+function Connect({
+  sessionToken,
+  className,
+  variant = "default",
+  size = "default",
+  asChild,
+  connectionCallbacks,
+  mode = "popup",
+  redirectUrl,
+  ...props
+}: ConnectProps): JSX.Element {
+  // Validate redirectUrl when mode is redirect
+  if (mode === "redirect" && !redirectUrl) {
+    throw new Error("redirectUrl is required when mode is set to 'redirect'");
+  }
+
+  const morph = useMorph();
+  const [connectionData, setConnectionData] = useState<any>(null);
+  const [connectionError, setConnectionError] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isActionLoading, setIsActionLoading] = useState(false);
+
+  // Update combined callbacks to handle loading state
+  const combinedCallbacks = {
+    ...connectionCallbacks,
+    onConnectionDataChange: (data: any) => {
+      setConnectionData(data);
+      setConnectionError(null);
+      setIsActionLoading(false);
+    },
+    onStart: () => {
+      setIsActionLoading(true);
+    },
+    onError: (error: any) => {
+      setIsActionLoading(false);
+    },
+  };
+
+  useEffect(() => {
+    const loadConnection = async () => {
+      try {
+        const connection = morph.connections({ sessionToken });
+        const { data, error } = await connection.retrieve();
+
+        setConnectionData(data);
+        setConnectionError(error);
+      } catch (error) {
+        const morphError = {
+          code: "MORPH::CONNECTION::UNKNOWN_ERROR",
+          message: error instanceof Error ? error.message : String(error),
+        };
+        setConnectionError(morphError);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadConnection();
+  }, [sessionToken, morph]);
+
+  if (isLoading) {
+    return (
+      <Button
+        className={className}
+        variant={variant}
+        size={size}
+        asChild={asChild}
+        {...props}
+        disabled
+      >
+        <LoaderCircle className="animate-spin" />
+        Connect
+      </Button>
+    );
+  }
+
+  if (connectionError) {
+    return <p>Error</p>;
+  }
+
+  if (connectionData.status === "unauthorized") {
+    return (
+      <ConnectTrigger.Authorize
+        sessionToken={sessionToken}
+        connectionCallbacks={combinedCallbacks}
+        mode={mode}
+        redirectUrl={redirectUrl}
+      >
+        <Button
+          className={className}
+          variant={variant}
+          size={size}
+          asChild={asChild}
+          disabled={isActionLoading}
+          {...props}
+        >
+          {isActionLoading ? (
+            <LoaderCircle className="animate-spin mr-2" />
+          ) : null}
+          Connect
+        </Button>
+      </ConnectTrigger.Authorize>
+    );
+  } else {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            className={className}
+            variant={"outline"}
+            size={size}
+            disabled={isActionLoading}
+            {...props}
+          >
+            {isActionLoading ? (
+              <LoaderCircle className="animate-spin mr-2" />
+            ) : (
+              <CircleCheck />
+            )}
+            Connected
+            <EllipsisVertical />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <ConnectTrigger.Authorize
+            sessionToken={sessionToken}
+            connectionCallbacks={combinedCallbacks}
+            mode={mode}
+            redirectUrl={redirectUrl}
+          >
+            <DropdownMenuItem disabled={isActionLoading}>
+              Re-authorize
+            </DropdownMenuItem>
+          </ConnectTrigger.Authorize>
+          <ConnectTrigger.Delete
+            sessionToken={sessionToken}
+            connectionCallbacks={combinedCallbacks}
+          >
+            <DropdownMenuItem disabled={isActionLoading}>
+              Delete
+            </DropdownMenuItem>
+          </ConnectTrigger.Delete>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+}
+
+export { Connect };

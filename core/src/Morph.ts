@@ -10,7 +10,7 @@ import {
 
 import { ConnectionClient } from "./Connection";
 import { ClientConnector } from "./Connector";
-import { Session } from "./Session";
+import { SessionClient } from "./Session";
 import { AuthorizeHadleParams } from "./types";
 import { Adapter } from "./types/adapter";
 import { oautCallback } from "./utils/oauth";
@@ -86,12 +86,11 @@ export class MorphClient<
     return new ConnectionClient(this, params);
   }
 
-  sessions(): Session<
-    Adapter,
+  sessions(): SessionClient<
     TConnectorBundleArray,
     TConnectorBundleArray[number]["id"]
   > {
-    return new Session(this);
+    return new SessionClient(this);
   }
 
   connectors(): ClientConnector<TConnectorBundleArray> {

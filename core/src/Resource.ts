@@ -20,7 +20,7 @@ import type {
 
 import { ConnectionClient } from "./Connection";
 import { MorphClient } from "./Morph";
-import { ListParams } from "./types";
+import { ListParams as ListOptions } from "./types";
 
 export type MorphResource<RTI extends ResourceModelId> = ResourceData<
   ResourceModels[RTI]
@@ -76,7 +76,7 @@ export class ResourceClient<
     };
   }
 
-  async list(params?: ListParams): Promise<
+  async list(options?: ListOptions): Promise<
     EitherTypeOrError<{
       //@ts-expect-error EI expected not to be full set of EntityId
       data: ResourceData<ResourceModels[RTI]>[];
@@ -85,7 +85,7 @@ export class ResourceClient<
   > {
     this.m_.logger?.debug("Listing resources", {
       resourceModelId: this.m_.resourceModelId,
-      params,
+      params: options,
     });
 
     const entityRecord =
@@ -97,7 +97,7 @@ export class ResourceClient<
       if (entityRecord.list) {
         const { data, next, error } = await entityRecord.list.run(
           this.m_.connection,
-          params
+          options
         );
 
         if (error) {

@@ -1,5 +1,6 @@
 "use server";
 
+//import { Connect } from "@runmorph/atoms";
 import { AlertTriangle, Info } from "lucide-react";
 import { headers } from "next/headers";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -48,7 +49,7 @@ async function createMorphSession({
       connection: {
         connectorId,
         ownerId,
-        operations: ["genericContact::list", "crmOpportunity::list"],
+        operations: ["genericContact::list"],
       },
     });
 

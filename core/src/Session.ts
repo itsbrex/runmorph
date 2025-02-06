@@ -6,6 +6,7 @@ import type {
   WebhookOperations,
   ResourceEvents,
   Settings,
+  ConnectionData,
 } from "@runmorph/cdk";
 import { config } from "dotenv";
 import { sign, verify } from "jsonwebtoken";
@@ -20,9 +21,7 @@ config();
 const JWT_SECRET = process.env.MORPH_ENCRYPTION_KEY;
 const TOKEN_EXPIRATION = process.env.MORPH_SESSION_DURATION || "30m"; // 30 minutes
 
-export class Session<
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  A extends Adapter,
+export class SessionClient<
   TConnectorBundleArray extends ConnectorBundle<
     I,
     Settings,
@@ -50,7 +49,7 @@ export class Session<
         },
       };
     }
-
+    console.log({ params });
     const { expiresIn, ...createSessionParams } = params;
 
     const expiresAt = new Date(
@@ -69,9 +68,11 @@ export class Session<
     return { data: sessionData };
   }
 
-  verify(
-    sessionToken: string
-  ): EitherDataOrError<SessionData<TConnectorBundleArray, I>> {
+  verify(sessionToken: string): EitherDataOrError<
+    SessionData<TConnectorBundleArray, I>
+  > & {
+    promise?: Promise<EitherDataOrError<ConnectionData>>;
+  } {
     if (!JWT_SECRET) {
       return {
         error: {
@@ -102,13 +103,17 @@ export class Session<
 
       const { connectorId, ownerId, ...connectionUpdateParams } =
         decodedSessionData.connection;
-      this.morph
+      console.log(
+        "decodedSessionData.connection",
+        decodedSessionData.connection
+      );
+      const promise = this.morph
         .connections({ connectorId: connectorId as I, ownerId })
         .updateOrCreate({ ...connectionUpdateParams });
 
       // if (error) return { error };
 
-      return { data: decodedSessionData };
+      return { data: decodedSessionData, promise };
     } catch (e) {
       return {
         error: {
