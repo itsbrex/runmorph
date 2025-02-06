@@ -1,0 +1,53 @@
+{
+  "name": "@runmorph/atoms",
+  "version": "0.0.2",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    },
+    "./styles.css": "./dist/styles/globals.css"
+  },
+  "files": [
+    "dist/**"
+  ],
+  "scripts": {
+    "prebuild": "rm -rf dist",
+    "build": "tsc && mkdir -p dist/styles && cp src/styles/globals.css dist/styles/",
+    "dev": "tsc --watch",
+    "lint": "eslint \"src/**/*.ts*\"",
+    "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
+  },
+  "peerDependencies": {
+    "@radix-ui/react-dropdown-menu": "^2.0.6",
+    "@runmorph/cloud": "^0.0.2",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.0",
+    "lucide-react": "^0.474.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^2.2.1"
+  },
+  "devDependencies": {
+    "@radix-ui/react-dropdown-menu": "^2.0.6",
+    "@runmorph/cloud": "^0.0.2",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.0",
+    "eslint": "^8.0.0",
+    "lucide-react": "^0.474.0",
+    "tailwind-merge": "^2.2.1",
+    "typescript": "^5.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT"
+}
