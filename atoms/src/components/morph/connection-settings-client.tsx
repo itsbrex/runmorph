@@ -105,8 +105,7 @@ export function ConnectionSettingsClient() {
 
   // Initialize form with dynamic schema
   const form = useForm<z.infer<ReturnType<typeof createFormSchema>>>({
-    // @ts-expect-error -- to fix
-    resolver: zodResolver(createFormSchema(connector?.settings || [])),
+    resolver: zodResolver(createFormSchema(connector?.settings || []) as any),
     defaultValues: {},
   });
 
@@ -201,7 +200,6 @@ export function ConnectionSettingsClient() {
                     setting.name
                   )}
                 </FormLabel>
-                {/** @ts-expect-error -- to fix */}
                 <FormControl>
                   <Select
                     onValueChange={field.onChange}

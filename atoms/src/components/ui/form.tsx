@@ -12,8 +12,8 @@ import {
   useFormContext,
 } from "react-hook-form";
 
-import { cn } from "@/lib/utils";
-import { Label } from "@/components/ui/label";
+import { cn } from "../../lib/utils";
+import { Label } from "../../components/ui/label";
 
 const Form = FormProvider;
 
@@ -104,18 +104,14 @@ const FormLabel = React.forwardRef<
 FormLabel.displayName = "FormLabel";
 
 const FormControl = React.forwardRef<
-  // @ts-expect-error -- to fix
   React.ElementRef<typeof Slot>,
-  // @ts-expect-error -- to fix
   React.ComponentPropsWithoutRef<typeof Slot>
 >(({ ...props }, ref) => {
   const { error, formItemId, formDescriptionId, formMessageId } =
     useFormField();
 
   return (
-    // @ts-expect-error -- to fix
     <Slot
-      // @ts-expect-error -- to fix
       ref={ref}
       id={formItemId}
       aria-describedby={
