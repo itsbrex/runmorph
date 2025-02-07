@@ -41,7 +41,7 @@ export function Connect({
   mode = "popup",
   redirectUrl,
   ...props
-}: ConnectButtonProps): JSX.Element {
+}: ConnectButtonProps): React.ReactElement {
   // Validate redirectUrl when mode is redirect
   if (mode === "redirect" && !redirectUrl) {
     throw new Error("redirectUrl is required when mode is set to 'redirect'");

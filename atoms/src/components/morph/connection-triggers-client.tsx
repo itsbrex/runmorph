@@ -33,7 +33,7 @@ function BaseTriggerClient<T = HTMLElement>({
   sessionToken: propSessionToken,
 }: ConnectionTriggerClientProps<T> & {
   action: "authorize" | "delete";
-}): JSX.Element {
+}): React.ReactElement {
   const morph = useMorph();
   const connectionContext = useConnection();
 

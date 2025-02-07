@@ -30,7 +30,7 @@ export function MorphProviderClient({
   );
 }
 
-export function useMorph() {
+export function useMorph(): ReturnType<typeof Morph> {
   const context = useContext(MorphContext);
 
   if (context === undefined) {
