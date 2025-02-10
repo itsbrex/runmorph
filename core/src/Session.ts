@@ -18,7 +18,7 @@ import type { SessionCreateParams, SessionData } from "./types/session";
 config();
 
 const JWT_SECRET: Secret = process.env.MORPH_ENCRYPTION_KEY || "";
-const TOKEN_EXPIRATION = process.env.MORPH_SESSION_DURATION || "30m"; // 30 minutes
+const TOKEN_EXPIRATION = process.env.MORPH_SESSION_DURATION || 1800; // 30 minutes in seconds
 
 export class SessionClient<
   TConnectorBundleArray extends ConnectorBundle<
@@ -56,9 +56,10 @@ export class SessionClient<
     ).toISOString();
 
     const signOptions: SignOptions = {
-      expiresIn: (typeof params.expiresIn === "number"
-        ? `${params.expiresIn}s`
-        : TOKEN_EXPIRATION) as string,
+      expiresIn:
+        typeof params.expiresIn === "number"
+          ? params.expiresIn
+          : TOKEN_EXPIRATION,
     };
 
     const sessionData: SessionData<TConnectorBundleArray, I> = {
