@@ -9,7 +9,7 @@ import type {
   ConnectionData,
 } from "@runmorph/cdk";
 import { config } from "dotenv";
-import { sign, verify, Secret } from "jsonwebtoken";
+import { sign, verify, Secret, SignOptions } from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 
 import { MorphClient } from "./Morph";
@@ -17,7 +17,7 @@ import type { SessionCreateParams, SessionData } from "./types/session";
 
 config();
 
-const JWT_SECRET = process.env.MORPH_ENCRYPTION_KEY || "";
+const JWT_SECRET: Secret = process.env.MORPH_ENCRYPTION_KEY || "";
 const TOKEN_EXPIRATION = process.env.MORPH_SESSION_DURATION || "30m"; // 30 minutes
 
 export class SessionClient<
@@ -55,19 +55,20 @@ export class SessionClient<
       Date.now() + (expiresIn || 30 * 60) * 1000
     ).toISOString();
 
+    const signOptions: SignOptions = {
+      expiresIn: (typeof params.expiresIn === "number"
+        ? `${params.expiresIn}s`
+        : TOKEN_EXPIRATION) as string,
+    };
+
     const sessionData: SessionData<TConnectorBundleArray, I> = {
       object: "session",
       ...createSessionParams,
       expiresAt,
       sessionToken: sign(
-        { ...params, jti: uuidv4() },
-        Buffer.from(JWT_SECRET),
-        {
-          expiresIn:
-            typeof params.expiresIn === "number"
-              ? `${params.expiresIn}s`
-              : TOKEN_EXPIRATION,
-        }
+        { ...params, jti: uuidv4() } as object,
+        JWT_SECRET,
+        signOptions
       ),
     };
 
@@ -90,7 +91,7 @@ export class SessionClient<
     try {
       const decodedSessionData = verify(
         sessionToken,
-        Buffer.from(JWT_SECRET)
+        JWT_SECRET
       ) as SessionData<TConnectorBundleArray, I> & {
         jti: string;
       };
