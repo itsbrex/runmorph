@@ -18,7 +18,25 @@ import type { SessionCreateParams, SessionData } from "./types/session";
 config();
 
 const JWT_SECRET: Secret = process.env.MORPH_ENCRYPTION_KEY || "";
-const TOKEN_EXPIRATION = process.env.MORPH_SESSION_DURATION || 1800; // 30 minutes in seconds
+// Convert any string duration to seconds, default to 30 minutes (1800 seconds)
+const TOKEN_EXPIRATION: number = (() => {
+  const duration = process.env.MORPH_SESSION_DURATION;
+  if (!duration) return 1800;
+  if (typeof duration === "number") return duration;
+  // If it ends with 'm', convert minutes to seconds
+  if (duration.endsWith("m")) {
+    const minutes = parseInt(duration.slice(0, -1));
+    return isNaN(minutes) ? 1800 : minutes * 60;
+  }
+  // If it ends with 'h', convert hours to seconds
+  if (duration.endsWith("h")) {
+    const hours = parseInt(duration.slice(0, -1));
+    return isNaN(hours) ? 1800 : hours * 3600;
+  }
+  // If it ends with 's' or is just a number, parse it as seconds
+  const seconds = parseInt(duration);
+  return isNaN(seconds) ? 1800 : seconds;
+})();
 
 export class SessionClient<
   TConnectorBundleArray extends ConnectorBundle<
