@@ -9,7 +9,7 @@ import type {
   ConnectionData,
 } from "@runmorph/cdk";
 import { config } from "dotenv";
-import { sign, verify } from "jsonwebtoken";
+import { sign, verify, Secret } from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 
 import { MorphClient } from "./Morph";
@@ -59,8 +59,11 @@ export class SessionClient<
       object: "session",
       ...createSessionParams,
       expiresAt,
-      sessionToken: sign({ ...params, jti: uuidv4() }, JWT_SECRET, {
-        expiresIn: params.expiresIn || TOKEN_EXPIRATION,
+      sessionToken: sign({ ...params, jti: uuidv4() }, JWT_SECRET as Secret, {
+        expiresIn:
+          typeof params.expiresIn === "number"
+            ? `${params.expiresIn}s`
+            : TOKEN_EXPIRATION,
       }),
     };
 
