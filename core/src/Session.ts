@@ -13,7 +13,6 @@ import { sign, verify } from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 
 import { MorphClient } from "./Morph";
-import type { Adapter } from "./types";
 import type { SessionCreateParams, SessionData } from "./types/session";
 
 config();
@@ -61,10 +60,7 @@ export class SessionClient<
       ...createSessionParams,
       expiresAt,
       sessionToken: sign({ ...params, jti: uuidv4() }, JWT_SECRET, {
-        expiresIn:
-          typeof params.expiresIn === "number"
-            ? `${params.expiresIn}s`
-            : TOKEN_EXPIRATION,
+        expiresIn: params.expiresIn || TOKEN_EXPIRATION,
       }),
     };
 
