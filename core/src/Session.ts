@@ -61,7 +61,10 @@ export class SessionClient<
       ...createSessionParams,
       expiresAt,
       sessionToken: sign({ ...params, jti: uuidv4() }, JWT_SECRET, {
-        expiresIn: params.expiresIn || TOKEN_EXPIRATION,
+        expiresIn:
+          typeof params.expiresIn === "number"
+            ? `${params.expiresIn}s`
+            : TOKEN_EXPIRATION,
       }),
     };
 
