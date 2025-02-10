@@ -104,18 +104,14 @@ const FormLabel = React.forwardRef<
 FormLabel.displayName = "FormLabel";
 
 const FormControl = React.forwardRef<
-  // @ts-expect-error
   React.ElementRef<typeof Slot>,
-  // @ts-expect-error
   React.ComponentPropsWithoutRef<typeof Slot>
 >(({ ...props }, ref) => {
   const { error, formItemId, formDescriptionId, formMessageId } =
     useFormField();
 
   return (
-    // @ts-expect-error
     <Slot
-      // @ts-expect-error
       ref={ref}
       id={formItemId}
       aria-describedby={

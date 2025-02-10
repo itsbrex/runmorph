@@ -200,7 +200,6 @@ export function ConnectionSettingsClient() {
                     setting.name
                   )}
                 </FormLabel>
-                {/**   @ts-expect-error */}
                 <FormControl>
                   <Select
                     onValueChange={field.onChange}
