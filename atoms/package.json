@@ -1,6 +1,6 @@
 {
   "name": "@runmorph/atoms",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -44,6 +44,7 @@
     "eslint": "^8.0.0",
     "lucide-react": "^0.474.0",
     "tailwind-merge": "^2.2.1",
+    "tsup": "^8.0.2",
     "typescript": "^5.0.0"
   },
   "publishConfig": {
