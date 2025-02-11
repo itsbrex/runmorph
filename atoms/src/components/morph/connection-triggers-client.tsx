@@ -16,7 +16,8 @@ export interface ConnectionTriggerClientProps<T = HTMLElement> {
     onClick?: (e: React.MouseEvent<T>) => void;
     onKeyDown?: (e: React.KeyboardEvent<T>) => void;
   }>;
-  mode?: "popup" | "redirect";
+  windowMode?: "popup" | "redirect";
+  mode?: "direct" | "connect";
   redirectUrl?: string;
   connectionCallbacks?: ConnectionCallbacks;
   settings?: Record<string, any>;
@@ -26,7 +27,8 @@ export interface ConnectionTriggerClientProps<T = HTMLElement> {
 function BaseTriggerClient<T = HTMLElement>({
   children,
   action,
-  mode = "popup",
+  mode = "connect",
+  windowMode = "popup",
   redirectUrl,
   connectionCallbacks,
   settings: propSettings,
@@ -67,91 +69,122 @@ function BaseTriggerClient<T = HTMLElement>({
   }
 
   const onClick = async () => {
-    if (!morph.connections) {
-      throw new Error(
-        getTriggerTranslatedText(
-          action,
-          "errors.missingMethod",
-          "Missing morph.connections() method"
-        )
-      );
-    }
-
-    const connection = morph.connections({ sessionToken });
-
-    if (action === "authorize") {
-      connectionCallbacks?.onStart?.();
-      const { data, error } = await connection.authorize({
-        redirectUrl,
-        mode: "direct",
-        settings,
-      });
-
-      if (error) {
-        connectionCallbacks?.onError?.(error);
-        return;
-      }
-
-      if (data?.authorizationUrl) {
-        if (mode === "redirect") {
-          // Redirect to authorization URL
-          window.location.href = data.authorizationUrl;
-        } else {
-          // Open in popup
-          const width = 600;
-          const height = 800;
-          const left = window.screenX + (window.outerWidth - width) / 2;
-          const top = window.screenY + (window.outerHeight - height) / 2;
-          const popup = window.open(
-            data.authorizationUrl,
-            "MorphConnect",
-            `width=${width},height=${height},left=${left},top=${top}`
-          );
-
-          if (!popup) {
-            throw new Error(
-              getTriggerTranslatedText(
-                action,
-                "errors.popupBlocked",
-                "Please allow popups for this site to continue with authorization"
-              )
-            );
-          }
-
-          // Check connection status when popup closes
-          const checkConnection = async () => {
-            if (popup?.closed) {
-              const { data: connectionData, error: connectionError } =
-                await connection.retrieve();
-
-              if (!connectionError && connectionData) {
-                // Update parent component state
-                connectionCallbacks?.onConnectionDataChange?.(connectionData);
-                // Trigger authorized callback
-                connectionCallbacks?.authorized?.(connectionData);
-              } else if (connectionError) {
-                connectionCallbacks?.onError?.(connectionError);
-              }
-              // Remove interval once we've checked
-              clearInterval(popupChecker);
-            }
-          };
-
-          // Check every second if the popup is closed
-          const popupChecker = setInterval(checkConnection, 1000);
-        }
-      } else {
+    try {
+      if (!morph.connections) {
         throw new Error(
           getTriggerTranslatedText(
             action,
-            "errors.noAuthUrl",
-            "No authorization URL received"
+            "errors.missingMethod",
+            "Missing morph.connections() method"
           )
         );
       }
-    } else if (action === "delete") {
-      // Update parent component state to show unauthorized
-      connectionCallbacks?.onConnectionDataChange?.({ status: "unauthorized" });
+
+      const connection = morph.connections({ sessionToken });
+
+      if (action === "authorize") {
+        connectionCallbacks?.onStart?.();
+        const { data, error } = await connection.authorize({
+          redirectUrl,
+          mode,
+          settings,
+        });
+
+        if (error) {
+          connectionCallbacks?.onError?.(error);
+          return;
+        }
+
+        if (data?.authorizationUrl) {
+          if (windowMode === "redirect") {
+            // Redirect to authorization URL
+            window.location.href = data.authorizationUrl;
+          } else {
+            // Proceed with authorization popup
+            const width = 600;
+            const height = 800;
+            const left = window.screenX + (window.outerWidth - width) / 2;
+            const top = window.screenY + (window.outerHeight - height) / 2;
+            // Check if popups are allowed first
+            const checkPopupPermission = () => {
+              const testPopup = window.open(
+                "http://localhost:3083/messages/popup-blocked",
+                "MorphPopupCheck",
+                `width=${width},height=${height},left=${left},top=${top}`
+              );
+
+              if (testPopup) {
+                testPopup.close();
+                return true;
+              }
+              return false;
+            };
+
+            if (!checkPopupPermission()) {
+              connectionCallbacks?.onError?.({
+                code: "MORPH_ATOMS::POPUP_BLOCKED",
+                message: getTriggerTranslatedText(
+                  action,
+                  "errors.popupBlocked",
+                  "Please allow popups for this site and try again"
+                ),
+              });
+              return;
+            }
+
+            const popup = window.open(
+              data.authorizationUrl,
+              "MorphConnect",
+              `width=${width},height=${height},left=${left},top=${top}`
+            );
+
+            if (popup) {
+              let popupChecker: NodeJS.Timeout | null = null;
+
+              // Check connection status when popup closes
+              const checkConnection = async () => {
+                if (popup.closed) {
+                  if (popupChecker) {
+                    clearInterval(popupChecker);
+                  }
+
+                  const { data: connectionData, error: connectionError } =
+                    await connection.retrieve();
+
+                  if (!connectionError && connectionData) {
+                    connectionCallbacks?.onConnectionDataChange?.(
+                      connectionData
+                    );
+                    connectionCallbacks?.authorized?.(connectionData);
+                  } else if (connectionError) {
+                    connectionCallbacks?.onError?.(connectionError);
+                  }
+                }
+              };
+
+              popupChecker = setInterval(checkConnection, 1000);
+            }
+          }
+        } else {
+          throw new Error(
+            getTriggerTranslatedText(
+              action,
+              "errors.noAuthUrl",
+              "No authorization URL received"
+            )
+          );
+        }
+      } else if (action === "delete") {
+        // Update parent component state to show unauthorized
+        await connection.delete();
+
+        connectionCallbacks?.onConnectionDataChange?.({
+          status: "unauthorized",
+        });
+      }
+    } catch (error) {
+      console.log(error);
+      connectionCallbacks?.onError?.(error);
     }
   };
 

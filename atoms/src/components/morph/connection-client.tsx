@@ -1,6 +1,5 @@
 "use client";
 
-import type { ReactElement } from "react";
 import {
   ConnectionTriggers,
   type ConnectionTriggerProps,
@@ -9,7 +8,8 @@ import {
 
 interface AuthorizeProps<T = HTMLElement> {
   children: ConnectionTriggerProps<T>["children"];
-  mode?: "popup" | "redirect";
+  windowMode?: "popup" | "redirect";
+  mode?: "connect" | "direct";
   redirectUrl?: string;
   connectionCallbacks?: ConnectionCallbacks;
 }
@@ -17,11 +17,13 @@ interface AuthorizeProps<T = HTMLElement> {
 export function Authorize<T = HTMLElement>({
   children,
   mode,
+  windowMode,
   redirectUrl,
   connectionCallbacks,
 }: AuthorizeProps<T>) {
   return (
     <ConnectionTriggers.Authorize<T>
+      windowMode={windowMode}
       mode={mode}
       redirectUrl={redirectUrl}
       connectionCallbacks={connectionCallbacks}

@@ -9,8 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@runmorph/cloud": "^0.0.2",
-    "@runmorph/atoms": "^0.0.2",
+    "@runmorph/cloud": "^0.0.3",
+    "@runmorph/atoms": "^0.0.3",
     "lucide-react": "^0.474.0",
     "next": "15.1.6",
     "react": "^19.0.0",

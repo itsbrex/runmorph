@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { VariantProps } from "class-variance-authority";
-import { CircleCheck, EllipsisVertical, LoaderCircle } from "lucide-react";
+import { EllipsisVertical } from "lucide-react";
 
 import { Button } from "../ui/button";
 import {
@@ -14,6 +14,7 @@ import {
 
 import { Connection } from "./connection";
 import { useMorph } from "./morph-provider";
+import { useConnection } from "./connection-context";
 import type { ConnectionCallbacks } from "./connection-triggers";
 
 export interface ConnectButtonProps
@@ -27,7 +28,7 @@ export interface ConnectButtonProps
   size?: VariantProps<typeof Button>["size"];
   asChild?: boolean;
   connectionCallbacks?: ConnectionCallbacks;
-  mode?: "popup" | "redirect";
+  windowMode?: "popup" | "redirect";
   redirectUrl?: string;
 }
 
@@ -38,20 +39,62 @@ export function Connect({
   size = "default",
   asChild,
   connectionCallbacks,
-  mode = "popup",
+  windowMode = "popup",
   redirectUrl,
   ...props
 }: ConnectButtonProps): React.ReactElement {
-  // Validate redirectUrl when mode is redirect
-  if (mode === "redirect" && !redirectUrl) {
-    throw new Error("redirectUrl is required when mode is set to 'redirect'");
+  // Validate redirectUrl when windowMode is redirect
+  if (windowMode === "redirect" && !redirectUrl) {
+    throw new Error(
+      "redirectUrl is required when windowMode is set to 'redirect'"
+    );
   }
 
+  return (
+    <Connection.Provider sessionToken={sessionToken}>
+      <ConnectContent
+        sessionToken={sessionToken}
+        className={className}
+        variant={variant}
+        size={size}
+        asChild={asChild}
+        connectionCallbacks={connectionCallbacks}
+        windowMode={windowMode}
+        redirectUrl={redirectUrl}
+        {...props}
+      />
+    </Connection.Provider>
+  );
+}
+
+function ConnectContent({
+  sessionToken,
+  className,
+  variant = "default",
+  size = "default",
+  asChild,
+  connectionCallbacks,
+  windowMode = "popup",
+  redirectUrl,
+  ...props
+}: ConnectButtonProps): React.ReactElement {
   const morph = useMorph();
+  const { t } = useConnection();
   const [connectionData, setConnectionData] = React.useState<any>(null);
   const [connectionError, setConnectionError] = React.useState<any>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isActionLoading, setIsActionLoading] = React.useState(false);
+
+  // Helper function to get translated text or fallback
+  const getTranslatedText = (
+    key: string,
+    defaultText: string,
+    vars?: Record<string, any>
+  ) => {
+    if (!t) return defaultText;
+    const translatedText = t(`connect.${key}`, vars);
+    return translatedText === `connect.${key}` ? defaultText : translatedText;
+  };
 
   // Update combined callbacks to handle loading state
   const combinedCallbacks: ConnectionCallbacks = {
@@ -104,79 +147,66 @@ export function Connect({
         {...props}
         disabled
       >
-        <LoaderCircle className="animate-spin" />
-        Connect
+        {getTranslatedText("status.loading", "Connect")}
       </Button>
     );
   }
 
   if (connectionError) {
-    return <p>Error</p>;
+    return <p>{getTranslatedText("status.error", "Error")}</p>;
   }
 
   if (connectionData.status === "unauthorized") {
     return (
-      <Connection.Provider sessionToken={sessionToken}>
-        <Connection.Triggers.Authorize
-          mode={mode}
-          redirectUrl={redirectUrl}
-          connectionCallbacks={combinedCallbacks}
+      <Connection.Triggers.Authorize
+        windowMode={windowMode}
+        redirectUrl={redirectUrl}
+        connectionCallbacks={combinedCallbacks}
+      >
+        <Button
+          className={className}
+          variant={variant}
+          size={size}
+          asChild={asChild}
+          disabled={isActionLoading}
+          {...props}
         >
-          <Button
-            className={className}
-            variant={variant}
-            size={size}
-            asChild={asChild}
-            disabled={isActionLoading}
-            {...props}
-          >
-            {isActionLoading ? (
-              <LoaderCircle className="animate-spin mr-2" />
-            ) : null}
-            Connect
-          </Button>
-        </Connection.Triggers.Authorize>
-      </Connection.Provider>
+          {getTranslatedText("actions.connect", "Connect")}
+        </Button>
+      </Connection.Triggers.Authorize>
     );
   }
 
   return (
-    <Connection.Provider sessionToken={sessionToken}>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            className={className}
-            variant="outline"
-            size={size}
-            disabled={isActionLoading}
-            {...props}
-          >
-            {isActionLoading ? (
-              <LoaderCircle className="animate-spin mr-2" />
-            ) : (
-              <CircleCheck className="mr-2" />
-            )}
-            Connected
-            <EllipsisVertical className="ml-2" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <Connection.Triggers.Authorize
-            mode={mode}
-            redirectUrl={redirectUrl}
-            connectionCallbacks={combinedCallbacks}
-          >
-            <DropdownMenuItem disabled={isActionLoading}>
-              Re-authorize
-            </DropdownMenuItem>
-          </Connection.Triggers.Authorize>
-          <Connection.Triggers.Delete connectionCallbacks={combinedCallbacks}>
-            <DropdownMenuItem disabled={isActionLoading}>
-              Delete
-            </DropdownMenuItem>
-          </Connection.Triggers.Delete>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </Connection.Provider>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          className={className}
+          variant="outline"
+          size={size}
+          disabled={isActionLoading}
+          {...props}
+        >
+          {getTranslatedText("status.authorized", "Connected")}
+          <EllipsisVertical className="ml-2" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <Connection.Triggers.Authorize
+          windowMode={windowMode}
+          redirectUrl={redirectUrl}
+          connectionCallbacks={combinedCallbacks}
+        >
+          <DropdownMenuItem disabled={isActionLoading}>
+            {getTranslatedText("actions.reauthorize", "Re-authorize")}
+          </DropdownMenuItem>
+        </Connection.Triggers.Authorize>
+        {/**<Connection.Triggers.Delete connectionCallbacks={combinedCallbacks}>
+          <DropdownMenuItem disabled={isActionLoading}>
+            {getTranslatedText("actions.delete", "Delete")}
+          </DropdownMenuItem>
+        </Connection.Triggers.Delete>**/}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
