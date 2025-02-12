@@ -1,5 +1,5 @@
 import { ConnectionWrapper } from "./connection-wrapper";
-import { createSession } from "./actions";
+import { createSession } from "../../../actions";
 
 export default async function Page({
   params,
@@ -19,6 +19,8 @@ export default async function Page({
     ownerId,
     connectorId: connectorId as "hubspot",
   });
+
+  console.log(result.error);
 
   if (result.error) {
     return <p>Could not create morph sessionToken</p>;

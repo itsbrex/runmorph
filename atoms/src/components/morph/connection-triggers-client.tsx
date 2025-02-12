@@ -108,7 +108,7 @@ function BaseTriggerClient<T = HTMLElement>({
             // Check if popups are allowed first
             const checkPopupPermission = () => {
               const testPopup = window.open(
-                "http://localhost:3083/messages/popup-blocked",
+                "https://connect.runmorph.dev/messages/popup-blocked",
                 "MorphPopupCheck",
                 `width=${width},height=${height},left=${left},top=${top}`
               );

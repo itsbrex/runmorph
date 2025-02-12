@@ -1,0 +1,157 @@
+---
+title: "Connection.Triggers.Delete"
+sidebarTitle: "Delete"
+description: "The `Connection.Triggers.Delete` component provides low-level control over connection deletion."
+---
+
+The `Connection.Triggers.Delete` component manages the connection deletion process. It provides:
+
+- Custom deletion UI integration
+- Connection state management
+- Callback system for deletion events
+- Error handling
+
+## Installation
+
+```bash
+yarn add @runmorph/atoms
+```
+
+## Usage
+
+<CodeGroup>
+
+```typescript Basic.tsx
+"use client"
+import { Connection } from "@runmorph/atoms";
+import { Button } from "@/components/ui/button";
+import { IconTrash } from "@/components/ui/icons";
+
+function DeleteConnectionButton({ sessionToken }) {
+    return (
+        <Connection.Triggers.Delete sessionToken={sessionToken}>
+            <Button variant="destructive" size="sm">
+                <IconTrash className="mr-2 h-4 w-4" />
+                Delete Connection
+            </Button>
+        </Connection.Triggers.Delete>
+    );
+}
+
+export default DeleteConnectionButton;
+```
+
+```typescript WithConfirmation.tsx
+"use client"
+import { Connection } from "@runmorph/atoms";
+import {
+    AlertDialog,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/use-toast";
+
+function DeleteWithConfirmation({ sessionToken }) {
+    return (
+        <AlertDialog>
+            <AlertDialogTrigger asChild>
+                <Button variant="destructive">Delete Connection</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete your
+                        connection and remove all associated data.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <Connection.Triggers.Delete
+                        sessionToken={sessionToken}
+                        connectionCallbacks={{
+                            onConnectionDataChange: () => {
+                                toast({
+                                    title: "Connection Deleted",
+                                    description: "Your connection has been removed."
+                                });
+                            }
+                        }}
+                    >
+                        <Button variant="destructive">
+                            Delete Connection
+                        </Button>
+                    </Connection.Triggers.Delete>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+}
+
+export default DeleteWithConfirmation;
+```
+
+</CodeGroup>
+
+## Props
+
+<ResponseField name="children" type="ReactElement" required>
+  A valid React element that will trigger the deletion action. Must accept
+  `onClick` and `onKeyDown` event handlers.
+</ResponseField>
+
+<ResponseField name="sessionToken" type="string" required>
+  A session token for the connection to be deleted.
+</ResponseField>
+
+<ResponseField name="connectionCallbacks" type="object">
+  <Expandable title="properties">
+    <ResponseField name="onConnectionDataChange" type="function">
+      Callback fired when connection data changes after deletion. ```typescript
+      (connectionData: any) => void ```
+    </ResponseField>
+    <ResponseField name="onError" type="function">
+      Callback fired when an error occurs during deletion. ```typescript (error:
+      any) => void ```
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Error Handling
+
+The component includes error handling for:
+
+- Missing session token errors
+- Invalid children components
+- Connection deletion errors
+
+Error messages can be customized through the internationalization system.
+
+## Internationalization
+
+The component supports internationalization for error messages through:
+
+- `triggers.delete.errors.missingToken`
+- `triggers.delete.errors.missingMethod`
+- `triggers.delete.errors.invalidChildren`
+
+## Best Practices
+
+1. Always implement a confirmation dialog before deletion
+2. Provide clear feedback through `connectionCallbacks`
+3. Handle errors appropriately
+4. Update UI state after successful deletion
+5. Consider using loading states during deletion
+
+## Security Considerations
+
+1. Validate session tokens before deletion
+2. Implement proper authorization checks
+3. Handle sensitive data cleanup
+4. Provide clear user feedback
+5. Implement proper error recovery

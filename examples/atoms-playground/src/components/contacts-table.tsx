@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "../components/ui/table";
-import { listContacts } from "../app/[ownerId]/connectors/[connectorId]/actions";
+import { listContacts } from "../app/actions";
 
 interface Contact {
   id: string;

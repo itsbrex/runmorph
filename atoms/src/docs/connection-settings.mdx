@@ -1,0 +1,131 @@
+---
+title: "Connection.Settings"
+sidebarTitle: "Settings"
+description: "The `Connection.Settings` component provides a form interface for configuring connector-specific settings."
+---
+
+The `Connection.Settings` component renders a dynamic form based on connector settings. It provides:
+
+- Dynamic form generation based on connector configuration
+- Real-time form validation
+- Internationalization support
+- Automatic state management
+- Default value handling
+
+## Installation
+
+```bash
+yarn add @runmorph/atoms
+```
+
+## Usage
+
+<CodeGroup>
+
+```typescript Basic.tsx
+"use client"
+import { Connection } from "@runmorph/atoms";
+
+function ConnectorSettings() {
+    return (
+        <Connection.Provider sessionToken={sessionToken}>
+            <Connection.Settings />
+        </Connection.Provider>
+    );
+}
+
+export default ConnectorSettings;
+```
+
+```typescript WithTranslations.tsx
+"use client"
+import { Connection } from "@runmorph/atoms";
+
+function TranslatedSettings() {
+    const translations = {
+        'settings.status.loading': 'Loading settings...',
+        'settings.status.error': 'Error loading settings',
+        'settings.status.noConnector': 'No connector configuration found'
+    };
+
+    return (
+        <Connection.Provider
+            sessionToken={sessionToken}
+            t={(key) => translations[key] || key}
+        >
+            <Connection.Settings />
+        </Connection.Provider>
+    );
+}
+
+export default TranslatedSettings;
+```
+
+</CodeGroup>
+
+## States
+
+The component handles various states:
+
+1. **Loading**: Displays a loading message while fetching connector configuration
+2. **Error**: Shows error message if configuration fetch fails
+3. **Empty**: Indicates when no connector is found
+4. **Form**: Renders the settings form when configuration is available
+
+## Internationalization
+
+The component supports translation keys for:
+
+### Status Messages
+
+- `settings.status.loading`
+- `settings.status.error`
+- `settings.status.noConnector`
+
+### Error Messages
+
+- `settings.errors.missingMethod`
+- `settings.errors.fetchFailed`
+
+### Connector-specific Translations
+
+- `settings.connectors.{connectorId}.{settingKey}.label`
+- `settings.connectors.{connectorId}.{settingKey}.description`
+- `settings.connectors.{connectorId}.{settingKey}.placeholder`
+- `settings.connectors.{connectorId}.{settingKey}.options.{optionValue}`
+- `settings.connectors.{connectorId}.{settingKey}.required`
+
+## Form Components
+
+The settings form uses the following UI components:
+
+- Form and FormField for layout and validation
+- Select for option selection
+- FormLabel for field labels
+- FormDescription for help text
+- FormMessage for validation messages
+
+## Best Practices
+
+1. Always wrap in a Connection.Provider
+2. Provide translations for all text elements
+3. Handle loading and error states appropriately
+4. Style consistently with your application's design
+5. Implement proper form validation handling
+
+## Error Handling
+
+The component handles several error scenarios:
+
+- Configuration fetch failures
+- Missing Morph client methods
+- Invalid connector data
+- Form validation errors
+
+## Security Considerations
+
+1. Validate all settings server-side
+2. Sanitize user inputs
+3. Handle sensitive settings appropriately
+4. Implement proper access controls
+5. Validate connector configuration

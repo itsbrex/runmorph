@@ -1,0 +1,195 @@
+---
+title: "Connect"
+description: "Our `Connect` component provides a seamless user experience to authorize third-party connectors and manage connections."
+---
+
+The `Connect` component is a versatile UI element that handles the complete connection lifecycle for third-party integrations. It provides:
+
+- Initial connection authorization
+- Connection status display
+- Connection management options (re-authorization)
+- Responsive state handling with loading indicators
+- Customizable appearance and behavior
+- Support for both popup and redirect authorization flows
+
+## Installation
+
+```bash
+yarn add @runmorph/atoms
+```
+
+## Usage
+
+<CodeGroup>
+
+```typescript Basic.tsx
+"use client"
+import { Connect } from "@runmorph/atoms";
+
+function MyConnectButton({ sessionToken }) {
+    return <Connect sessionToken={sessionToken} />;
+}
+
+export default MyConnectButton;
+```
+
+```typescript CustomStyling.tsx
+"use client"
+import { Connect } from "@runmorph/atoms";
+
+function MyStyledConnectButton({ sessionToken }) {
+    return (
+        <Connect
+            sessionToken={sessionToken}
+            variant="outline"
+            size="lg"
+            className="my-custom-class"
+        />
+    );
+}
+
+export default MyStyledConnectButton;
+```
+
+```typescript WithCallbacks.tsx
+"use client"
+import { Connect } from "@runmorph/atoms";
+
+function MyConnectButtonWithCallbacks({ sessionToken }) {
+    return (
+        <Connect
+            sessionToken={sessionToken}
+            connectionCallbacks={{
+                onConnectionDataChange: (data) => {
+                    console.log('Connection data updated:', data);
+                },
+                onStart: () => {
+                    console.log('Connection process started');
+                },
+                onError: (error) => {
+                    console.error('Connection error:', error);
+                }
+            }}
+        />
+    );
+}
+
+export default MyConnectButtonWithCallbacks;
+```
+
+```typescript RedirectFlow.tsx
+"use client"
+import { Connect } from "@runmorph/atoms";
+
+function MyRedirectConnectButton({ sessionToken }) {
+    return (
+        <Connect
+            sessionToken={sessionToken}
+            windowMode="redirect"
+            redirectUrl="https://app.co/connection/completed"
+        />
+    );
+}
+
+export default MyRedirectConnectButton;
+```
+
+</CodeGroup>
+
+## Props
+
+<ParamField path="sessionToken" type="string" required>
+  A `sessionToken` generated from your server with the [create session
+  method](https://docs.runmorph.dev/api-reference/connection/create-a-session).
+  This token is used to identify and manage the connection.
+</ParamField>
+
+<ParamField path="windowMode" type="popup|redirect" default="popup">
+  Determines how the authorization window is opened: - `popup`: Opens the
+  authorization URL in a new popup window (default) - `redirect`: Redirects the
+  current window to the authorization URL When using `redirect` mode, the
+  `redirectUrl` prop is required.
+</ParamField>
+
+<ParamField path="redirectUrl" type="string">
+  The URL where the user will be redirected after authorization when using
+  `windowMode="redirect"`. Required when `windowMode` is set to `redirect`.
+</ParamField>
+
+<ParamField path="variant" type="string" default="default">
+  The visual style variant of the button. Inherits from the underlying Button
+  component. Common values include: `default`, `outline`, `ghost`, etc.
+</ParamField>
+
+<ParamField path="size" type="string" default="default">
+  The size of the button. Inherits from the underlying Button component.
+  Available options: `default`, `sm`, `lg`, etc.
+</ParamField>
+
+<ParamField path="className" type="string">
+  Additional CSS classes to apply to the button for custom styling.
+</ParamField>
+
+<ParamField path="asChild" type="boolean">
+  When true, the component will render its child as the root element instead of
+  a button. Useful for custom implementations.
+</ParamField>
+
+<ResponseField name="connectionCallbacks" type="object">
+  <Expandable title="properties">
+    <ResponseField name="authorized" type="function">
+      Callback fired when the connection is successfully authorized
+    </ResponseField>
+    <ResponseField name="onConnectionDataChange" type="function">
+      Callback fired whenever the connection data is updated, including status
+      changes
+    </ResponseField>
+    <ResponseField name="onStart" type="function">
+      Callback fired when the connection process begins
+    </ResponseField>
+    <ResponseField name="onError" type="function">
+      Callback fired when an error occurs during the connection process
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## States
+
+The Connect component handles various states automatically:
+
+1. **Loading**: Shows a disabled button with loading text while initializing
+2. **Unauthorized**: Displays a "Connect" button to initiate authorization
+3. **Authorized**: Shows a "Connected" button with a dropdown menu for management options
+4. **Error**: Displays an error message if something goes wrong
+
+## Internationalization
+
+The component supports internationalization through a translation context. All text strings can be customized by providing translations for the following keys:
+
+- `connect.status.loading`
+- `connect.status.error`
+- `connect.status.authorized`
+- `connect.actions.connect`
+- `connect.actions.reauthorize`
+
+## Error Handling
+
+The component includes built-in error handling and will:
+
+- Display user-friendly error messages
+- Invoke the `onError` callback when provided
+- Maintain a stable UI state even when errors occur
+
+## Best Practices
+
+1. Always handle the `onError` callback to provide appropriate feedback to users
+2. Use the `redirectUrl` that matches your application's architecture when using redirect mode
+3. Consider using custom styling via `className` to match your application's design
+4. Implement proper error boundaries around the component for production use
+
+## Security Considerations
+
+1. Always generate the `sessionToken` server-side
+2. Never expose sensitive credentials in the client-side code
+3. Implement proper CORS and CSP policies when using popup mode
+4. Validate all redirect URLs to prevent open redirect vulnerabilities

@@ -1,0 +1,209 @@
+---
+title: "Connection.Triggers.Authorize"
+sidebarTitle: "Authorize"
+description: "The `Connection.Triggers.Authorize` component provides low-level control over connection authorization flows."
+---
+
+The `Connection.Triggers.Authorize` component handles the connection authorization flow. It provides:
+
+- Custom authorization UI integration
+- Popup and redirect authorization modes
+- Comprehensive callback system
+- Connection state management
+- Automatic popup window handling
+
+## Installation
+
+```bash
+yarn add @runmorph/atoms
+```
+
+## Usage
+
+<CodeGroup>
+
+```typescript Basic.tsx
+"use client"
+import { Connection } from "@runmorph/atoms";
+import { Button } from "@/components/ui/button";
+
+function CustomConnectButton({ sessionToken }) {
+    return (
+        <Connection.Triggers.Authorize sessionToken={sessionToken}>
+            <Button>Connect Account</Button>
+        </Connection.Triggers.Authorize>
+    );
+}
+
+export default CustomConnectButton;
+```
+
+```typescript WithCallbacks.tsx
+"use client"
+import { Connection } from "@runmorph/atoms";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/use-toast";
+
+function ConnectWithCallbacks({ sessionToken }) {
+    return (
+        <Connection.Triggers.Authorize
+            sessionToken={sessionToken}
+            connectionCallbacks={{
+                onStart: () => toast({
+                    title: "Connection Started",
+                    description: "Initializing connection process..."
+                }),
+                authorized: (data) => toast({
+                    title: "Authorization Successful",
+                    description: "Your account has been connected."
+                }),
+                onConnectionDataChange: (data) => console.log("Connection updated:", data),
+                onError: (error) => toast({
+                    variant: "destructive",
+                    title: "Connection Error",
+                    description: error.message
+                })
+            }}
+        >
+            <Button variant="outline">
+                <IconPlug className="mr-2 h-4 w-4" />
+                Connect with Callbacks
+            </Button>
+        </Connection.Triggers.Authorize>
+    );
+}
+
+export default ConnectWithCallbacks;
+```
+
+```typescript RedirectFlow.tsx
+"use client"
+import { Connection } from "@runmorph/atoms";
+import { Button } from "@/components/ui/button";
+import { IconExternalLink } from "@/components/ui/icons";
+
+function RedirectConnectButton({ sessionToken }) {
+    return (
+        <Connection.Triggers.Authorize
+            sessionToken={sessionToken}
+            windowMode="redirect"
+            redirectUrl="https://app.co/auth/callback"
+        >
+            <Button>
+                Connect with Redirect
+                <IconExternalLink className="ml-2 h-4 w-4" />
+            </Button>
+        </Connection.Triggers.Authorize>
+    );
+}
+
+export default RedirectConnectButton;
+```
+
+</CodeGroup>
+
+## Props
+
+<ResponseField name="children" type="ReactElement" required>
+  A valid React element that will trigger the authorization action. Must accept
+  `onClick` and `onKeyDown` event handlers.
+</ResponseField>
+
+<ResponseField name="sessionToken" type="string" required>
+  A session token for the connection. Can be provided via props or through a
+  `Connection.Provider` context.
+</ResponseField>
+
+<ResponseField name="windowMode" type="popup|redirect" default="popup">
+  Determines how the authorization window is opened: - `popup`: Opens in a new
+  window (default) - `redirect`: Redirects the current window
+</ResponseField>
+
+<ResponseField name="mode" type="direct|connect" default="connect">
+  The connection mode to use: - `connect`: Standard OAuth connection flow -
+  `direct`: Direct connection without OAuth
+</ResponseField>
+
+<ResponseField name="redirectUrl" type="string">
+  The URL where the user will be redirected after authorization. Required when
+  `windowMode` is set to `redirect`.
+</ResponseField>
+
+<ResponseField name="settings" type="object">
+  Additional settings to pass to the connection authorization flow.
+</ResponseField>
+
+<ResponseField name="connectionCallbacks" type="object">
+  <Expandable title="properties">
+    <ResponseField name="authorized" type="function">
+      Callback fired when authorization is successful
+    </ResponseField>
+    <ResponseField name="onConnectionDataChange" type="function">
+      Callback fired when connection data changes.
+    </ResponseField>
+    <ResponseField name="onStart" type="function">
+      Callback fired when authorization process starts.
+    </ResponseField>
+    <ResponseField name="onError" type="function">
+      Callback fired when an error occurs.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Popup Window Behavior
+
+When using `windowMode="popup"`, the component:
+
+1. Checks if popups are allowed
+2. Centers the popup window on screen
+3. Uses standard dimensions (600x800)
+4. Monitors popup state
+5. Handles connection status updates
+
+Default popup configuration:
+
+```typescript
+{
+  width: 600,
+  height: 800,
+  centered: true,
+  pollInterval: 1000 // ms
+}
+```
+
+## Error Handling
+
+The component includes comprehensive error handling for:
+
+- Missing session token errors
+- Popup blocked detection
+- Authorization URL validation
+- Invalid children components
+- Connection state errors
+
+Error messages can be customized through the internationalization system.
+
+## Internationalization
+
+The component supports internationalization for error messages through:
+
+- `triggers.authorize.errors.missingToken`
+- `triggers.authorize.errors.missingMethod`
+- `triggers.authorize.errors.popupBlocked`
+- `triggers.authorize.errors.noAuthUrl`
+- `triggers.authorize.errors.invalidChildren`
+
+## Best Practices
+
+1. Always provide error handling through `connectionCallbacks.onError`
+2. Use appropriate window mode based on your application's needs
+3. Implement proper popup handling for better user experience
+4. Consider mobile devices when choosing between popup and redirect modes
+5. Validate redirect URLs for security
+
+## Security Considerations
+
+1. Validate session tokens before use
+2. Implement proper CORS policies for popup windows
+3. Verify redirect URLs to prevent open redirect vulnerabilities
+4. Protect sensitive connection data

@@ -1,0 +1,134 @@
+---
+title: "Connection.Provider"
+sidebarTitle: "Provider"
+description: "The `Connection.Provider` component provides connection context and state management for Morph connection components."
+---
+
+The `Connection.Provider` component manages connection state and provides context for all connection-related components. It provides:
+
+- Centralized connection state management
+- Translation context for internationalization
+- Session token management
+- Connection data sharing
+
+## Installation
+
+```bash
+yarn add @runmorph/atoms
+```
+
+## Usage
+
+<CodeGroup>
+
+```typescript Basic.tsx
+"use client"
+import { Connection } from "@runmorph/atoms";
+
+function App({ sessionToken }) {
+    return (
+        <Connection.Provider sessionToken={sessionToken}>
+            <YourConnectionComponents />
+        </Connection.Provider>
+    );
+}
+
+export default App;
+```
+
+```typescript WithTranslations.tsx
+"use client"
+import { Connection } from "@runmorph/atoms";
+
+function AppWithTranslations({ sessionToken }) {
+    const translations = {
+        'connect.status.loading': 'Connecting...',
+        'connect.status.authorized': 'Connected',
+        'connect.actions.connect': 'Connect',
+        'connect.actions.reauthorize': 'Reconnect'
+    };
+
+    const t = (key: string) => translations[key] || key;
+
+    return (
+        <Connection.Provider
+            sessionToken={sessionToken}
+            t={t}
+        >
+            <YourConnectionComponents />
+        </Connection.Provider>
+    );
+}
+
+export default AppWithTranslations;
+```
+
+</CodeGroup>
+
+## Props
+
+<ResponseField name="sessionToken" type="string" required>
+  The session token used to identify and manage the connection.
+</ResponseField>
+
+<ResponseField name="children" type="ReactNode" required>
+  The child components that will have access to the connection context.
+</ResponseField>
+
+<ResponseField name="t" type="TranslationFunction">
+  <Expandable title="properties">
+    <ResponseField name="function">
+      A translation function that receives a key and optional variables and
+      returns the translated string.
+    </ResponseField>
+    <ResponseField name="parameters">
+      - key: The translation key to look up - vars: Optional variables for
+      string interpolation
+    </ResponseField>
+    <ResponseField name="returns">
+      The translated string or the original key if no translation is found
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Context Values
+
+The connection context provides:
+
+- `sessionToken`: The current session token
+- `t`: The translation function if provided
+- `settings`: Any connection settings
+- `status`: The current connection status
+
+## Best Practices
+
+1. Place the provider high in your component tree
+2. Use a single provider instance per connection
+3. Implement proper error boundaries
+4. Provide translations for all supported languages
+5. Handle connection state changes appropriately
+
+## Error Handling
+
+The provider includes error handling for:
+
+- Missing session token
+- Invalid context usage
+- Translation function errors
+
+## Internationalization
+
+The provider supports translation keys for:
+
+- Connection status messages
+- Action buttons
+- Error messages
+- UI elements
+
+## Security Considerations
+
+1. Protect session tokens
+2. Validate translation inputs
+3. Handle sensitive connection data securely
+4. Implement proper access controls
+5. Manage connection state securely

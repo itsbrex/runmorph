@@ -1,0 +1,178 @@
+---
+title: "Quick Start"
+description: "Get started with Morph in your React application in minutes."
+---
+
+This guide will help you quickly integrate Morph into your React application.
+
+## Installation
+
+```bash
+yarn add @runmorph/atoms
+```
+
+## Basic Setup
+
+<Steps>
+  <Step title="Add Morph Provider">
+    Wrap your application with the `Morph.Provider` component:
+
+    <CodeGroup>
+      ```tsx [Next.js] app/layout.tsx
+      import { Morph } from "@runmorph/atoms";
+
+      export default function RootLayout({ children }) {
+        return (
+          <html>
+            <body>
+              <Morph.Provider>
+                {children}
+              </Morph.Provider>
+            </body>
+          </html>
+        );
+      }
+      ```
+
+      ```tsx [Vite] src/main.tsx
+      import { Morph } from "@runmorph/atoms";
+
+      ReactDOM.createRoot(document.getElementById('root')!).render(
+        <React.StrictMode>
+          <Morph.Provider>
+            <App />
+          </Morph.Provider>
+        </React.StrictMode>
+      );
+      ```
+
+      ```tsx [CRA] src/App.tsx
+      import { Morph } from "@runmorph/atoms";
+
+      function App() {
+        return (
+          <Morph.Provider>
+            <YourComponents />
+          </Morph.Provider>
+        );
+      }
+      ```
+
+      ```tsx [Remix] app/root.tsx
+      import { Morph } from "@runmorph/atoms";
+
+      export default function App() {
+        return (
+          <html>
+            <body>
+              <Morph.Provider>
+                <Outlet />
+              </Morph.Provider>
+            </body>
+          </html>
+        );
+      }
+      ```
+    </CodeGroup>
+
+  </Step>
+
+  <Step title="Configure environment variables">
+    Add your Morph public key to your environment variables:
+
+    <CodeGroup>
+      ```env [Next.js] .env.local
+      NEXT_PUBLIC_MORPH_PUBLIC_KEY=pk_...
+      ```
+
+      ```env [Vite] .env.local
+      VITE_MORPH_PUBLIC_KEY=pk_...
+      ```
+
+      ```env [CRA] .env.local
+      REACT_APP_MORPH_PUBLIC_KEY=pk_...
+      ```
+
+      ```env [Remix] .env
+      MORPH_PUBLIC_KEY=pk_...
+      ```
+    </CodeGroup>
+
+    The provider will automatically detect the key from your environment variables.
+
+  </Step>
+
+  <Step title="Add Connect button">
+    Add the `Connect` component to handle authorization:
+
+    <CodeGroup>
+      ```tsx [Next.js] app/connections/page.tsx
+      import { Connect } from "@runmorph/atoms";
+
+      export default function ConnectionPage({ sessionToken }) {
+        return (
+          <Connect
+            sessionToken={sessionToken}
+            connectionCallbacks={{
+              onError: (error) => alert(error.message)
+            }}
+          />
+        );
+      }
+      ```
+
+      ```tsx [Vite] src/components/Connection.tsx
+      import { Connect } from "@runmorph/atoms";
+
+      export function ConnectionComponent({ sessionToken }) {
+        return (
+          <Connect
+            sessionToken={sessionToken}
+            connectionCallbacks={{
+              onError: (error) => alert(error.message)
+            }}
+          />
+        );
+      }
+      ```
+
+      ```tsx [CRA] src/components/Connection.tsx
+      import { Connect } from "@runmorph/atoms";
+
+      export function ConnectionComponent({ sessionToken }) {
+        return (
+          <Connect
+            sessionToken={sessionToken}
+            connectionCallbacks={{
+              onError: (error) => alert(error.message)
+            }}
+          />
+        );
+      }
+      ```
+
+      ```tsx [Remix] app/routes/connections.tsx
+      import { Connect } from "@runmorph/atoms";
+
+      export default function ConnectionRoute({ sessionToken }) {
+        return (
+          <Connect
+            sessionToken={sessionToken}
+            connectionCallbacks={{
+              onError: (error) => alert(error.message)
+            }}
+          />
+        );
+      }
+      ```
+    </CodeGroup>
+
+  </Step>
+</Steps>
+
+## Next Steps
+
+- Implement [custom authorization flows](./connection-triggers-authorize) using triggers
+- Add [connection settings](./connection-settings) for advanced configuration
+- Add [internationalization](./connection-provider#internationalization) support
+- Explore [security best practices](./security) for production deployments
