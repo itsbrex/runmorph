@@ -1,9 +1,9 @@
 ---
-title: "MorphProvider"
-description: "The `MorphProvider` component initializes the Morph SDK and provides configuration context throughout your application."
+title: "Morph.Provider"
+description: "The `Morph.Provider` component initializes the Morph SDK and provides configuration context throughout your application."
 ---
 
-The `MorphProvider` component is a crucial setup component that must wrap your application to enable Morph functionality. It:
+The `Morph.Provider` component is a crucial setup component that must wrap your application to enable Morph functionality. It:
 
 - Initializes the Morph SDK with your configuration
 - Provides configuration context to all Morph components
@@ -16,19 +16,28 @@ The `MorphProvider` component is a crucial setup component that must wrap your a
 yarn add @runmorph/atoms
 ```
 
-## Basic Usage
+## Environment Variables
+
+The provider automatically detects your public key from the following environment variables (in order of precedence):
+
+1. `MORPH_PUBLIC_KEY`
+2. `NEXT_PUBLIC_MORPH_PUBLIC_KEY`
+3. `VITE_MORPH_PUBLIC_KEY`
+4. `REACT_APP_MORPH_PUBLIC_KEY`
+
+## Usage
 
 <CodeGroup>
 
 ```typescript Basic.tsx
 "use client"
-import { MorphProvider } from "@runmorph/atoms";
+import { Morph } from "@runmorph/atoms";
 
 function App({ children }) {
     return (
-        <MorphProvider>
+        <Morph.Provider>
             {children}
-        </MorphProvider>
+        </Morph.Provider>
     );
 }
 
@@ -37,49 +46,30 @@ export default App;
 
 ```typescript WithExplicitConfig.tsx
 "use client"
-import { MorphProvider } from "@runmorph/atoms";
+import { Morph } from "@runmorph/atoms";
 
 function App({ children }) {
     return (
-        <MorphProvider config={{ publicKey: "pk_..." }}>
+        <Morph.Provider config={{ publicKey: "pk_..." }}>
             {children}
-        </MorphProvider>
+        </Morph.Provider>
     );
 }
 
 export default App;
 ```
 
-```typescript WithHook.tsx
-"use client"
-import { useMorph } from "@runmorph/atoms";
-
-function MyComponent() {
-    const morph = useMorph();
-
-    // Access Morph client instance
-    const handleConnection = async () => {
-        const connection = morph.connections({ sessionToken: "..." });
-        // ... use connection
-    };
-
-    return <div>My Component</div>;
-}
-
-export default MyComponent;
-```
-
 ```typescript NextJsApp.tsx
 // app/layout.tsx
-import { MorphProvider } from "@runmorph/atoms";
+import { Morph } from "@runmorph/atoms";
 
 export default function RootLayout({ children }) {
     return (
         <html>
             <body>
-                <MorphProvider>
+                <Morph.Provider>
                     {children}
-                </MorphProvider>
+                </Morph.Provider>
             </body>
         </html>
     );
@@ -90,42 +80,20 @@ export default function RootLayout({ children }) {
 
 ## Props
 
-<ParamField path="config" type="object">
-  Configuration options for the Morph SDK:
-  ```typescript
-  interface MorphConfig {
-    publicKey: string;
-    // Additional configuration options
-  }
-  ```
-  If not provided, the provider will attempt to read from environment variables.
-</ParamField>
+<ResponseField name="config" type="object">
+  <Expandable title="properties">
+    <ResponseField name="publicKey" type="string" required>
+      Publishable API key
+    </ResponseField>
+    <ResponseField name="baseUrl" type="string">
+      Custom Morph API base URL
+    </ResponseField>
+  </Expandable>
+</ResponseField>
 
 <ParamField path="children" type="ReactNode" required>
   The child components that will have access to the Morph context.
 </ParamField>
-
-## Environment Variables
-
-The provider automatically detects your public key from the following environment variables (in order of precedence):
-
-1. `MORPH_PUBLIC_KEY`
-2. `NEXT_PUBLIC_MORPH_PUBLIC_KEY`
-3. `VITE_MORPH_PUBLIC_KEY`
-4. `REACT_APP_MORPH_PUBLIC_KEY`
-
-## Hook Usage
-
-The provider exports a `useMorph` hook that can be used to access the Morph client instance:
-
-```typescript
-import { useMorph } from "@runmorph/atoms";
-
-function MyComponent() {
-  const morph = useMorph();
-  // Use morph client instance
-}
-```
 
 ## Error Handling
 
@@ -142,85 +110,9 @@ The provider includes built-in error handling:
 3. Explicitly pass configuration in production environments
 4. Implement error boundaries around the provider for graceful error handling
 
-## Framework Integration
-
-### Next.js
-
-Place the provider in your root layout:
-
-```typescript
-// app/layout.tsx
-import { MorphProvider } from "@runmorph/atoms";
-
-export default function RootLayout({ children }) {
-    return (
-        <html>
-            <body>
-                <MorphProvider>
-                    {children}
-                </MorphProvider>
-            </body>
-        </html>
-    );
-}
-```
-
-### Create React App
-
-Place the provider in your root component:
-
-```typescript
-// src/App.tsx
-import { MorphProvider } from "@runmorph/atoms";
-
-function App() {
-    return (
-        <MorphProvider>
-            {/* Your app components */}
-        </MorphProvider>
-    );
-}
-```
-
-### Vite
-
-Place the provider in your main component:
-
-```typescript
-// src/main.tsx
-import { MorphProvider } from "@runmorph/atoms";
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
-    <React.StrictMode>
-        <MorphProvider>
-            <App />
-        </MorphProvider>
-    </React.StrictMode>
-);
-```
-
 ## Security Considerations
 
 1. Never expose your private key through the provider
 2. Use appropriate environment variable prefixes for your framework
 3. Implement proper CSP policies for your deployment environment
 4. Keep your public key secure and rotate if compromised
-
-## TypeScript Support
-
-The provider and its configurations are fully typed:
-
-```typescript
-import type { MorphConfig, MorphProviderProps } from "@runmorph/atoms";
-
-// Your configuration
-const config: MorphConfig = {
-    publicKey: "pk_..."
-};
-
-// Provider props
-const providerProps: MorphProviderProps = {
-    config,
-    children: <App />
-};
-```

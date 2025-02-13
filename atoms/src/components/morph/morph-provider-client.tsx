@@ -24,7 +24,6 @@ export function MorphProviderClient({
   children,
 }: MorphProviderClientProps) {
   const morph = Morph(config);
-  console.log("MorphProviderClient : config", config);
   return (
     <MorphContext.Provider value={{ morph }}>{children}</MorphContext.Provider>
   );

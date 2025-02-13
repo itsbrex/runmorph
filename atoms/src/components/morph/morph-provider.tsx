@@ -1,10 +1,12 @@
 import type { ReactNode } from "react";
 import { MorphProviderClient, type MorphConfig } from "./morph-provider-client";
 
-export interface MorphProviderProps {
+type MorphProviderProps = {
   config?: MorphConfig;
   children: ReactNode;
-}
+};
+
+export type { MorphProviderProps };
 
 export function MorphProvider({ config, children }: MorphProviderProps) {
   let morphConfig = config;
