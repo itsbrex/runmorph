@@ -407,6 +407,7 @@ export class ResourceClient<
           model: obj.model,
           id: obj.id,
           parentKey,
+          expandKeys,
         });
 
         if (parentKey && expandKeys.includes(parentKey)) {

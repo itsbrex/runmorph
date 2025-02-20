@@ -72,9 +72,15 @@ export class WebhookRegistry<
     this.eventEmitter = new EventEmitter();
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  static getInstance(morph: MorphClient<any>): WebhookRegistry<any> {
+  static getInstance(
+    morph: MorphClient<any>,
+    tempInstance?: boolean
+  ): WebhookRegistry<any> {
     if (!WebhookRegistry.instance) {
       WebhookRegistry.instance = new WebhookRegistry(morph);
+    }
+    if (tempInstance) {
+      return new WebhookRegistry(morph);
     }
     return WebhookRegistry.instance;
   }
@@ -135,6 +141,10 @@ export class WebhookRegistry<
 
     const connectors = this.morph.m_.connectors;
     console.log("Available connectors:", Object.keys(connectors));
+    console.log(
+      "Available connectors:",
+      this.morph.connectors().retrieve(connectorId)
+    );
 
     let connector;
     if (Object.keys(connectors).includes(connectorId)) {

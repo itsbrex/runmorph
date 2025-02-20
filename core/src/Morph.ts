@@ -64,7 +64,12 @@ export class MorphClient<
     }*/
   }
 
-  webhooks(): WebhookRegistry<TConnectorBundleArray> {
+  webhooks(options?: {
+    tempInstance: boolean;
+  }): WebhookRegistry<TConnectorBundleArray> {
+    if (options?.tempInstance) {
+      return WebhookRegistry.getInstance(this, options.tempInstance);
+    }
     return WebhookRegistry.getInstance(this);
   }
 
