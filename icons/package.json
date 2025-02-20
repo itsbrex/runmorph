@@ -1,0 +1,79 @@
+{
+  "name": "@runmorph/iconify",
+  "version": "0.1.1",
+  "description": "Generate highly customizable React icon components from SVGs",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "iconify": "./dist/cli.js"
+  },
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "postbuild": "chmod +x dist/cli.js",
+    "dev": "vite",
+    "dev:cli": "ts-node src/cli.ts",
+    "clean": "rimraf dist",
+    "lint": "eslint src --ext .ts,.tsx",
+    "test": "jest",
+    "typecheck": "tsc --noEmit",
+    "convert-svg": "ts-node scripts/svg-converter.ts"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "clsx": "^2.1.0",
+    "commander": "^12.0.0",
+    "glob": "^10.3.10",
+    "ora": "^5.4.1",
+    "tailwind-merge": "^2.2.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vitejs/plugin-react": "^4.2.0",
+    "eslint": "^8.0.0",
+    "eslint-plugin-react": "^7.0.0",
+    "eslint-plugin-react-hooks": "^4.0.0",
+    "fast-xml-parser": "^5.0.1",
+    "fs-extra": "^11.3.0",
+    "jest": "^29.5.0",
+    "node-html-parser": "^6.1.12",
+    "prettier": "^3.5.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "rimraf": "^5.0.0",
+    "ts-node": "^10.9.2",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  },
+  "keywords": [
+    "react",
+    "icons",
+    "generate",
+    "svg"
+  ],
+  "author": "Morph",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
+}
