@@ -26,6 +26,10 @@ const CrmOpportunity = new ResourceModel({
       .array(z.morph.resource("genericCompany").optional())
       .optional()
       .describe("Associated companies"),
+    engagements: z
+      .array(z.morph.resource("crmEngagement").optional())
+      .optional()
+      .describe("Associated engagements"),
   }),
 });
 

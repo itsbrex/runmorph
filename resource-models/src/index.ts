@@ -2,6 +2,7 @@ export * from "./ResourceModel";
 export * from "./ZodExtensions";
 
 import { ResourceModelMap } from "./ResourceModel";
+import { default as CrmEngagement } from "./ResourceModels/CrmEngagement";
 import { default as CrmOpportunity } from "./ResourceModels/CrmOpportunity";
 import { default as CrmPipeline } from "./ResourceModels/CrmPipeline";
 import { default as CrmStage } from "./ResourceModels/CrmStage";
@@ -19,6 +20,7 @@ const resourceModelMap = new ResourceModelMap({})
   .addResourceModel(CrmOpportunity)
   .addResourceModel(CrmStage)
   .addResourceModel(CrmPipeline)
+  .addResourceModel(CrmEngagement)
   .addResourceModel(WidgetCardView);
 
 const resourceModels = resourceModelMap.getResourceModelMap();

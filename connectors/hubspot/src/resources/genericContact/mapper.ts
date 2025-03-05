@@ -21,8 +21,6 @@ export default new Mapper<ResourceModels["genericContact"], HubSpotContact>({
     firstName: {
       read: (from) => from("properties.firstname"),
       write: (to) => to("properties.firstname"),
-      key: "firstname",
-      filter: "firstname",
     },
     lastName: {
       read: (from) => from("properties.lastname"),

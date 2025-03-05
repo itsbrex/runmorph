@@ -28,6 +28,12 @@ export type HubSpotDeal = {
         type: string;
       }>;
     };
+    engagements: {
+      results: Array<{
+        id: string;
+        type: string;
+      }>;
+    };
   };
   createdAt: string;
   updatedAt: string;
@@ -51,7 +57,7 @@ export default new Mapper<ResourceModels["crmOpportunity"], HubSpotDeal>({
             ? {
                 id: `${d.properties.pipeline}::${stageId}`,
               }
-            : undefined,
+            : undefined
         ),
       write: (to) =>
         to("properties.dealstage", (v) => {
@@ -108,6 +114,19 @@ export default new Mapper<ResourceModels["crmOpportunity"], HubSpotDeal>({
             });
         }),
       key: "association::companies",
+    },
+    engagements: {
+      read: (from) =>
+        from("associations.engagements.results", (v) => {
+          return v
+            .filter((e) => e.type === "deal_to_engagement")
+            .map(function (hsEngagement) {
+              return {
+                id: hsEngagement.id,
+              };
+            });
+        }),
+      key: "association::engagements",
     },
   },
   createdAt: {
