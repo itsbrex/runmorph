@@ -10,6 +10,7 @@ import { default as GenericCompany } from "./ResourceModels/GenericCompany";
 import { default as GenericContact } from "./ResourceModels/GenericContact";
 import { default as GenericUser } from "./ResourceModels/GenericUser";
 import { default as GenericWorkspace } from "./ResourceModels/GenericWorkspace";
+import { default as TelephonyCall } from "./ResourceModels/TelephonyCall";
 import { default as WidgetCardView } from "./ResourceModels/WidgetCardView";
 
 const resourceModelMap = new ResourceModelMap({})
@@ -21,6 +22,7 @@ const resourceModelMap = new ResourceModelMap({})
   .addResourceModel(CrmStage)
   .addResourceModel(CrmPipeline)
   .addResourceModel(CrmEngagement)
+  .addResourceModel(TelephonyCall)
   .addResourceModel(WidgetCardView);
 
 const resourceModels = resourceModelMap.getResourceModelMap();

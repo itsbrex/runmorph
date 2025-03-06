@@ -185,11 +185,19 @@ export class ConnectionClient<
     TKey extends keyof TSettingRecord,
   >(key: TKey): Promise<TSettingRecord[TKey] | undefined>;
   async getSetting(key: string): Promise<any> {
+    this.morph.m_.logger?.debug("Getting connection setting", { key });
+
     const { data: connectionData, error } = await this.retrieveConnectionData();
-    if (error) return undefined;
+    if (error) {
+      this.morph.m_.logger?.debug("Failed to retrieve connection data", {
+        error,
+      });
+      return undefined;
+    }
 
     try {
       if (!connectionData.authorizationData) {
+        this.morph.m_.logger?.debug("No authorization data found");
         return undefined;
       }
 
@@ -197,10 +205,16 @@ export class ConnectionClient<
         connectionData.authorizationData
       ) as ConnectionAuthorizationStoredData;
 
-      return authorizationJson.metadata
-        ? authorizationJson.metadata[key]
+      const value = authorizationJson.settings
+        ? authorizationJson.settings[key]
         : undefined;
+
+      this.morph.m_.logger?.debug("Retrieved setting value", { key, value });
+      return value;
     } catch (e) {
+      this.morph.m_.logger?.error("Failed to parse authorization data", {
+        error: e,
+      });
       return undefined;
     }
   }
@@ -211,11 +225,19 @@ export class ConnectionClient<
     ) => Promise<string | undefined>) = async (
     key: string
   ): Promise<string | undefined> => {
+    this.morph.m_.logger?.debug("Getting connection metadata", { key });
+
     const { data: connectionData, error } = await this.retrieveConnectionData();
-    if (error) return undefined;
+    if (error) {
+      this.morph.m_.logger?.debug("Failed to retrieve connection data", {
+        error,
+      });
+      return undefined;
+    }
 
     try {
       if (!connectionData.authorizationData) {
+        this.morph.m_.logger?.debug("No authorization data found");
         return undefined;
       }
 
@@ -224,10 +246,17 @@ export class ConnectionClient<
       ) as ConnectionAuthorizationStoredData;
 
       if (!authorizationJson.metadata) {
+        this.morph.m_.logger?.debug("No metadata found");
         return undefined;
       }
-      return authorizationJson.metadata[key];
+
+      const value = authorizationJson.metadata[key];
+      this.morph.m_.logger?.debug("Retrieved metadata value", { key, value });
+      return value;
     } catch (e) {
+      this.morph.m_.logger?.error("Failed to parse authorization data", {
+        error: e,
+      });
       return undefined;
     }
   };

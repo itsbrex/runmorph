@@ -1,0 +1,31 @@
+{
+  "name": "@runmorph/connector-aircall",
+  "author": "HenriChabrand",
+  "version": "0.0.1",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "morph build",
+    "dev": "morph develop",
+    "clean": "rm -rf ./dist",
+    "validate": "run-p validate:*",
+    "validate:format": "prettier --list-different \"**/*.{ts,tsx,md}\" --ignore-path ../../.gitignore",
+    "validate:lint": "eslint --max-warnings=0 src/",
+    "validate:typecheck": "tsc --noEmit",
+    "fix": "run-p fix:*",
+    "fix:lint": "eslint --fix src/",
+    "fix:format": "prettier --write \"**/*.{ts,tsx,md}\" --ignore-path ../../.gitignore",
+    "prepublishOnly": "yarn run build",
+    "publish": "yarn run build && yarn publish --access public",
+    "prepare": "yarn link @runmorph/cli"
+  },
+  "devDependencies": {
+    "@runmorph/cli": "^0.0.3",
+    "@runmorph/cdk": "^0.0.26",
+    "@runmorph/resource-models": "^0.0.7"
+  },
+  "peerDependencies": {
+    "@runmorph/cdk": "^0.0.26",
+    "@runmorph/resource-models": "^0.0.7"
+  }
+}
