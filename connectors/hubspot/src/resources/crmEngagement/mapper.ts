@@ -91,6 +91,64 @@ export type HubSpotEngagement = {
   };
 };
 
+// Helper function to strip HTML tags with enhanced HTML entity handling
+const stripHtml = (html: string | undefined): string | undefined => {
+  if (!html) return undefined;
+
+  // If in browser environment, use DOMParser for more accurate HTML parsing
+  if (typeof window !== "undefined") {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    // Get text content and normalize whitespace
+    return doc.body.textContent?.replace(/\s+/g, " ").trim();
+  }
+
+  // For Node.js environment, use regex-based approach with enhanced entity handling
+  return (
+    html
+      // Remove style/script tags and their contents
+      .replace(/<(script|style)\b[^<]*(?:(?!<\/\1>)<[^<]*)*<\/\1>/gi, "")
+      // Remove HTML comments
+      .replace(/<!--[\s\S]*?-->/g, "")
+      // Replace common HTML entities (extended list)
+      .replace(/&nbsp;|&ndash;|&mdash;/g, " ")
+      .replace(/&lsquo;|&rsquo;|&sbquo;|&prime;/g, "'")
+      .replace(/&ldquo;|&rdquo;|&bdquo;|&Prime;/g, '"')
+      .replace(/&bull;|&middot;/g, "•")
+      .replace(/&hellip;/g, "...")
+      .replace(/&copy;/g, "©")
+      .replace(/&reg;/g, "®")
+      .replace(/&trade;/g, "™")
+      .replace(/&deg;/g, "°")
+      .replace(/&plusmn;/g, "±")
+      .replace(/&para;/g, "¶")
+      .replace(/&sect;/g, "§")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      // Remove all remaining HTML tags
+      .replace(/<[^>]+>/g, "")
+      // Handle line breaks and lists
+      .replace(/<\/(p|div|br|li|h[1-6])>/gi, "\n")
+      // Decode numeric and hex HTML entities
+      .replace(/&#x?[0-9a-f]+;/gi, (match) => {
+        try {
+          return String.fromCharCode(
+            parseInt(
+              match.replace(/[&#x;]/g, ""),
+              match.startsWith("&#x") ? 16 : 10
+            )
+          );
+        } catch {
+          return match;
+        }
+      })
+      // Normalize whitespace
+      .replace(/\n\s*\n/g, "\n")
+      .replace(/\s+/g, " ")
+      .trim()
+  );
+};
+
 export default new Mapper<ResourceModels["crmEngagement"], HubSpotEngagement>({
   id: {
     read: (from) => from("engagement.id", (v) => v.toString()),
@@ -285,13 +343,13 @@ export default new Mapper<ResourceModels["crmEngagement"], HubSpotEngagement>({
             case "CALL":
             case "MEETING":
             case "NOTE":
-              return rawHubSpotEngagement.metadata.body;
+              return stripHtml(rawHubSpotEngagement.metadata.body);
             case "EMAIL":
-              return rawHubSpotEngagement.metadata.html;
+              return stripHtml(rawHubSpotEngagement.metadata.html);
             case "TASK":
-              return rawHubSpotEngagement.metadata.body;
+              return stripHtml(rawHubSpotEngagement.metadata.body);
             default:
-              return rawHubSpotEngagement.metadata.body;
+              return stripHtml(rawHubSpotEngagement.metadata.body);
           }
         }),
       write: (to) =>
