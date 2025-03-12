@@ -46,30 +46,23 @@ export async function generateAuthorizationUrl({
     },
     true
   );
-  const url = new URL(
-    (
-      await connector.connector.auth.generateAuthorizeUrl({
-        connector: {
-          getSetting: async (key) => {
-            const connectorOptions = connector.connector.getOptions();
-            if (!connectorOptions) {
-              return undefined;
-            }
-            return connectorOptions[
-              key as keyof typeof connectorOptions
-            ] as any;
-          },
-        },
-        connection: {
-          getMetadata: async () => undefined,
-          getSetting: async (key) =>
-            settings
-              ? (settings[key as keyof typeof settings] as any)
-              : undefined,
-        },
-      })
-    ).toString()
-  );
+  const urlAndHeaders = await connector.connector.auth.generateAuthorizeUrl({
+    connector: {
+      getSetting: async (key) => {
+        const connectorOptions = connector.connector.getOptions();
+        if (!connectorOptions) {
+          return undefined;
+        }
+        return connectorOptions[key as keyof typeof connectorOptions] as any;
+      },
+    },
+    connection: {
+      getMetadata: async () => undefined,
+      getSetting: async (key) =>
+        settings ? (settings[key as keyof typeof settings] as any) : undefined,
+    },
+  });
+  const url = new URL(urlAndHeaders.url);
   url.searchParams.append("client_id", clientId);
   url.searchParams.append("redirect_uri", redirectUri);
   url.searchParams.append("state", JSON.stringify(state));
@@ -87,10 +80,11 @@ export async function exchangeCodeForToken({
   const clientId = getConnectorClientId(connector);
   const clientSecret = getConnectorClientSecret(connector);
   const redirectUri = getConnectorCallbackUrl(connector.connector.id);
+  const urlAndHeaders = await connector.connector.auth.generateAccessTokenUrl(
+    {} as any
+  );
   const response = await axios.post(
-    (
-      await connector.connector.auth.generateAccessTokenUrl({} as any)
-    ).toString(),
+    urlAndHeaders.url,
     {
       grant_type: "authorization_code",
       code,
@@ -101,6 +95,7 @@ export async function exchangeCodeForToken({
     {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
+        ...(urlAndHeaders.headers || {}),
       },
     }
   );
@@ -158,8 +153,11 @@ export async function fetchOAuthToken(
   const response = await axios.post(accessTokenUrl, urlParams.toString(), {
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
+      ...(params.headers || {}),
     },
   });
+
+  console.log(response.data);
 
   return response.data;
 }
@@ -224,28 +222,38 @@ export async function oautCallback<
     getConnectorOAuthCredentials(connectorData);
 
   try {
+    const urlAndHeaders =
+      await connectorData.connector.auth.generateAccessTokenUrl({
+        connector: {
+          getSetting: async (key) => {
+            const connectorOptions =
+              morph.m_.connectors[connectorId as I].connector.getOptions();
+            if (!connectorOptions) {
+              return undefined;
+            }
+            return connectorOptions[
+              key as keyof typeof connectorOptions
+            ] as any;
+          },
+        },
+        connection,
+      });
+    console.log({ urlAndHeaders });
+    console.log({
+      clientId,
+      clientSecret,
+      code,
+      accessTokenUrl: urlAndHeaders.url,
+      callbackUrl,
+      headers: urlAndHeaders.headers || undefined,
+    });
     const tokenResponse = await fetchOAuthToken({
       clientId,
       clientSecret,
       code,
-      accessTokenUrl: (
-        await connectorData.connector.auth.generateAccessTokenUrl({
-          connector: {
-            getSetting: async (key) => {
-              const connectorOptions =
-                morph.m_.connectors[connectorId as I].connector.getOptions();
-              if (!connectorOptions) {
-                return undefined;
-              }
-              return connectorOptions[
-                key as keyof typeof connectorOptions
-              ] as any;
-            },
-          },
-          connection,
-        })
-      ).toString(),
+      accessTokenUrl: urlAndHeaders.url,
       callbackUrl,
+      headers: urlAndHeaders.headers || undefined,
     });
 
     if (tokenResponse.access_token) {
@@ -402,7 +410,7 @@ export async function getAuthorizationHeader<
     connectorId,
     ownerId,
   });
- 
+
   if (!connectionAdapter) {
     throw {
       code: "MORPH::ADAPTER::CONNECTION_NOT_FOUND",
@@ -501,29 +509,28 @@ export async function refreshAccessToken<
       connectorId,
       ownerId,
     });
-    const response = await axios.post(
-      (
-        await connectorData.connector.auth.generateAccessTokenUrl({
-          connector: {
-            getSetting: async (key) => {
-              const connectorOptions =
-                morph.m_.connectors[connectorId as I].connector.getOptions();
-              if (!connectorOptions) {
-                return undefined;
-              }
-              return connectorOptions[
-                key as keyof typeof connectorOptions
-              ] as any;
-            },
+    const urlAndHeaders =
+      await connectorData.connector.auth.generateAccessTokenUrl({
+        connector: {
+          getSetting: async (key) => {
+            const connectorOptions =
+              morph.m_.connectors[connectorId as I].connector.getOptions();
+            if (!connectorOptions) {
+              return undefined;
+            }
+            return connectorOptions[
+              key as keyof typeof connectorOptions
+            ] as any;
           },
-          connection,
-        })
-      ).toString(),
-      params.toString(),
-      {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      }
-    );
+        },
+        connection,
+      });
+    const response = await axios.post(urlAndHeaders.url, params.toString(), {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        ...(urlAndHeaders.headers || {}),
+      },
+    });
     const newAuthorizationOAuthData: ConnectionAuthorizationOAuthData = {
       _accessToken: response.data.access_token,
       _refreshToken:
@@ -555,7 +562,7 @@ export async function refreshAccessToken<
     const stringEncryptedAuthorizationStoredData = JSON.stringify(
       newAuthorizationStoredData
     );
-    
+
     const updatedConnection = await morph.m_.database.adapter.updateConnection(
       { connectorId, ownerId },
       {
@@ -566,7 +573,6 @@ export async function refreshAccessToken<
 
     return { ...authorizationData, oauth: newAuthorizationOAuthData };
   } catch (error) {
-    
     throw {
       code: "MORPH::CONNECTION::REFRESHING_TOKEN_FAILED",
       message: `Failed to refresh access token. Details: ${JSON.stringify(

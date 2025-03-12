@@ -89,6 +89,7 @@ export type FetchOAuthTokenParams = {
   code: string;
   accessTokenUrl: string;
   callbackUrl: string;
+  headers?: Record<string, string>;
 };
 
 export type OAuthToken = {

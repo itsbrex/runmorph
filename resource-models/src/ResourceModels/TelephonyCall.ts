@@ -7,7 +7,7 @@ const TelephonyCall = new ResourceModel({
       .enum(["inbound", "outbound"])
       .describe("Direction of the call (inbound, outbound)"),
     status: z
-      .enum(["inProgress", "completed", "missed", "voicemail"])
+      .enum(["planned", "inProgress", "completed", "missed", "voicemail"])
       .describe("Call status (inProgress, completed, missed, voicemail)"),
     // Later add "state" as telephonyCallState reference – unique by connectors
     startedAt: z.string().datetime().describe("Call start time"),
