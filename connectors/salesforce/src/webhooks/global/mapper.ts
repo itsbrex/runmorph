@@ -2,48 +2,58 @@ import * as crypto from "crypto";
 
 import { GlobalEventMapper } from "@runmorph/cdk";
 
+import { SalesforceConnector } from "../../connector";
 import SalesforceCardViewMapper, {
   SalesforceCardViewRequest,
 } from "../../resources/widgetCardView/mapper";
 
 export default new GlobalEventMapper({
-  eventRouter: {
+  eventRoutes: {
     cardView: {
-      widgetCardView: ["created"],
+      widgetCardView: {
+        mapper: SalesforceCardViewMapper,
+        triggers: ["created"],
+      },
     },
   },
-  handler: async ({ request, globalRoute }) => {
-    switch (globalRoute) {
+  identifier: async (request, { route }) => {
+    switch (route) {
       case "cardView": {
-        const { body, headers } = request as {
-          body: SalesforceCardViewRequest;
+        const { headers } = request as {
           headers: { origin?: string };
         };
 
-        console.log("headers", headers);
         const organizationDomain = headers.origin
           ? new URL(headers.origin).hostname.split(".")[0]
           : undefined;
 
-        return [
-          {
-            mapper: SalesforceCardViewMapper,
-            trigger: "created",
-            rawResource: body,
-            identifierKey: `${organizationDomain}-${globalRoute}-widgetCardView-created`,
-            idempotencyKey: `${organizationDomain}-${globalRoute}-${body.userId}-${body.recordType}-${body.recordId}-${Date.now()}`,
-          },
-        ];
+        if (!organizationDomain) {
+          return {
+            error: {
+              code: "CONNECTOR::WEBHOOK::MAPPER_FAILED",
+              message: "Missing organization domain in request origin",
+            },
+          };
+        }
+
+        return {
+          model: "widgetCardView",
+          trigger: "created",
+          identifierKey: organizationDomain,
+        };
       }
     }
   },
-  validator: async ({ request, connector }) => {
-    const timestamp = request.headers["x-salesforce-request-timestamp"];
-    const signature = request.headers["x-salesforce-signature"];
+  handler: async (request, { model, metadata, trigger, connection }) => {
+    // Validate the request
+    const headers = request.headers;
+    const timestamp = headers["x-salesforce-request-timestamp"];
+    const signature = headers["x-salesforce-signature"];
     const method = request.method;
     const uri = request.url;
     const origin = request.headers.origin;
-    const body = request.body ? JSON.stringify(request.body) : "";
+    const body = request.body as SalesforceCardViewRequest;
+    const bodyAsString = body ? JSON.stringify(body) : "";
 
     if (!timestamp || !signature || !method || !uri || !origin) {
       return {
@@ -56,8 +66,11 @@ export default new GlobalEventMapper({
 
     const host = origin ? new URL(origin.toString()).host : undefined;
 
-    const options = connector.getOptions();
-    const cardViewPackageSecret = options?._cardViewPackageSecret || undefined;
+    const connector = connection.getConnector<SalesforceConnector>();
+
+    const cardViewPackageSecret = connector.getSetting(
+      "_cardViewPackageSecret"
+    );
     if (!cardViewPackageSecret) {
       return {
         error: {
@@ -68,9 +81,7 @@ export default new GlobalEventMapper({
     }
 
     const encoder = new TextEncoder();
-    const stringToSign = method + uri + body + timestamp + host;
-    console.log("stringToSign", stringToSign);
-    console.log("cardViewPackageSecret", cardViewPackageSecret);
+    const stringToSign = method + uri + bodyAsString + timestamp + host;
     const data = encoder.encode(stringToSign);
     const keyData = encoder.encode(cardViewPackageSecret.toString());
 
@@ -79,12 +90,12 @@ export default new GlobalEventMapper({
       keyData,
       { name: "HMAC", hash: "SHA-256" },
       false,
-      ["sign"],
+      ["sign"]
     );
 
     const computedSignature = await crypto.subtle.sign("HMAC", key, data);
     const computedSignatureBase64 = btoa(
-      String.fromCharCode(...new Uint8Array(computedSignature)),
+      String.fromCharCode(...new Uint8Array(computedSignature))
     );
     console.log("computedSignatureBase64", computedSignatureBase64);
     if (computedSignatureBase64 !== signature) {
@@ -96,6 +107,19 @@ export default new GlobalEventMapper({
       };
     }
 
-    return { valid: true };
+    // Process with the mapping
+
+    switch (model) {
+      case "widgetCardView": {
+        const organizationDomain = headers.origin
+          ? new URL(headers.origin as string).hostname.split(".")[0]
+          : undefined;
+
+        return {
+          rawResource: body,
+          idempotencyKey: `${organizationDomain}-${body.userId}-${body.recordType}-${body.recordId}-${Date.now()}`,
+        };
+      }
+    }
   },
 });

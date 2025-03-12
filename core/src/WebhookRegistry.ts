@@ -1,5 +1,5 @@
 import { EventEmitter } from "events";
-
+import { verify } from "jsonwebtoken";
 import type {
   ConnectorBundle,
   EventTrigger,
@@ -60,7 +60,12 @@ export class WebhookRegistry<
     Settings,
     string,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
+    WebhookOperations<
+      ResourceEvents,
+      Record<string, ResourceEvents>,
+      string,
+      string
+    >
   >[],
 > {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -131,7 +136,7 @@ export class WebhookRegistry<
         }
       | {
           webhookType: "global";
-          globalRoute: string;
+          route: string;
           connectorId: I;
           request: RawEventRequest;
           //  handler: (request: RawEventRequest) => Awaitable<void>;
@@ -140,196 +145,355 @@ export class WebhookRegistry<
     const { connectorId, webhookType, request } = params;
 
     const connectors = this.morph.m_.connectors;
-    console.log("Available connectors:", Object.keys(connectors));
-    console.log(
-      "Available connectors:",
-      this.morph.connectors().retrieve(connectorId)
-    );
 
     let connector;
     if (Object.keys(connectors).includes(connectorId)) {
       connector = connectors[connectorId];
-      console.log("Found connector:", connectorId);
     } else {
       throw "Connector not found : " + connectorId;
     }
 
     const resourceModelOperations = connector.resourceModelOperations;
 
-    console.log("webhookType:", webhookType);
-    console.log("resourceModelOperations:", resourceModelOperations);
     const results = [];
 
     if (webhookType === "subscription") {
-      /*const { webhookToken } = params;
-      const subscriptonMapper = webhookOperations.subscription?.mapper;
+      // TO CONTINUE
+      // TYEP IS STCUK TO GLOBAL →  CHECK API 
+      const { webhookToken } = params;
+      const subscriptonMapper = connector.webhookOperations.subscription?.mapper;
       if (!subscriptonMapper) {
-        throw "Connector has no subscription mapper : " + connectorId;
+        return {
+          error:{
+          code: "MORPH::BAD_CONFIGURATION",
+          message: "Webhook token missing required fields: ownerId, model, and trigger must be present"
+        }};
       }
 
-      const mappedSubEvent = await subscriptonMapper.run(request);
-      const idempotencyKey = mappedSubEvent.idempotencyKey;
-      const model = mappedSubEvent.mapper
-        .resourceModelId as keyof typeof resourceModelOperations;
-      const trigger = mappedSubEvent.trigger;
-
-      if ("rawResource" in mappedSubEvent) {
-        const mappedResource = mappedSubEvent.mapper.read(
-          mappedSubEvent.rawResource
-        ) as ResourceData<
-          ResourceModel<keyof typeof resourceModelOperations, any>
-        >;
-      } else if ("resourceRef" in mappedSubEvent) {
-
+      const JWT_SECRET = process.env.MORPH_ENCRYPTION_KEY;
+      if (!JWT_SECRET) {
+        return {
+          error:{
+          code: "MORPH::BAD_CONFIGURATION", 
+          message: "MORPH_ENCRYPTION_KEY missing.",
+        }};
       }
 
-      const response = await this.porcesseEvent({
-        connectorId,
-        ownerId: "FOOO",
-        model,
-        trigger,
-        mappedResource:,
-        idempotencyKey,
-      });
-      results.push(response);*/
-    } else if (webhookType === "global") {
-      const { globalRoute } = params;
-      console.log("connector.webhookOperations", connector.webhookOperations);
-      const globalMapper =
-        connector.webhookOperations[webhookType as "global"]?.mapper;
-      console.log("globalMapper", globalMapper);
-      if (!globalMapper) {
-        throw "Connector has no global mapper : " + connectorId;
+      const { ownerId, model, trigger } = verify(webhookToken, JWT_SECRET) as {
+        ownerId: string;
+        model: ResourceModelId;
+        trigger: EventTrigger;
+      };
+
+      if (!ownerId || !model || !trigger) {
+        return {
+          error:{
+          code: "MORPH::BAD_CONFIGURATION",
+          message: "Webhook token missing required fields: ownerId, model, and trigger must be present"
+        }};
       }
-      const { error, data: mappedEvent } = await globalMapper.run({
-        request,
-        globalRoute,
-        connector: connector.connector,
-      });
 
-      if (error) {
-        return { error };
-      }
-      console.log("mappedEvent", mappedEvent);
-      // Handle case where mappedEvent can be single event or array of events
-      const events = Array.isArray(mappedEvent) ? mappedEvent : [mappedEvent];
-      console.log("events", events);
-      // Replace forEach with Promise.all + map
-      const eventPromises = events.map(async (event) => {
-        const model = event.mapper
-          .resourceModelId as keyof typeof resourceModelOperations;
-        const trigger = event.trigger;
-        const identifierKey = event.identifierKey;
+      const webhookAdapter = await this.morph.m_.database.adapter.retrieveWebhook(            {
+                  connectorId,
+                  ownerId,
+                  model,
+                  trigger,                  
+                }
+              );
+            if (!webhookAdapter) {
+              return {
+                error:{
+                  code: "MORPH::BAD_CONFIGURATION",
+                  message: "Webhook token missing required fields: ownerId, model, and trigger must be present"
+                }
+              };
+            }
 
-        const webhookAdapter =
-          await this.morph.m_.database.adapter.retrieveWebhookByIdentifierKey(
-            identifierKey
-          );
+          
 
-        console.log("identifierKey", identifierKey, webhookAdapter);
+            let metadata = {}; // Preserve existing metadata if JSON parsing fails
+            try {
+              if (webhookAdapter.metadata) {
+                metadata = JSON.parse(webhookAdapter.metadata);
+              }
+            } catch (e) {
+              // Do nothing, keeping metadata unchanged
+            }
 
-        if (!webhookAdapter) {
-          throw "Couldn't found related webhook subscriton";
-        }
-
-        let mappedResource;
-        const ownerId = webhookAdapter.ownerId;
-        if ("rawResource" in event) {
-          mappedResource = event.mapper.read(event.rawResource) as ResourceData<
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ResourceModel<keyof typeof resourceModelOperations, any, any>
-          >;
-        } else if ("resourceRef" in event) {
-          const resourceId = event.resourceRef.id;
-
-          const { data, error } = await this.morph
-            .connections({ connectorId, ownerId })
-            .resources(model)
-            .retrieve(resourceId);
-
-          if (error) {
-            return { error };
-          }
-
-          mappedResource = data;
-        }
-
-        console.log("mappedResource", mappedResource);
-
-        if (!mappedResource) {
-          return {
-            error: {
-              code: "CONNECTOR::OPERATION::RESOURCE_NOT_FOUND",
-              message:
-                "Could retrieve the resource related to this webhook event.",
-            },
-          };
-        }
-
-        console.log("Expect repsonse", event.mapper.expectResponse());
-        if (event.mapper.expectResponse()) {
-          const processedEvent = await this.porcesseEvent({
-            connectorId,
-            ownerId,
-            model,
-            trigger,
-            mappedResource: mappedResource,
-            idempotencyKey: event.idempotencyKey,
-          });
-          console.log("processedEvent", processedEvent);
-
-          if (
-            processedEvent.processed &&
-            processedEvent.data &&
-            !processedEvent.error
-          ) {
-            const mappedEventResponse = event.mapper.writeResponse(
-              processedEvent.data
+            const { error, data: mappedEvent } = await subscriptonMapper.run(
+              request,
+              {
+                connection: this.morph.connections({ connectorId, ownerId }),
+                model,
+                trigger,
+                metadata,
+              }
             );
-
-            console.log("mappedEventResponse", mappedEventResponse);
-
-            return { data: mappedEventResponse, processed: true };
+            if(error){
+              return { error}
+            }
+ 
+      const idempotencyKey = mappedEvent.idempotencyKey;
+      const resourceMapper = subscriptonMapper.getMapper(model);
+      if (!resourceMapper) {
+        return {
+          error: {
+            code: "MORPH::BAD_CONFIGURATION",
+            message: `No resource mapper found for model: ${model}`
           }
+        };
+      }
 
-          return processedEvent;
+      let mappedResource;
+      if ("rawResource" in mappedEvent) {
+     
+        mappedResource = resourceMapper.read(
+          mappedEvent.rawResource
+        ) as ResourceData<
+          ResourceModel<typeof model,any,any>
+        >;
+      } else if ("resourceRef" in mappedEvent) {
+        const resourceId = mappedEvent.resourceRef.id;
+
+        const { data, error } = await this.morph
+          .connections({ connectorId, ownerId })
+          .resources(model)
+          .retrieve(resourceId);
+
+        if (error) {
+          return { error };
         }
 
-        return this.porcesseEvent({
+        mappedResource = data;
+      }
+
+      if (!mappedResource) {
+        return {
+          error: {
+            code: "CONNECTOR::OPERATION::RESOURCE_NOT_FOUND",
+            message:
+              "Could retrieve the resource related to this webhook event.",
+          },
+        };
+      }
+
+      if (resourceMapper.expectResponse()) {
+        const processedEvent = await this.porcesseEvent({
           connectorId,
           ownerId,
           model,
           trigger,
           mappedResource: mappedResource,
-          idempotencyKey: event.idempotencyKey,
+          idempotencyKey: mappedEvent.idempotencyKey,
         });
-      });
 
-      results.push(...(await Promise.all(eventPromises)));
+        if (
+          processedEvent.processed &&
+          processedEvent.data &&
+          !processedEvent.error
+        ) {
+          const mappedEventResponse = resourceMapper.writeResponse(
+            processedEvent.data
+          );
+
+          return { data: mappedEventResponse, processed: true };
+        }
+
+        return processedEvent;
+      }
+
+      const response = await this.porcesseEvent({
+        connectorId,
+        ownerId,
+        model,
+        trigger,
+        mappedResource,
+        idempotencyKey,
+      });
+      results.push(response);
+    } else if (webhookType === "global") {
+      const { route } = params;
+
+      const globalMapper =
+        connector.webhookOperations[webhookType as "global"]?.mapper;
+      if (!globalMapper) {
+        return {
+          error: {
+            code: "MORPH::BAD_CONFIGURATION",
+            message: "Connector has no global mapper: " + connectorId
+          }
+        };
+      }
+      const { data: identifiedEvents } = await globalMapper.runIdentifier(
+        request,
+        { route }
+      );
+      // Use Promise.all with map to properly handle async operations
+
+      results.push(
+        ...(await Promise.all(
+          (identifiedEvents || []).map(async (identifiedEvent) => {
+            const {
+              model,
+              trigger,
+              identifierKey,
+              request: editedRequest,
+            } = identifiedEvent;
+            const webhookAdapter =
+              await this.morph.m_.database.adapter.retrieveWebhookByIdentifierKey(
+                {
+                  connectorId,
+                  model,
+                  trigger,
+                  identifierKey,
+                }
+              );
+            if (!webhookAdapter) {
+              return [];
+            }
+
+            const ownerId = webhookAdapter.ownerId;
+
+            let metadata = {}; // Preserve existing metadata if JSON parsing fails
+            try {
+              if (webhookAdapter.metadata) {
+                metadata = JSON.parse(webhookAdapter.metadata);
+              }
+            } catch (e) {
+              // Do nothing, keeping metadata unchanged
+            }
+            const { error, data: mappedEvent } = await globalMapper.run(
+              editedRequest ? editedRequest : request,
+              {
+                connection: this.morph.connections({ connectorId, ownerId }),
+                model,
+                trigger,
+                metadata,
+              }
+            );
+
+            if (error) {
+              return { error };
+            }
+
+            if (mappedEvent) {
+              mappedEvent;
+            }
+
+            let mappedResource;
+            const idempotencyKey = mappedEvent.idempotencyKey;
+            const resourceMapper = globalMapper.getMapper(route, model);
+
+            if (!resourceMapper) {
+              return {
+                error: {
+                  code: "CONNECTOR::WEBHOOK::MAPPER_FAILED",
+                  message: `Could not find mapper for route ${route} and model ${model}`,
+                },
+              };
+            }
+
+            if ("rawResource" in mappedEvent) {
+              mappedResource = resourceMapper.read(
+                mappedEvent.rawResource
+              ) as ResourceData<
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                ResourceModel<keyof typeof resourceModelOperations, any, any>
+              >;
+            } else if ("resourceRef" in mappedEvent) {
+              const resourceId = mappedEvent.resourceRef.id;
+
+              const { data, error } = await this.morph
+                .connections({ connectorId, ownerId })
+                .resources(model)
+                .retrieve(resourceId);
+
+              if (error) {
+                return { error };
+              }
+
+              mappedResource = data;
+            }
+
+            if (!mappedResource) {
+              return {
+                error: {
+                  code: "CONNECTOR::OPERATION::RESOURCE_NOT_FOUND",
+                  message:
+                    "Could retrieve the resource related to this webhook event.",
+                },
+              };
+            }
+
+            console.log({
+              state: "TO_BE_PRCESS",
+              expectResponse :resourceMapper.expectResponse(),
+              connectorId,
+              ownerId,
+              model,
+              trigger,
+              mappedResource: mappedResource,
+              idempotencyKey: mappedEvent.idempotencyKey,
+            })
+            if (resourceMapper.expectResponse()) {
+              const processedEvent = await this.porcesseEvent({
+                connectorId,
+                ownerId,
+                model,
+                trigger,
+                mappedResource: mappedResource,
+                idempotencyKey: mappedEvent.idempotencyKey,
+              });
+
+              if (
+                processedEvent.processed &&
+                processedEvent.data &&
+                !processedEvent.error
+              ) {
+                const mappedEventResponse = resourceMapper.writeResponse(
+                  processedEvent.data
+                );
+
+                return { data: mappedEventResponse, processed: true };
+              }
+
+              return processedEvent;
+            }
+
+            return this.porcesseEvent({
+              connectorId,
+              ownerId,
+              model,
+              trigger,
+              mappedResource,
+              idempotencyKey,
+            });
+          })
+        ))
+      );
     } else {
       return {
         error: {
           code: "MORPH::UNKNOWN_ERROR",
-          message: "Webhook type not supporteed : " + webhookType,
+          message: "Webhook type not supported : " + webhookType,
         },
       };
     }
 
     const processed = results.reduce((acc, result) => {
       if ("error" in result) return false;
+      if (Array.isArray(result)) return false; // Handle the case when result is an array
       return acc && (result.processed ?? false);
     }, true);
 
     const data = results.reduce<unknown>((acc, result) => {
       if (acc !== undefined) return acc;
       if ("error" in result) return undefined;
+      if (Array.isArray(result)) return undefined; // Handle the case when result is an array
       return result.processed ? result.data : undefined;
     }, undefined);
 
-    console.log("RESULTS", results);
-    console.log("RESULTS", processed);
-    console.log("RESULTS", data);
-
+    console.log({ processed, data })
     return { processed, data };
   };
 
@@ -388,7 +552,7 @@ export class WebhookRegistry<
 
         let allProcessed = true;
         // Check if any listener returned data
-        console.log("results", results);
+
         for (const result of results) {
           if (result) {
             const { processed, data } = result;
@@ -398,7 +562,6 @@ export class WebhookRegistry<
             allProcessed = !processed ? false : allProcessed;
           }
         }
-        console.log("allProcessed", allProcessed);
 
         return { processed: allProcessed };
       } catch (error) {
@@ -410,12 +573,6 @@ export class WebhookRegistry<
         };
       }
     } else {
-      console.log("Missing required event data:", {
-        ownerId,
-        model,
-        trigger,
-        mappedResource,
-      });
       return {
         error: {
           code: "CONNECTOR::UNKNOWN_ERROR",

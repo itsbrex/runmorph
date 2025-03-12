@@ -18,7 +18,7 @@ export type AdapterWebhook = {
   trigger: string;
   type: string; // subscription | global
   identifierKey?: string | null;
-  meta?: string | null;
+  metadata?: string | null;
   //redirectUrl?: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -35,7 +35,7 @@ export type Adapter = {
     { connectorId, ownerId }: ConnectionIds<string>,
     connection: Partial<AdapterConnection> & {
       updatedAt: Date;
-    },
+    }
   ): Awaitable<AdapterConnection>;
   deleteConnection({
     connectorId,
@@ -52,9 +52,17 @@ export type Adapter = {
     model: string;
     trigger: string;
   }): Awaitable<AdapterWebhook | null>;
-  retrieveWebhookByIdentifierKey(
-    identifierKey: string,
-  ): Awaitable<AdapterWebhook | null>;
+  retrieveWebhookByIdentifierKey({
+    connectorId,
+    model,
+    trigger,
+    identifierKey,
+  }: {
+    connectorId: string;
+    model: string;
+    trigger: string;
+    identifierKey: string;
+  }): Awaitable<AdapterWebhook | null>;
   updateWebhook(
     {
       connectorId,
@@ -67,7 +75,7 @@ export type Adapter = {
     },
     webhook: Partial<AdapterWebhook> & {
       updatedAt: Date;
-    },
+    }
   ): Awaitable<AdapterWebhook>;
   deleteWebhook({
     connectorId,

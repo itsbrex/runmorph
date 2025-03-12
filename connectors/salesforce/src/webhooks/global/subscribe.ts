@@ -19,12 +19,12 @@ type InstalledSubscriberPackageQueryResponse = {
 };
 
 async function isPackageVersionInstalled(
-  connection: RuntimeConnection<any, any>,
-  packageVersionId: string,
+  connection: RuntimeConnection<any, any, any>,
+  packageVersionId: string
 ): Promise<boolean> {
   console.log(
     "[isPackageVersionInstalled] Checking package:",
-    packageVersionId,
+    packageVersionId
   );
 
   const { data, error } =
@@ -52,12 +52,12 @@ type PackageInstallRequestResponse = {
 };
 
 async function installPackageVersion(
-  connection: RuntimeConnection<any, any>,
-  packageVersionId: string,
+  connection: RuntimeConnection<any, any, any>,
+  packageVersionId: string
 ): Promise<boolean> {
   const packageVersionIsinstalled = await isPackageVersionInstalled(
     connection,
-    packageVersionId,
+    packageVersionId
   );
   if (!packageVersionIsinstalled) {
     const { data, error } =
@@ -92,7 +92,7 @@ async function isRemoteSiteWhitelisted({
   connection,
   remoteSite,
 }: {
-  connection: RuntimeConnection<any, any>;
+  connection: RuntimeConnection<any, any, any>;
   remoteSite: RemoteSiteParams;
 }): Promise<boolean> {
   const { data, error } =
@@ -124,7 +124,7 @@ async function whitelistRemoteSite({
   connection,
   remoteSite,
 }: {
-  connection: RuntimeConnection<any, any>;
+  connection: RuntimeConnection<any, any, any>;
   remoteSite: RemoteSiteParams;
 }): Promise<boolean> {
   const remoteSiteIsWhitelisted = await isRemoteSiteWhitelisted({
@@ -182,7 +182,7 @@ async function isTrustedSiteWhitelisted({
   connection,
   trustedSite,
 }: {
-  connection: RuntimeConnection<any, any>;
+  connection: RuntimeConnection<any, any, any>;
   trustedSite: TrustedSiteParams;
 }): Promise<boolean> {
   const { data, error } = await connection.proxy<TrustedSiteQueryResponse>({
@@ -241,7 +241,7 @@ async function whitelistTrustedSite({
   connection,
   trustedSite,
 }: {
-  connection: RuntimeConnection<any, any>;
+  connection: RuntimeConnection<any, any, any>;
   trustedSite: TrustedSiteParams;
 }): Promise<boolean> {
   const trustedSiteIsWhitelisted = await isTrustedSiteWhitelisted({
@@ -280,7 +280,7 @@ async function whitelistTrustedSite({
 async function whitelistMorphAPI({
   connection,
 }: {
-  connection: RuntimeConnection<any, any>;
+  connection: RuntimeConnection<any, any, any>;
 }): Promise<boolean> {
   const name = "MorphPublicAPI";
   const description = "Morph Public API (runmorph.dev)";
@@ -312,10 +312,15 @@ async function whitelistMorphAPI({
 
 export default new SubscribeToGlobalEvent({
   globalEventMapper: SalesforceGlobalEventMapper,
-  handler: async (connection, { globalRoute, settings }) => {
-    if (globalRoute === "cardView") {
-      const { cardViewPackageVersionId, cardViewPackageIframeDomains } =
-        settings as ExtractConnectorSettings<SalesforceConnector>;
+  handler: async (connection, { route }) => {
+    if (route === "cardView") {
+      const connector = connection.getConnector<SalesforceConnector>();
+      const cardViewPackageVersionId = connector.getSetting(
+        "cardViewPackageVersionId"
+      );
+      const cardViewPackageIframeDomains = connector.getSetting(
+        "cardViewPackageIframeDomains"
+      );
 
       if (!cardViewPackageVersionId) {
         return {
@@ -329,7 +334,7 @@ export default new SubscribeToGlobalEvent({
       // Install card view package
       const packageInstalled = await installPackageVersion(
         connection,
-        cardViewPackageVersionId,
+        cardViewPackageVersionId
       );
       if (!packageInstalled) {
         return {
@@ -389,15 +394,25 @@ export default new SubscribeToGlobalEvent({
         ? new URL(instanceUrl).hostname.split(".")[0]
         : undefined;
 
+      if (!organizationDomain) {
+        return {
+          error: {
+            code: "CONNECTOR::WEBHOOK::SUBSCRIPTION_FAILED",
+            message:
+              "Could not determine organization domain from instance URL",
+          },
+        };
+      }
+
       return {
-        identifierKey: `${organizationDomain}-${globalRoute}-widgetCardView-created`, // TODO: define identierKey composable (portalId, globalRoute, ...) so it become typesafe across sub and mapper
+        identifierKey: organizationDomain, // TODO: define identierKey composable (portalId, globalRoute, ...) so it become typesafe across sub and mapper
       };
     } else {
       // TODO : if route infered proeperly, this shouldn't be necessary
       return {
         error: {
           code: "CONNECTOR::WEBHOOKS_NOT_SUPPORTED",
-          message: `The global webhook route '${globalRoute}' does not exist on the HubSpot connector.`,
+          message: `The global webhook route '${route}' does not exist on the HubSpot connector.`,
         },
       };
     }

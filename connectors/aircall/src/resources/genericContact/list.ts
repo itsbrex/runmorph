@@ -1,9 +1,9 @@
 import { List } from "@runmorph/cdk";
 
-import mapper, { type AircallCall } from "./mapper";
+import mapper, { type AircallContact } from "./mapper";
 
-interface AircallCallListResponse {
-  calls: AircallCall[];
+interface AircallContactListResponse {
+  contacts: AircallContact[];
   meta: {
     count: number;
     total: number;
@@ -17,18 +17,17 @@ interface AircallCallListResponse {
 export default new List({
   scopes: [],
   mapper,
-  handler: async (connection, { limit, cursor, fields }) => {
+  handler: async (connection, { limit, cursor }) => {
     const page = cursor ? parseInt(cursor) : 1;
     const perPage = limit || 20;
 
-    const { data, error } = await connection.proxy<AircallCallListResponse>({
+    const { data, error } = await connection.proxy<AircallContactListResponse>({
       method: "GET",
-      path: "/v1/calls",
+      path: "/v1/contacts",
       query: {
         page,
         per_page: perPage,
         order_by: "desc",
-        ...(fields?.includes("fetch_contact") ? { fetch_contact: true } : {}),
       },
     });
 
@@ -37,7 +36,7 @@ export default new List({
     }
 
     return {
-      data: data.calls,
+      data: data.contacts,
       next: data.meta.next_page_link ? (page + 1).toString() : null,
     };
   },

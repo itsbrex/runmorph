@@ -19,13 +19,16 @@ import { ConnectionClient } from "./Connection";
 import { MorphClient } from "./Morph";
 import { AdapterWebhook } from "./types";
 
-export function generateHookUrl(params: {
-  connectorId: string;
-  ownerId: string;
-  model: string;
-  trigger: string;
-}): string {
-  const hookBaseUrl = process.env.MORPH_HOOK_BASE_URL;
+export function generateHookUrl(
+  params: {
+    connectorId: string;
+    ownerId: string;
+    model: string;
+    trigger: string;
+  },
+  baseUrl?: string
+): string {
+  const hookBaseUrl = baseUrl || process.env.MORPH_HOOK_BASE_URL;
   if (!hookBaseUrl) {
     throw {
       code: "MORPH::BAD_CONFIGURATION",
@@ -43,7 +46,7 @@ export function generateHookUrl(params: {
 
   const subscriptionToken = sign({ ...params, jti: uuidv4() }, JWT_SECRET);
 
-  return `${hookBaseUrl}/hook/${params.connectorId}/subscription/${subscriptionToken}`;
+  return `${hookBaseUrl}/${params.connectorId}/subscription/${subscriptionToken}`;
 }
 
 export class WebhookClient<
@@ -53,7 +56,12 @@ export class WebhookClient<
     Settings,
     string,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
+    WebhookOperations<
+      ResourceEvents,
+      Record<string, ResourceEvents>,
+      string,
+      string
+    >
   >,
   CA extends ConnectorBundle<
     string,
@@ -61,7 +69,12 @@ export class WebhookClient<
     Settings,
     string,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
+    WebhookOperations<
+      ResourceEvents,
+      Record<string, ResourceEvents>,
+      string,
+      string
+    >
   >[],
 > {
   private morph: MorphClient<CA>;
@@ -83,12 +96,15 @@ export class WebhookClient<
     this.logger = this.morph.m_.logger;
   }
 
-  subscribe = async (params: {
-    events: [
-      `${GetWebhookModels<C["webhookOperations"]>}::${EventTrigger}`,
-      ...`${GetWebhookModels<C["webhookOperations"]>}::${EventTrigger}`[],
-    ];
-  }): Promise<EitherDataOrError<WebhookData[]>> => {
+  subscribe = async (
+    params: {
+      events: [
+        `${GetWebhookModels<C["webhookOperations"]>}::${EventTrigger}`,
+        ...`${GetWebhookModels<C["webhookOperations"]>}::${EventTrigger}`[],
+      ];
+    },
+    options?: { baseUrl: string }
+  ): Promise<EitherDataOrError<WebhookData[]>> => {
     this.logger?.debug("Subscribing to webhook", { params });
 
     const results: WebhookData[] = [];
@@ -107,15 +123,43 @@ export class WebhookClient<
         throw "WebhookClient : Failed to get connection ids";
       }
 
+      // Check if webhook already exists
+      const existingWebhook =
+        await this.morph.m_.database.adapter.retrieveWebhook({
+          connectorId: ids.connectorId,
+          ownerId: ids.ownerId,
+          model,
+          trigger,
+        });
+
+      if (existingWebhook) {
+        // Skip if webhook already exists and add to results
+        results.push({
+          object: "webhook",
+          connectorId: existingWebhook.connectorId,
+          ownerId: existingWebhook.ownerId,
+          model: existingWebhook.model,
+          trigger: existingWebhook.trigger,
+          createdAt: existingWebhook.createdAt,
+          updatedAt: existingWebhook.updatedAt,
+        });
+        continue;
+      }
+
       const webhookSubscriptionOperations =
         this.connector.webhookOperations?.subscription;
       const webhookGlobalOperations = this.connector.webhookOperations?.global;
 
       let webhookResponse:
         | {
-            type: "subscription" | "global";
+            type: "global";
             identifierKey: string;
-            meta?: Record<string, string>;
+            metadata?: Partial<Record<string, string>>;
+          }
+        | {
+            type: "subscription";
+            identifierKey?: string;
+            metadata?: Partial<Record<string, string>>;
           }
         | undefined;
 
@@ -125,12 +169,15 @@ export class WebhookClient<
       ) {
         let url;
         try {
-          url = generateHookUrl({
-            connectorId: ids.connectorId,
-            ownerId: ids.ownerId,
-            model,
-            trigger,
-          });
+          url = generateHookUrl(
+            {
+              connectorId: ids.connectorId,
+              ownerId: ids.ownerId,
+              model,
+              trigger,
+            },
+            options?.baseUrl
+          );
         } catch (error) {
           if (error instanceof Error && "code" in error) {
             return {
@@ -159,6 +206,7 @@ export class WebhookClient<
             url,
           });
 
+        console.log({ data });
         if (error) {
           this.logger?.error(
             "Failed to create webhook with subscription method. Checking global webhook.",
@@ -167,27 +215,25 @@ export class WebhookClient<
         } else {
           webhookResponse = {
             type: "subscription",
-            identifierKey: `${data.id}`,
-            meta: data?.meta,
+            metadata: data?.metadata || {},
           };
         }
       }
 
       // Try global webhook if subscription failed or wasn't available
-      if (!webhookResponse && webhookGlobalOperations?.mapper?.eventRouter) {
+      if (!webhookResponse && webhookGlobalOperations?.mapper?.eventRoutes) {
         const foundEntry = Object.entries(
-          webhookGlobalOperations.mapper.eventRouter
+          webhookGlobalOperations.mapper.eventRoutes
         ).find(([_route, events]) => events[model]);
 
         if (foundEntry && webhookGlobalOperations?.subscribe) {
-          const [globalRoute] = foundEntry;
+          const [route] = foundEntry;
           const { data, error } = await webhookGlobalOperations.subscribe.run(
             this.connection,
             {
               model,
               trigger,
-              globalRoute,
-              settings: this.connector.connector.getOptions(),
+              route,
             }
           );
 
@@ -199,7 +245,7 @@ export class WebhookClient<
             webhookResponse = {
               type: "global",
               identifierKey: data.identifierKey,
-              meta: data?.meta,
+              metadata: data?.metadata && {},
             };
           }
         }
@@ -217,6 +263,8 @@ export class WebhookClient<
         };
       }
 
+      console.log({ webhookResponse });
+
       const webhook: AdapterWebhook = {
         connectorId: ids.connectorId,
         ownerId: ids.ownerId,
@@ -224,8 +272,8 @@ export class WebhookClient<
         identifierKey: webhookResponse.identifierKey,
         model,
         trigger,
-        meta: webhookResponse.meta
-          ? JSON.stringify(webhookResponse.meta)
+        metadata: webhookResponse.metadata
+          ? JSON.stringify(webhookResponse.metadata)
           : null,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -234,35 +282,8 @@ export class WebhookClient<
       console.log("[AdapterWebhook]", webhook);
 
       try {
-        let createdWebhook: AdapterWebhook;
-        const existingWebhook =
-          await this.morph.m_.database.adapter.retrieveWebhook({
-            connectorId: webhook.connectorId,
-            ownerId: webhook.ownerId,
-            model,
-            trigger,
-          });
-
-        if (existingWebhook) {
-          createdWebhook = await this.morph.m_.database.adapter.updateWebhook(
-            {
-              connectorId: webhook.connectorId,
-              ownerId: webhook.ownerId,
-              model,
-              trigger,
-            },
-            {
-              ...(webhook.identifierKey
-                ? { identifierKey: webhook.identifierKey }
-                : {}),
-              ...(webhook.type ? { type: webhook.type } : {}),
-              updatedAt: new Date(),
-            }
-          );
-        } else {
-          createdWebhook =
-            await this.morph.m_.database.adapter.createWebhook(webhook);
-        }
+        const createdWebhook =
+          await this.morph.m_.database.adapter.createWebhook(webhook);
 
         results.push({
           object: "webhook",
@@ -325,7 +346,43 @@ export class WebhookClient<
         continue; // Skip if webhook doesn't exist
       }
 
-      if (existingWebhook.type === "global") {
+      if (existingWebhook.type === "subscription") {
+        const webhookSubscriptionOperations =
+          this.connector.webhookOperations?.subscription;
+        if (!webhookSubscriptionOperations?.unsubscribe) {
+          return {
+            error: {
+              code: "CONNECTOR::WEBHOOKS_NOT_SUPPORTED",
+              message: `Subscription webhook unsubscribe not supported for ${model}::${trigger}`,
+            },
+          };
+        }
+
+        let metadata = {};
+        try {
+          if (existingWebhook.metadata) {
+            metadata = JSON.parse(existingWebhook.metadata);
+          }
+        } catch (e) {
+          this.logger?.error("Failed to parse webhook metadata", {
+            error: e,
+            metadata: existingWebhook.metadata,
+          });
+        }
+
+        const { error } = await webhookSubscriptionOperations.unsubscribe.run(
+          this.connection,
+          {
+            metadata,
+            model,
+            trigger,
+          }
+        );
+
+        if (error) {
+          return { error };
+        }
+      } else if (existingWebhook.type === "global") {
         const webhookGlobalOperations =
           this.connector.webhookOperations?.global;
         if (!webhookGlobalOperations?.unsubscribe) {
@@ -338,7 +395,7 @@ export class WebhookClient<
         }
 
         const foundEntry = Object.entries(
-          webhookGlobalOperations.mapper.eventRouter
+          webhookGlobalOperations.mapper.eventRoutes
         ).find(([_route, events]) => events[model]);
 
         if (!foundEntry) {
@@ -349,16 +406,26 @@ export class WebhookClient<
             },
           };
         }
-
-        const [globalRoute] = foundEntry;
+        let metadata = {};
+        try {
+          if (existingWebhook.metadata) {
+            metadata = JSON.parse(existingWebhook.metadata);
+          }
+        } catch (e) {
+          this.logger?.error("Failed to parse webhook metadata", {
+            error: e,
+            metadata: existingWebhook.metadata,
+          });
+        }
+        const [route] = foundEntry;
         const { error } = await webhookGlobalOperations.unsubscribe.run(
           this.connection,
           {
             identifierKey: existingWebhook.identifierKey || "",
             model,
             trigger,
-            globalRoute,
-            settings: this.connector.connector.getOptions(),
+            route,
+            metadata,
           }
         );
 

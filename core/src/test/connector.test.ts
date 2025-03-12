@@ -12,6 +12,7 @@ import {
   SubscribeToEvent,
   UnsubscribeFromGlobalEvent,
   UnsubscribeFromGlobalEventHandlerResult,
+  UnsubscribeFromEvent,
 } from "@runmorph/cdk";
 import type { ResourceModels } from "@runmorph/resource-models";
 
@@ -310,32 +311,40 @@ const updateContact = (
 
 // Define webhook mappers and operations
 const TestWebhookGlobalMapper = new GlobalEventMapper({
-  eventRouter: {
+  eventRoutes: {
     main: {
-      crmOpportunity: ["created", "updated"],
+      crmOpportunity: {
+        mapper: TestOpportunityMapper,
+        triggers: ["created", "updated"],
+      },
     },
   },
+  metadataKeys: ["sss"],
+  identifier: async ({}) => {
+    return {
+      model: "crmOpportunity",
+      trigger: "created",
+      identifierKey: "test::main::crmOpportunity::created",
+    };
+  },
   handler: async ({}) => {
-    return [
-      {
-        mapper: TestOpportunityMapper,
-        trigger: "created",
-        rawResource: {},
-        identifierKey: "test::main::crmOpportunity::created",
-        idempotencyKey: "test_event_1",
-      },
-    ];
+    return {
+      rawResource: {},
+      idempotencyKey: "test_event_1",
+    };
   },
 });
 
 const TestWebhookSubscriptionMapper = new EventMapper({
   events: {
-    genericContact: ["created", "updated", "deleted"],
-  },
-  handler(_request) {
-    return {
+    genericContact: {
       mapper: TestContactMapper,
-      trigger: "created",
+      triggers: ["created", "updated", "deleted"],
+    },
+  },
+  metadataKeys: ["test"],
+  handler: async (_request) => {
+    return {
       resourceRef: { id: "foo" },
       idempotencyKey: "test_event_1",
     };
@@ -346,7 +355,8 @@ const TestWebhookGlobalSubscribe = new SubscribeToGlobalEvent({
   globalEventMapper: TestWebhookGlobalMapper,
   handler: async (connection, params) => {
     return {
-      identifierKey: `test::${params.globalRoute}::${params.model}::${params.trigger}`,
+      identifierKey: `test::${params.route}::${params.model}::${params.trigger}`,
+      metadata: { sss: "ss" },
     };
   },
 });
@@ -356,10 +366,17 @@ const TestWebhookSubscription = new SubscribeToEvent({
   handler: async (_connection, { model: _m, trigger: _t, url: _u }) => {
     return {
       id: "whk_test",
-      meta: {
-        secret: "test_secret",
+      metadata: {
+        test: "test_secret",
       },
     };
+  },
+});
+
+const TestWebhookUnsubscribe = new UnsubscribeFromEvent({
+  eventMapper: TestWebhookSubscriptionMapper,
+  handler: async (_connection, { model: _m, trigger: _t }) => {
+    return {};
   },
 });
 
@@ -388,6 +405,7 @@ const connectorBundleTest = new ConnectorBundle({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       mapper: TestWebhookSubscriptionMapper as any,
       subscribe: TestWebhookSubscription,
+      unsubscribe: TestWebhookUnsubscribe,
     },
   },
 }).init;
@@ -412,9 +430,7 @@ const connectorBundleTest2 = new ConnectorBundle({
   },
   webhookOperations: {
     global: {
-      // TO REFACTOR
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mapper: TestWebhookGlobalMapper as any,
+      mapper: TestWebhookGlobalMapper,
       subscribe: TestWebhookGlobalSubscribe,
       unsubscribe: TestWebhookGlobalUnsubscribe,
     },

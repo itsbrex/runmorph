@@ -71,7 +71,6 @@ const connector = new Connector({
   proxy: {
     baseUrl: async ({ connection }) => {
       const instanceUrl = await connection.getMetadata("instanceUrl");
-      console.log("instanceUrl", instanceUrl);
       return `${instanceUrl}/services/data/v59.0`;
     },
   },

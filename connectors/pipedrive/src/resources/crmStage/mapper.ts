@@ -27,13 +27,13 @@ export default new Mapper<ResourceModels["crmStage"], PipedriveStage>({
     type: {
       read: (from) =>
         from("*", (_, stage) => {
-          if (!stage.active_flag) return "UNKNOWN";
+          if (!stage.active_flag) return "unknown";
           if (stage.deal_probability === 0) {
-            return "LOST";
+            return "lost";
           } else if (stage.deal_probability === 100) {
-            return "WON";
+            return "won";
           } else {
-            return "OPEN";
+            return "open";
           }
         }),
     },
@@ -50,7 +50,7 @@ export default new Mapper<ResourceModels["crmStage"], PipedriveStage>({
   updatedAt: {
     read: (from) =>
       from("add_time", (add_time, stage) =>
-        stage.update_time ? new Date(stage.update_time) : new Date(add_time),
+        stage.update_time ? new Date(stage.update_time) : new Date(add_time)
       ),
   },
 });

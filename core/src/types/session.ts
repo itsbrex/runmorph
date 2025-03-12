@@ -15,7 +15,12 @@ type SessionConnectionParams<
     Settings,
     string,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
+    WebhookOperations<
+      ResourceEvents,
+      Record<string, ResourceEvents>,
+      string,
+      string
+    >
   >[],
   I extends string,
 > = ConnectionIds<I> & ConnectionCreateParams<C>;
@@ -27,7 +32,12 @@ export type SessionCreateParams<
     Settings,
     string,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
+    WebhookOperations<
+      ResourceEvents,
+      Record<string, ResourceEvents>,
+      string,
+      string
+    >
   >[],
   I extends string,
 > = {
@@ -43,7 +53,12 @@ export type SessionData<
     Settings,
     string,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
+    WebhookOperations<
+      ResourceEvents,
+      Record<string, ResourceEvents>,
+      string,
+      string
+    >
   >[],
   I extends string,
 > = {

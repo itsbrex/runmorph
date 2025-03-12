@@ -29,9 +29,9 @@ type HSEventType = keyof typeof hubspotEventType;
 
 const hubspotObjectProperties = {
   contact: "genericContact",
-  company: "genericCompany",
-  deal: "crmOpportunity",
-};
+  //company: "genericCompany",
+  // deal: "crmOpportunity",
+} as const;
 
 type HSObjectType = keyof typeof hubspotObjectProperties;
 
@@ -40,22 +40,28 @@ type HubSpotRequest = {
 };
 
 type HubSpotCardViewQuery = {
-  portalId?: string;
-  associatedObjectType?: string;
-  hs_object_id?: string;
+  portalId: string;
+  associatedObjectType: string;
+  hs_object_id: string;
 };
 
 export default new GlobalEventMapper({
-  eventRouter: {
+  eventRoutes: {
     main: {
-      genericContact: ["updated", "created"],
+      genericContact: {
+        mapper: HubSpotContactMapper,
+        triggers: ["updated", "created", "deleted"],
+      },
     },
     cardView: {
-      widgetCardView: ["created"],
+      widgetCardView: {
+        mapper: HubSpotCardViewMapper,
+        triggers: ["created"],
+      },
     },
   },
-  handler: async ({ request, globalRoute }) => {
-    switch (globalRoute) {
+  identifier: async (request, { route }) => {
+    switch (route) {
       case "main": {
         const { body } = request as HubSpotRequest;
         return body.map((hubspotEvent) => {
@@ -66,28 +72,58 @@ export default new GlobalEventMapper({
           const model = hubspotObjectProperties[objectType as HSObjectType];
 
           return {
-            mapper: HubSpotContactMapper,
-            trigger: trigger,
-            resourceRef: {
-              id: hubspotEvent.objectId.toString(),
-            },
-            identifierKey: `${hubspotEvent.portalId}-${globalRoute}-${model}-${trigger}`,
-            idempotencyKey: hubspotEvent.eventId.toString(),
+            model,
+            trigger,
+            identifierKey: hubspotEvent.portalId.toString(),
+            request: { ...request, ...{ body: hubspotEvent } },
           };
         });
       }
       case "cardView": {
-        const { query } = request as { query: HubSpotCardViewQuery };
+        const query = request.query as unknown as HubSpotCardViewQuery;
+
         return [
           {
-            mapper: HubSpotCardViewMapper,
+            model: "widgetCardView",
             trigger: "created",
             rawResource: query,
-            identifierKey: `${query.portalId}-${globalRoute}-widgetCardView-created`,
-            idempotencyKey: `${query.portalId}-${globalRoute}-${query.associatedObjectType}-${query.hs_object_id}-${Date.now()}`,
+            identifierKey: query.portalId.toString(),
           },
         ];
       }
+      default:
+        return {
+          error: {
+            code: "CONNECTOR::WEBHOOK::MAPPER_FAILED",
+            message: `Invalid route: ${route}`,
+          },
+        };
+    }
+  },
+  handler: async (request, { model, trigger, metadata }) => {
+    if (model === "widgetCardView") {
+      const query = request.query as unknown as HubSpotCardViewQuery;
+      return {
+        rawResource: query,
+        identifierKey: query.portalId.toString(),
+        idempotencyKey: `${query.portalId}-${query.associatedObjectType}-${query.hs_object_id}-${Date.now()}`,
+      };
+    } else {
+      const { body } = request as { body: HubSpotWebhookEvent };
+      if (!body.objectId) {
+        return {
+          error: {
+            code: "CONNECTOR::WEBHOOK::MAPPER_FAILED",
+            message: "Missing objectId in webhook event",
+          },
+        };
+      }
+      return {
+        resourceRef: {
+          id: body.objectId.toString(),
+        },
+        idempotencyKey: body.eventId.toString(),
+      };
     }
   },
 });

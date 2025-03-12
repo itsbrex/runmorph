@@ -42,7 +42,7 @@ type HubspotEvent = keyof typeof hubspotEventType;
 async function subscribeToEvent(
   appId: string,
   hapikey: string,
-  body: unknown,
+  body: unknown
 ): Promise<Response> {
   const response = await fetch(
     `https://api.hubapi.com/webhooks/v1/${appId}/subscriptions?hapikey=${hapikey}`,
@@ -52,18 +52,35 @@ async function subscribeToEvent(
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
-    },
+    }
   );
   return response;
 }
 
 export default new SubscribeToGlobalEvent({
   globalEventMapper: HubSpotGlobalEventMapper,
-  handler: async (connection, { model, trigger, globalRoute, settings }) => {
-    const { appId, hapikey } =
-      settings as ExtractConnectorSettings<HubSpotConnector>;
+  handler: async (connection, { model, trigger, route }) => {
+    const connector = connection.getConnector<HubSpotConnector>();
+    const appId = connector.getSetting("appId");
+    const hapikey = connector.getSetting("hapikey");
 
-    console.log("settings", settings);
+    if (!appId) {
+      return {
+        error: {
+          code: "CONNECTOR::BAD_CONFIGURATION",
+          message: "Missing required configuration: appId",
+        },
+      };
+    }
+
+    if (!hapikey) {
+      return {
+        error: {
+          code: "CONNECTOR::BAD_CONFIGURATION",
+          message: "Missing required configuration: hapikey",
+        },
+      };
+    }
 
     // TODO : get portalId from connection.getMeta("portalId")
     const { data: accountData, error } = await connection.proxy<{
@@ -80,7 +97,7 @@ export default new SubscribeToGlobalEvent({
     const portalId = accountData.portalId;
 
     // TODO : fix type inference
-    if (globalRoute === "main") {
+    if (route === "main") {
       try {
         // Type guard to ensure model is HubspotModel
         if (!(model in hubspotObjectProperties)) {
@@ -107,7 +124,7 @@ export default new SubscribeToGlobalEvent({
                 },
               };
               return subscribeToEvent(appId, hapikey, body);
-            }),
+            })
           );
         } else {
           const body = {
@@ -122,7 +139,6 @@ export default new SubscribeToGlobalEvent({
 
         responses.forEach(async (response) => {
           const responseData = await response.json();
-          console.log("responseData", responseData);
           if (!response.ok) {
             if (
               responseData.category === "VALIDATION_ERROR" &&
@@ -150,19 +166,21 @@ export default new SubscribeToGlobalEvent({
       }
 
       return {
-        identifierKey: `${portalId}-${globalRoute}-${model}-${trigger}`, // TODO: define identierKey composable (portalId, globalRoute, ...) so it become typesafe across sub and mapper
+        identifierKey: portalId.toString(), // TODO: define identierKey composable (portalId, globalRoute, ...) so it become typesafe across sub and mapper
+        // metadata: {}
       };
     }
-    if (globalRoute === "cardView") {
+    if (route === "cardView") {
       return {
-        identifierKey: `${portalId}-${globalRoute}-widgetCardView-created`, // TODO: define identierKey composable (portalId, globalRoute, ...) so it become typesafe across sub and mapper
+        identifierKey: portalId.toString(), // TODO: define identierKey composable (portalId, globalRoute, ...) so it become typesafe across sub and mapper
+        // metadata: {}
       };
     } else {
       // TODO : if route infered proeperly, this shouldn't be necessary
       return {
         error: {
           code: "CONNECTOR::WEBHOOKS_NOT_SUPPORTED",
-          message: `The global webhook route '${globalRoute}' does not exist on the HubSpot connector.`,
+          message: `The global webhook route '${route}' does not exist on the HubSpot connector.`,
         },
       };
     }

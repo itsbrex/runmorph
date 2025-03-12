@@ -4,7 +4,9 @@ const CrmStage = new ResourceModel({
   id: "crmStage",
   schema: (z) => ({
     name: z.string().min(1).max(250).describe("Stage name"),
-    type: z.enum(["OPEN", "WON", "LOST", "UNKNOWN"]).describe("Stage type"),
+    type: z
+      .enum(["open", "won", "lost", "unknown"])
+      .describe("Type of the stage"),
     pipeline: z.morph
       .resource("crmPipeline")
       .optional()

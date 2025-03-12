@@ -9,13 +9,14 @@ const TelephonyCall = new ResourceModel({
     status: z
       .enum(["inProgress", "completed", "missed", "voicemail"])
       .describe("Call status (inProgress, completed, missed, voicemail)"),
+    // Later add "state" as telephonyCallState reference – unique by connectors
     startedAt: z.string().datetime().describe("Call start time"),
-    endedAt: z.string().datetime().optional().describe("Call end time"),
     answeredAt: z
       .string()
       .datetime()
       .optional()
       .describe("Time when call was answered (if applicable)"),
+    endedAt: z.string().datetime().optional().describe("Call end time"),
     duration: z
       .number()
       .int()

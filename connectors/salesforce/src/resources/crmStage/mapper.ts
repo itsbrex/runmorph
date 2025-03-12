@@ -31,14 +31,14 @@ export default new Mapper<ResourceModels["crmStage"], SalesforceStage>({
     type: {
       read: (from) =>
         from("*", (sfStage) => {
-          let type: "OPEN" | "WON" | "LOST" | "UNKNOWN" = "UNKNOWN";
+          let type: "open" | "won" | "lost" | "unknown" = "unknown";
           if (
             sfStage.ForecastCategoryName === "Closed" ||
             sfStage.ForecastCategoryName === "Omitted"
           ) {
-            type = sfStage.DefaultProbability === 100 ? "WON" : "LOST";
+            type = sfStage.DefaultProbability === 100 ? "won" : "lost";
           } else if (sfStage.ForecastCategoryName === "Pipeline") {
-            type = "OPEN";
+            type = "open";
           }
           return type;
         }),

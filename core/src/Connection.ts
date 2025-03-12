@@ -23,6 +23,8 @@ import type {
   ExtractMetadataKeys,
   SettingFieldsToRecord,
   ConnectionProxyOptions,
+  SettingFieldValue,
+  ExtractCS,
 } from "@runmorph/cdk";
 import axios, { AxiosRequestConfig } from "axios";
 
@@ -48,7 +50,12 @@ function validateAuthorizationSettings(
     Settings,
     string,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
+    WebhookOperations<
+      ResourceEvents,
+      Record<string, ResourceEvents>,
+      string,
+      string
+    >
   >,
   settings: Record<string, string>,
   strict: boolean = true
@@ -128,6 +135,34 @@ export class ConnectionClient<
       this.connectorId = params.connectorId;
       this.ownerId = params.ownerId;
     }
+  }
+
+  /**
+   * Gets the connector associated with this connection.
+   *
+   * @returns The connector associated with this connection.
+   * @throws Error if the connection IDs cannot be retrieved or if the connector is not found.
+   */
+  getConnector<TConnector extends C["connector"]>(): {
+    getSetting(key: any): any;
+  } {
+    const { data: connectionIds, error } = this.getConnectionIds();
+    if (error) {
+      this.morph.m_.logger?.error("Failed to get connection IDs", { error });
+      throw new Error(`Failed to get connection IDs: ${error.message}`);
+    }
+
+    const connector = this.morph.m_.connectors[connectionIds.connectorId]
+      .connector as {
+      getSetting(key: any): any;
+    };
+    if (!connector) {
+      const errorMessage = `Connector not found for ID: ${connectionIds.connectorId}`;
+      this.morph.m_.logger?.error(errorMessage);
+      throw new Error(errorMessage);
+    }
+
+    return connector;
   }
 
   async create(
@@ -1123,7 +1158,6 @@ export class ConnectionClient<
   }
 
   webhooks(): WebhookClient<C, CA> {
-    console.log("CORE_LOAD_WEBOOK");
     return new WebhookClient(this.morph, this);
   }
 }
@@ -1135,7 +1169,12 @@ export class AllConnectionsClient<
     Settings,
     string,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
+    WebhookOperations<
+      ResourceEvents,
+      Record<string, ResourceEvents>,
+      string,
+      string
+    >
   >[],
   I extends string,
 > {

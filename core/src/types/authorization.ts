@@ -13,7 +13,12 @@ export type GenerateAuthorizationUrlParams = {
     Settings,
     string,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
+    WebhookOperations<
+      ResourceEvents,
+      Record<string, ResourceEvents>,
+      string,
+      string
+    >
   >;
   ownerId: string;
   scopes?: string[];
@@ -34,7 +39,12 @@ export type ExchangeCodeForTokenParams = {
     Settings,
     string,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
+    WebhookOperations<
+      ResourceEvents,
+      Record<string, ResourceEvents>,
+      string,
+      string
+    >
   >;
   code: string;
 };
@@ -46,7 +56,12 @@ export type RefreshAccessTokenParams = {
     Settings,
     string,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
+    WebhookOperations<
+      ResourceEvents,
+      Record<string, ResourceEvents>,
+      string,
+      string
+    >
   >;
   refreshToken: string;
 };

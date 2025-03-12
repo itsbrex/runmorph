@@ -1,6 +1,6 @@
 import { GlobalEventMapper } from "@runmorph/cdk";
 
-import HubSpotCardViewMapper from "../../resources/widgetCardView/mapper";
+import PipedriveCardViewMapper from "../../resources/widgetCardView/mapper";
 
 type PipedriveCardViewQuery = {
   companyId?: string;
@@ -10,26 +10,55 @@ type PipedriveCardViewQuery = {
 };
 
 export default new GlobalEventMapper({
-  eventRouter: {
+  eventRoutes: {
     cardView: {
-      widgetCardView: ["created"],
+      widgetCardView: {
+        mapper: PipedriveCardViewMapper,
+        triggers: ["created"],
+      },
     },
   },
-  handler: async ({ request, globalRoute }) => {
-    console.log("request", request);
-    switch (globalRoute) {
+  identifier: async (request, { route }) => {
+    switch (route) {
       case "cardView": {
         const { query } = request as { query: PipedriveCardViewQuery };
-        return [
-          {
-            mapper: HubSpotCardViewMapper,
-            trigger: "created",
-            rawResource: query,
-            identifierKey: `${query.companyId}-${globalRoute}-widgetCardView-created`,
-            idempotencyKey: `${query.companyId}-${globalRoute}-${query.resource}-${query.selectedIds}-${query.userId}-${Date.now()}`,
-          },
-        ];
+        if (!query.companyId) {
+          return {
+            error: {
+              code: "CONNECTOR::WEBHOOK::MAPPER_FAILED",
+              message: "Missing companyId in query parameters",
+            },
+          };
+        }
+        return {
+          model: "widgetCardView",
+          trigger: "created",
+          identifierKey: query.companyId,
+        };
       }
+      default:
+        return {
+          error: {
+            code: "CONNECTOR::WEBHOOK::MAPPER_FAILED",
+            message: `Invalid route: ${route}`,
+          },
+        };
+    }
+  },
+  handler: async (request, { model }) => {
+    if (model === "widgetCardView") {
+      const { query } = request as { query: PipedriveCardViewQuery };
+      return {
+        rawResource: query,
+        idempotencyKey: `${query.companyId}-${query.resource}-${query.selectedIds}-${query.userId}-${Date.now()}`,
+      };
+    } else {
+      return {
+        error: {
+          code: "CONNECTOR::WEBHOOK::MAPPER_FAILED",
+          message: `Unsupported model: ${model}`,
+        },
+      };
     }
   },
 });

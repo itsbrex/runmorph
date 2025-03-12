@@ -5,7 +5,7 @@ export type AircallCall = {
   id: number;
   direction: "inbound" | "outbound";
   status: "done" | "initial" | "answered" | "missed" | "voicemail";
-  started_at: number;
+  started_at?: number;
   answered_at?: number;
   ended_at?: number;
   duration?: number;
@@ -54,7 +54,7 @@ export default new Mapper<ResourceModels["telephonyCall"], AircallCall>({
     startedAt: {
       read: (from) =>
         from("started_at", (started_at) =>
-          new Date(started_at * 1000).toISOString()
+          started_at ? new Date(started_at * 1000).toISOString() : undefined
         ),
     },
     endedAt: {
@@ -89,11 +89,7 @@ export default new Mapper<ResourceModels["telephonyCall"], AircallCall>({
       read: (from) =>
         from("user", (user) => {
           if (!user) return [];
-          return [
-            {
-              id: user.id.toString(),
-            },
-          ];
+          return [{ rawResource: user, id: user.id.toString() }];
         }),
     },
     contacts: {
@@ -102,10 +98,12 @@ export default new Mapper<ResourceModels["telephonyCall"], AircallCall>({
           if (!contact) return [];
           return [
             {
+              rawResource: contact,
               id: contact.id.toString(),
             },
           ];
         }),
+      key: "fetch_contact",
     },
     externalNumber: {
       read: (from) =>
@@ -125,14 +123,20 @@ export default new Mapper<ResourceModels["telephonyCall"], AircallCall>({
   },
   createdAt: {
     read: (from) =>
-      from("started_at", (started_at) =>
-        started_at ? new Date(started_at * 1000) : undefined
-      ),
+      from("started_at", (started_at) => {
+        const createdAt = started_at || Math.floor(Date.now() / 1000);
+        return new Date(createdAt * 1000);
+      }),
   },
   updatedAt: {
     read: (from) =>
-      from("ended_at", (ended_at) =>
-        ended_at ? new Date(ended_at * 1000) : undefined
-      ),
+      from("*", (rawCall) => {
+        const updatedAt =
+          rawCall.ended_at ||
+          rawCall.answered_at ||
+          rawCall.started_at ||
+          Math.floor(Date.now() / 1000);
+        return new Date(updatedAt * 1000);
+      }),
   },
 });

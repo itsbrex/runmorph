@@ -29,11 +29,11 @@ export default new Mapper<ResourceModels["crmStage"], HubSpotStage>({
     type: {
       read: (from) =>
         from("*", (_, d) => {
-          if (d.archived) return "UNKNOWN";
+          if (d.archived) return "unknown";
           if (d.metadata.isClosed === "true") {
-            return d.metadata.probability === "1.0" ? "WON" : "LOST";
+            return d.metadata.probability === "1.0" ? "won" : "lost";
           } else {
-            return "OPEN";
+            return "open";
           }
         }),
     },

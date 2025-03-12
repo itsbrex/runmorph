@@ -32,7 +32,12 @@ export class ResourceClient<
     Settings,
     string,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
+    WebhookOperations<
+      ResourceEvents,
+      Record<string, ResourceEvents>,
+      string,
+      string
+    >
   >,
   CA extends ConnectorBundle<
     string,
@@ -40,7 +45,12 @@ export class ResourceClient<
     Settings,
     string,
     ResourceModelOperations,
-    WebhookOperations<ResourceEvents, Record<string, ResourceEvents>, string>
+    WebhookOperations<
+      ResourceEvents,
+      Record<string, ResourceEvents>,
+      string,
+      string
+    >
   >[],
   RTI extends keyof C["resourceModelOperations"],
 > {
@@ -202,6 +212,7 @@ export class ResourceClient<
 
         this.m_.logger?.debug("Resource retrieved successfully", {
           resourceId: id,
+          data,
         });
         return {
           data: data as ResourceData<

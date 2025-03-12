@@ -349,7 +349,7 @@ async function main(): Promise<void> {
     });
     morph.webhooks().requestHandler({
       webhookType: "global",
-      globalRoute: "main",
+      route: "main",
       connectorId: "test-2",
       request: {
         url: "foo",
