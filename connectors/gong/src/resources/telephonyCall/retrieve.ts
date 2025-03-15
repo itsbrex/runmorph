@@ -3,7 +3,11 @@ import { Retrieve } from "@runmorph/cdk";
 import mapper, { type GongCall } from "./mapper";
 
 export default new Retrieve({
-  scopes: ["api:calls:read:extensive", "api:calls:read:media-url"],
+  scopes: [
+    "api:calls:read:basic",
+    "api:calls:read:extensive",
+    "api:calls:read:media-url",
+  ],
   mapper,
   handler: async (connection, { id }) => {
     const { data, error } = await connection.proxy<{

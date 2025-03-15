@@ -14,7 +14,11 @@ interface GongCallListResponse {
 }
 
 export default new List({
-  scopes: ["api:calls:read:extensive", "api:calls:read:media-url"],
+  scopes: [
+    "api:calls:read:basic",
+    "api:calls:read:extensive",
+    "api:calls:read:media-url",
+  ],
   mapper,
   handler: async (connection, { limit, cursor }) => {
     const { data, error } = await connection.proxy<GongCallListResponse>({
