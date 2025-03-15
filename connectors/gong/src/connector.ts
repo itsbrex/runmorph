@@ -22,18 +22,21 @@ const connector = new Connector({
       const basicToken = Buffer.from(`${clientId}:${clientSecret}`).toString(
         "base64"
       );
-      console.log({
-        url: "https://app.gong.io/oauth2/generate-customer-token",
-        headers: {
-          Authorization: `Basic ${basicToken}`,
-        },
-      });
       return {
         url: "https://app.gong.io/oauth2/generate-customer-token",
         headers: {
           Authorization: `Basic ${basicToken}`,
         },
       };
+    },
+    settings: {
+      webhookPublicKey: {
+        type: "text",
+        name: "Webhook Public Key (optional)",
+        description:
+          "Company settings > Automation rules > New Rule > Signed JWT",
+        required: false,
+      },
     },
     metadataKeys: ["apiBaseUrl"],
     callbacks: {

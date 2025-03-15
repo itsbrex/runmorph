@@ -46,6 +46,17 @@ export default new Retrieve({
       };
     }
 
-    return data.calls[0];
+    const call = data.calls[0];
+
+    if (call.metaData.isPrivate) {
+      return {
+        error: {
+          code: "CONNECTOR::OPERATION::RESOURCE_NOT_FOUND" as const,
+          message: `Call is private in Gong for id ${id}`,
+        },
+      };
+    }
+
+    return call;
   },
 });

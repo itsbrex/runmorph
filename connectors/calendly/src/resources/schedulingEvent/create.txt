@@ -1,0 +1,320 @@
+import { Create } from "@runmorph/cdk";
+import mapper, { type CalendlyEvent } from "./mapper";
+import { CalendlyEventType } from "../schedulingEventType/mapper";
+import { AirtopClient, AirtopError } from "@airtop/sdk";
+import type { AirtopSessionConfigV1 } from "@airtop/sdk/wrapper/AirtopSessions";
+
+const AIRTOP_API_KEY = ""; // Create an API from https://portal.airtop.ai/api-keys and paste the key here
+
+async function airtopCloseCookieModal(
+  client: AirtopClient,
+  sessionId: string,
+  windowId: string
+) {
+  const apiResponse = await client.windows.click(sessionId, windowId, {
+    elementDescription:
+      'Click the "I understand" button from the privacy cookie modal',
+  });
+  console.log("Cookie modal click response:", apiResponse);
+  if (!apiResponse.data) {
+    throw Error("Failed to click cookie modal button");
+  }
+  return apiResponse.data;
+}
+
+async function airtopSelectAnswer(
+  client: AirtopClient,
+  sessionId: string,
+  windowId: string,
+  question: string,
+  value: string
+) {
+  const apiResponse = await client.windows.click(sessionId, windowId, {
+    elementDescription: `Click the answer "${value}" for the question "${question}"`,
+  });
+  console.log(`Select answer response for "${question}":`, apiResponse);
+  if (!apiResponse.data) {
+    throw Error("Failed to select answer");
+  }
+  return apiResponse.data;
+}
+
+async function airtopTextAnswer(
+  client: AirtopClient,
+  sessionId: string,
+  windowId: string,
+  question: string,
+  value: string
+) {
+  const apiResponse = await client.windows.type(sessionId, windowId, {
+    text: value,
+    elementDescription: `Fill the answer for the question "${question}"`,
+  });
+  console.log(`Text answer response for "${question}":`, apiResponse);
+  if (!apiResponse.data) {
+    throw Error("Failed to enter text answer");
+  }
+  return apiResponse.data;
+}
+
+async function airtopSubmitEvent(
+  client: AirtopClient,
+  sessionId: string,
+  windowId: string
+) {
+  const apiResponse = await client.windows.click(sessionId, windowId, {
+    elementDescription: "Submit the form by clicking the Schedule Event",
+  });
+  console.log("Submit event response:", apiResponse);
+  if (!apiResponse.data) {
+    throw Error("Failed to submit event");
+  }
+  return apiResponse.data;
+}
+
+export default new Create({
+  scopes: ["scheduling:write"],
+  mapper,
+  handler: async (connection, { data }) => {
+    const { externalAttendees, startTime, answers } = data;
+    // First retrieve the event type ID
+    let eventTypeId = data.eventTypeId;
+    if (eventTypeId?.startsWith("res_")) {
+      eventTypeId = Buffer.from(eventTypeId.slice(4), "base64").toString();
+    }
+
+    if (!eventTypeId) {
+      return {
+        error: {
+          code: "CONNECTOR::OPERATION::SERVER_ERROR" as const,
+          message: "Event type ID is required",
+        },
+      };
+    }
+
+    // Create scheduling event in Calendly
+
+    const eventTypeResult = await connection.proxy<{
+      resource: CalendlyEventType;
+    }>({
+      method: "GET",
+      path: `/event_types/${eventTypeId}`,
+    });
+
+    if (eventTypeResult.error) {
+      return { error: eventTypeResult.error };
+    }
+
+    const eventType = eventTypeResult.data.resource;
+
+    const attendee = externalAttendees && externalAttendees[0];
+
+    if (!attendee) {
+      return {
+        error: {
+          code: "CONNECTOR::OPERATION::BAD_REQUEST" as const,
+          message: "At least one external attendee is required",
+        },
+      };
+    }
+
+    if (!attendee.email) {
+      return {
+        error: {
+          code: "CONNECTOR::OPERATION::BAD_REQUEST" as const,
+          message: "Email is required for external attendee",
+        },
+      };
+    }
+
+    if (!startTime) {
+      return {
+        error: {
+          code: "CONNECTOR::OPERATION::BAD_REQUEST" as const,
+          message: "Start time is required",
+        },
+      };
+    }
+
+    const duration = data.duration
+      ? data.duration
+      : eventType.duration
+        ? eventType.duration
+        : eventType.duration_options && eventType.duration_options[0]
+          ? eventType.duration_options[0]
+          : 30;
+
+    // Check that all required questions have answers
+    const requiredQuestions = eventType.custom_questions.filter(
+      (q) => q.required
+    );
+
+    for (const question of requiredQuestions) {
+      const questionKey = Buffer.from(question.name).toString("base64");
+      if (!answers || !answers[questionKey]) {
+        return {
+          error: {
+            code: "CONNECTOR::OPERATION::BAD_REQUEST" as const,
+            message: `Required question "${question.name}" is missing an answer`,
+          },
+        };
+      }
+    }
+
+    const schedulingUrl = eventType.scheduling_url;
+    const date = new Date(startTime);
+    const formattedDate = date.toISOString().split("T")[0];
+    const formattedMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    const name = [attendee.firstName, attendee.lastName]
+      .filter(Boolean)
+      .join(" ");
+
+    const schedulingUrlWithParams = `${schedulingUrl}/${startTime}?email=${encodeURIComponent(attendee.email)}&name=${encodeURIComponent(name)}&spot_id=${formattedDate}&month=${formattedMonth}&date=${formattedDate}`;
+
+    // Create Airtop session and get ID before starting background process
+    if (!AIRTOP_API_KEY) {
+      throw new Error("AIRTOP_API_KEY is not set");
+    }
+
+    const client = new AirtopClient({
+      apiKey: AIRTOP_API_KEY,
+    });
+
+    const configuration: AirtopSessionConfigV1 = {
+      timeoutMinutes: 1,
+    };
+
+    const session = await client.sessions.create({ configuration });
+    console.log("Session creation response:", session);
+
+    if (!session || session.errors || !session.data.id) {
+      throw Error("Failed to create session");
+    }
+
+    const sessionId = session.data.id;
+
+    // Start Airtop process in background
+
+    try {
+      // Create a browser window
+      const window = await client.windows.create(sessionId, {
+        url: schedulingUrlWithParams,
+      });
+      console.log("Window creation response:", window);
+      if (!window.data) {
+        throw Error("Failed to create window");
+      }
+
+      // Add a wait of 5 secs to allow the page to load
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+
+      // Close cookie modal
+      await airtopCloseCookieModal(client, sessionId, window.data.windowId);
+
+      if (answers) {
+        // Handle each answer based on the question type
+        for (const [key, answer] of Object.entries(answers)) {
+          const questionKey = Buffer.from(key, "base64").toString();
+          // Find matching question from eventType
+          const question = eventType.custom_questions.find(
+            (q) => q.name === questionKey
+          );
+
+          if (!question) {
+            throw new Error(
+              `Question ${questionKey} not found in event type questions`
+            );
+          }
+
+          // Convert answer to string for text input
+          const answerStr = String(answer);
+
+          switch (question.type) {
+            case "text":
+            case "multi_line":
+            case "single_line":
+            case "phone_number":
+              await airtopTextAnswer(
+                client,
+                sessionId,
+                window.data.windowId,
+                question.name,
+                answerStr
+              );
+              break;
+            case "single_select":
+            case "multi_select":
+              await airtopSelectAnswer(
+                client,
+                sessionId,
+                window.data.windowId,
+                question.name,
+                answerStr
+              );
+              break;
+
+            default:
+              throw new Error(`Unsupported question type: ${question.type}`);
+          }
+        }
+      }
+
+      // Submit the form by clicking the Schedule Event button
+      const submitResponse = await client.windows.click(
+        sessionId,
+        window.data.windowId,
+        {
+          elementDescription:
+            'Click the "Schedule Event" button to submit the form',
+        }
+      );
+      console.log("Submit form response:", submitResponse);
+
+      if (!submitResponse.data) {
+        throw Error("Failed to submit scheduling form");
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+    } catch (err) {
+      if (err instanceof AirtopError) {
+        console.error(err.statusCode);
+        console.error(err.message);
+        console.error(err.body);
+      } else {
+        console.error(err);
+      }
+    } finally {
+      // Terminate the session
+      const terminateResponse = await client.sessions.terminate(sessionId);
+      console.log("Session termination response:", terminateResponse);
+    }
+
+    // Return response with session ID immediately
+    return {
+      id: `res_${Buffer.from(JSON.stringify({ sessionId })).toString("base64")}`,
+      eventTypeId: eventTypeId,
+      eventType: eventType,
+      name: `${attendee?.firstName ? attendee.firstName : ""}${attendee?.lastName ? " " + attendee?.lastName : ""}${eventType.profile?.name ? ` and ${eventType.profile?.name}` : ""}`,
+      status: "requested" as const,
+      startTime: startTime,
+      endTime: new Date(
+        new Date(startTime).getTime() + duration * 60000
+      ).toISOString(),
+      attendees: [
+        {
+          id: eventType.profile.owner.split("/").pop() || "",
+        },
+      ],
+      externalAttendees:
+        externalAttendees?.map((attendee) => ({
+          email: attendee?.email || "",
+          firstName: attendee?.firstName,
+          lastName: attendee?.lastName,
+          phoneNumber: attendee?.phoneNumber,
+        })) || [],
+      answers: answers || {},
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    } as any;
+  },
+});

@@ -1,5 +1,5 @@
 {
-  "name": "@runmorph/connector-gong",
+  "name": "@runmorph/connector-calendly",
   "author": "HenriChabrand",
   "version": "0.0.1",
   "main": "dist/index.js",
@@ -20,7 +20,7 @@
     "prepare": "yarn link @runmorph/cli"
   },
   "dependencies": {
-    "jsonwebtoken": "^9.0.2"
+    "@airtop/sdk": "^0.1.33"
   },
   "devDependencies": {
     "@runmorph/cli": "^0.0.3",

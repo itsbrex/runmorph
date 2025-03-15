@@ -39,8 +39,10 @@ export default new List({
       return { error };
     }
 
+    const filteredCalls = data.calls.filter((call) => !call.metaData.isPrivate);
+
     return {
-      data: data.calls,
+      data: filteredCalls,
       next: data.records.cursor || null,
     };
   },
