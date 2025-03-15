@@ -12,6 +12,9 @@ import { default as GenericUser } from "./ResourceModels/GenericUser";
 import { default as GenericWorkspace } from "./ResourceModels/GenericWorkspace";
 import { default as TelephonyCall } from "./ResourceModels/TelephonyCall";
 import { default as WidgetCardView } from "./ResourceModels/WidgetCardView";
+import { default as SchedulingEventType } from "./ResourceModels/SchedulingEventType";
+import { default as SchedulingSlot } from "./ResourceModels/SchedulingSlot";
+import { default as SchedulingEvent } from "./ResourceModels/SchedulingEvent";
 
 const resourceModelMap = new ResourceModelMap({})
   .addResourceModel(GenericCompany)
@@ -23,6 +26,9 @@ const resourceModelMap = new ResourceModelMap({})
   .addResourceModel(CrmPipeline)
   .addResourceModel(CrmEngagement)
   .addResourceModel(TelephonyCall)
+  .addResourceModel(SchedulingEventType)
+  .addResourceModel(SchedulingSlot)
+  .addResourceModel(SchedulingEvent)
   .addResourceModel(WidgetCardView);
 
 const resourceModels = resourceModelMap.getResourceModelMap();
