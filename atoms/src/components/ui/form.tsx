@@ -87,13 +87,15 @@ const FormItem = React.forwardRef<
 FormItem.displayName = "FormItem";
 
 const FormLabel = React.forwardRef<
-  React.ElementRef<typeof LabelPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>
+  HTMLLabelElement,
+  React.LabelHTMLAttributes<HTMLLabelElement>
 >(({ className, ...props }, ref) => {
   const { error, formItemId } = useFormField();
 
   return (
+    /** @ts-expect-error –– to refacto */
     <Label
+      /** @ts-expect-error –– to refacto */
       ref={ref}
       className={cn(error && "text-destructive", className)}
       htmlFor={formItemId}
@@ -104,14 +106,18 @@ const FormLabel = React.forwardRef<
 FormLabel.displayName = "FormLabel";
 
 const FormControl = React.forwardRef<
+  // @ts-ignore –– to refacto
   React.ElementRef<typeof Slot>,
+  // @ts-ignore –– to refacto
   React.ComponentPropsWithoutRef<typeof Slot>
 >(({ ...props }, ref) => {
   const { error, formItemId, formDescriptionId, formMessageId } =
     useFormField();
 
   return (
+    /** @ts-ignore –– to refacto */
     <Slot
+      /** @ts-ignore –– to refacto */
       ref={ref}
       id={formItemId}
       aria-describedby={

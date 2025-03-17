@@ -23,14 +23,16 @@ import {
 } from "../ui/select";
 import { useMorph } from "./morph-provider";
 import { useConnection } from "./connection-context";
+import { Input } from "../ui/input";
+import { Loader2 } from "lucide-react";
 
 export interface ConnectorSetting {
   key: string;
-  type: "select";
+  type: "select" | "text" | "number";
   name: string;
   required: boolean;
   description: string;
-  options: Array<{
+  options?: Array<{
     value: string;
     name: string;
   }>;
@@ -87,6 +89,37 @@ export function ConnectionSettingsClient() {
 
     settings.forEach((setting) => {
       if (setting.type === "select") {
+        schemaFields[setting.key] = setting.required
+          ? z.string({
+              required_error: getConnectorTranslatedText(
+                connector?.id || "",
+                setting.key,
+                "required",
+                `${setting.name} is required`
+              ),
+            })
+          : z.string().optional();
+      } else if (setting.type === "number") {
+        schemaFields[setting.key] = setting.required
+          ? z
+              .string()
+              .transform((val) => (val ? Number(val) : undefined))
+              .pipe(
+                z.number({
+                  required_error: getConnectorTranslatedText(
+                    connector?.id || "",
+                    setting.key,
+                    "required",
+                    `${setting.name} is required`
+                  ),
+                })
+              )
+          : z
+              .string()
+              .transform((val) => (val ? Number(val) : undefined))
+              .pipe(z.number().optional());
+      } else {
+        // Default to string for text and other types
         schemaFields[setting.key] = setting.required
           ? z.string({
               required_error: getConnectorTranslatedText(
@@ -165,7 +198,11 @@ export function ConnectionSettingsClient() {
   }, [form, setSettings]);
 
   if (loading) {
-    return <div>{getTranslatedText("status.loading", "Loading...")}</div>;
+    return (
+      <div className="flex items-center justify-center">
+        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+      </div>
+    );
   }
 
   if (error) {
@@ -200,7 +237,8 @@ export function ConnectionSettingsClient() {
                     setting.name
                   )}
                 </FormLabel>
-                <FormControl>
+
+                {setting.type === "select" && setting.options ? (
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
@@ -216,7 +254,7 @@ export function ConnectionSettingsClient() {
                       />
                     </SelectTrigger>
                     <SelectContent>
-                      {setting.options.map((option) => (
+                      {setting.options?.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {getConnectorTranslatedText(
                             connector.id,
@@ -228,7 +266,29 @@ export function ConnectionSettingsClient() {
                       ))}
                     </SelectContent>
                   </Select>
-                </FormControl>
+                ) : setting.type === "number" ? (
+                  <Input
+                    type="number"
+                    {...field}
+                    placeholder={getConnectorTranslatedText(
+                      connector.id,
+                      setting.key,
+                      "placeholder",
+                      `Enter ${setting.name.toLowerCase()}`
+                    )}
+                  />
+                ) : (
+                  <Input
+                    type="text"
+                    {...field}
+                    placeholder={getConnectorTranslatedText(
+                      connector.id,
+                      setting.key,
+                      "placeholder",
+                      `Enter ${setting.name.toLowerCase()}`
+                    )}
+                  />
+                )}
                 <FormDescription>
                   {getConnectorTranslatedText(
                     connector.id,
