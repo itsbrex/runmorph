@@ -14,9 +14,17 @@ export type AircallCall = {
   raw_digits?: string;
   user?: {
     id: number;
+    name: string;
   };
   contact?: {
     id: number;
+    first_name: string;
+    last_name: string;
+    phone_numbers: Array<{
+      id: number;
+      label: string;
+      value: string;
+    }>;
   } | null;
   number: {
     id: number;

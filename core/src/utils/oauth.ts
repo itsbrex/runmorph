@@ -253,7 +253,7 @@ export async function oautCallback<
       code,
       accessTokenUrl: urlAndHeaders.url,
       callbackUrl,
-      ...(urlAndHeaders.headers || {}),
+      headers: urlAndHeaders.headers,
     });
 
     if (tokenResponse.access_token) {

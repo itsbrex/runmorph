@@ -15,6 +15,7 @@ import { default as WidgetCardView } from "./ResourceModels/WidgetCardView";
 import { default as SchedulingEventType } from "./ResourceModels/SchedulingEventType";
 import { default as SchedulingSlot } from "./ResourceModels/SchedulingSlot";
 import { default as SchedulingEvent } from "./ResourceModels/SchedulingEvent";
+import { default as TelephonyCallTranscript } from "./ResourceModels/TelephonyCallTranscript";
 
 const resourceModelMap = new ResourceModelMap({})
   .addResourceModel(GenericCompany)
@@ -26,6 +27,7 @@ const resourceModelMap = new ResourceModelMap({})
   .addResourceModel(CrmPipeline)
   .addResourceModel(CrmEngagement)
   .addResourceModel(TelephonyCall)
+  .addResourceModel(TelephonyCallTranscript)
   .addResourceModel(SchedulingEventType)
   .addResourceModel(SchedulingSlot)
   .addResourceModel(SchedulingEvent)
