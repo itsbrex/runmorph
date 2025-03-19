@@ -43,6 +43,10 @@ const TelephonyCall = new ResourceModel({
       .string()
       .optional()
       .describe("Internal number involved in the call (if applicable)"),
+    transcript: z.morph
+      .resource("telephonyCallTranscript")
+      .optional()
+      .describe("Transcript of the call if available"),
   }),
 });
 

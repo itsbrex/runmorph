@@ -205,6 +205,37 @@ export default new Mapper<ResourceModels["telephonyCall"], DialpadCall>({
     internalNumber: {
       read: (from) => from("*", (raw) => raw.internal_number),
     },
+    transcript: {
+      read: (from) =>
+        from("*", (call) => {
+          if (!call.call_id) return undefined;
+
+          if (!call.recording_details || call.recording_details.length === 0)
+            return undefined;
+
+          let hasCallRecording = false;
+          const callRecording = call.recording_details.find(
+            (d) => d.recording_type === "callrecording"
+          );
+          hasCallRecording = !!callRecording?.url;
+
+          const voicemail = call.recording_details.find(
+            (d) => d.recording_type === "voicemail"
+          );
+          hasCallRecording = !!voicemail?.url;
+
+          const adminRecording = call.recording_details.find(
+            (d) => d.recording_type === "admincallrecording"
+          );
+          hasCallRecording = !!adminRecording?.url;
+
+          if (!hasCallRecording) return undefined;
+
+          return {
+            id: call.call_id.toString(),
+          };
+        }),
+    },
   },
   createdAt: {
     read: (from) =>

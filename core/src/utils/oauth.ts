@@ -157,8 +157,6 @@ export async function fetchOAuthToken(
     },
   });
 
-  console.log(response.data);
-
   return response.data;
 }
 
@@ -238,22 +236,14 @@ export async function oautCallback<
         },
         connection,
       });
-    console.log({ urlAndHeaders });
-    console.log({
-      clientId,
-      clientSecret,
-      code,
-      accessTokenUrl: urlAndHeaders.url,
-      callbackUrl,
-      headers: urlAndHeaders.headers || undefined,
-    });
+
     const tokenResponse = await fetchOAuthToken({
       clientId,
       clientSecret,
       code,
       accessTokenUrl: urlAndHeaders.url,
       callbackUrl,
-      headers: urlAndHeaders.headers,
+      ...(urlAndHeaders.headers ? { headers: urlAndHeaders.headers } : {}),
     });
 
     if (tokenResponse.access_token) {
@@ -355,6 +345,7 @@ export async function oautCallback<
 
     return { connection: unauthorizedConnection, redirectUrl };
   } catch (error) {
+    morph.m_.logger?.error("Error authorizing connection", { error });
     return {
       error: {
         code: "MORPH::UNKNOWN_ERROR",

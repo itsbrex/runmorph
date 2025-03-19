@@ -128,6 +128,15 @@ export default new Mapper<ResourceModels["telephonyCall"], GongCall>({
       read: (from) =>
         from("media.audioUrl", (recordingUrl) => recordingUrl || undefined),
     },
+    transcript: {
+      read: (from) =>
+        from("*", (call) => {
+          if (!call.metaData?.id || !call.media?.audioUrl) return undefined;
+          return {
+            id: call.metaData.id.toString(),
+          };
+        }),
+    },
   },
   createdAt: {
     read: (from) =>

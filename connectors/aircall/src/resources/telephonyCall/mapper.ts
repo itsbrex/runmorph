@@ -85,11 +85,11 @@ export default new Mapper<ResourceModels["telephonyCall"], AircallCall>({
     },
     recordingUrl: {
       read: (from) =>
-        from("*", (raw) =>
-          raw.recording
-            ? raw.recording
-            : raw.voicemail
-              ? raw.voicemail
+        from("*", (call) =>
+          call.recording
+            ? call.recording
+            : call.voicemail
+              ? call.voicemail
               : undefined
         ),
     },
@@ -127,6 +127,15 @@ export default new Mapper<ResourceModels["telephonyCall"], AircallCall>({
     internalNumber: {
       read: (from) =>
         from("number.digits", (digits) => digits && digits?.replace(/\s/g, "")),
+    },
+    transcript: {
+      read: (from) =>
+        from("*", (call) => {
+          if (!call.id || !call.recording || !call.voicemail) return undefined;
+          return {
+            id: call.id.toString(),
+          };
+        }),
     },
   },
   createdAt: {
