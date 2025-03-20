@@ -3,10 +3,10 @@ import { GlobalEventMapper } from "@runmorph/cdk";
 import PipedriveCardViewMapper from "../../resources/widgetCardView/mapper";
 
 type PipedriveCardViewQuery = {
-  companyId?: string;
+  companyId?: number;
   resource?: "deal" | "contact" | "company";
   selectedIds?: string;
-  userId?: string;
+  userId?: number;
 };
 
 export default new GlobalEventMapper({
@@ -33,7 +33,7 @@ export default new GlobalEventMapper({
         return {
           model: "widgetCardView",
           trigger: "created",
-          identifierKey: query.companyId,
+          identifierKey: query.companyId.toString(),
         };
       }
       default:

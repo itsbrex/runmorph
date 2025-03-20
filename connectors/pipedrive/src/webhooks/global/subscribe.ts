@@ -6,7 +6,7 @@ export default new SubscribeToGlobalEvent({
   globalEventMapper: PipedriveGlobalEventMapper,
   handler: async (connection, { route }) => {
     const { data: accountData, error } = await connection.proxy<{
-      data: { company_id: string };
+      data: { company_id: number };
     }>({
       method: "GET",
       path: "/users/me",
@@ -20,7 +20,7 @@ export default new SubscribeToGlobalEvent({
 
     if (route === "cardView") {
       return {
-        identifierKey: portalId, // TODO: define identierKey composable (portalId, globalRoute, ...) so it become typesafe across sub and mapper
+        identifierKey: portalId.toString(), // TODO: define identierKey composable (portalId, globalRoute, ...) so it become typesafe across sub and mapper
       };
     } else {
       return {
