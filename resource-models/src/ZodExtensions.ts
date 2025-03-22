@@ -21,7 +21,7 @@ declare module "zod" {
         string,
         Record<string, z.ZodTypeAny>,
         Record<string, z.ZodTypeAny>
-      >,
+      >
     ) => this;
     // Méthode pour récupérer les métadonnées
     isMorphResource: () =>
@@ -41,7 +41,7 @@ function extendZodWithMorph(zodInstance: typeof z): void {
       string,
       Record<string, z.ZodTypeAny>,
       Record<string, z.ZodTypeAny>
-    >,
+    >
   ) {
     // Conversion via unknown, puis en Record<symbol, any>
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -73,7 +73,7 @@ function zMoprhResource<
     Record<string, z.ZodTypeAny>
   >,
 >(
-  resourceModelId: RM["id"],
+  resourceModelId: RM["id"]
 ): z.ZodEffects<
   ZodObject<{ id: ZodString; rawResource: ZodOptional<ZodAny> }>,
   {
@@ -91,6 +91,7 @@ function zMoprhResource<
       model: z.string().optional(),
       fields: z.any().optional(),
       rawResource: z.any().optional(),
+      remote: z.object({ id: z.string().optional() }).optional(),
       createdAt: z.string().optional(),
       updatedAt: z.string().optional(),
     })
@@ -106,6 +107,7 @@ function zMoprhResource<
         object: "resourceRef",
         model: resourceModelId,
         id: data.id,
+        ...(data.remote ? { remote: data.remote } : {}),
         rawResource: data.rawResource || undefined,
       };
     });
