@@ -10,7 +10,7 @@ export type SalesforceAccount = {
 
 export default new Mapper<ResourceModels["genericCompany"], SalesforceAccount>({
   id: {
-    read: (from) => from("Id"),
+    read: (from) => from("Id", (id) => id.substring(0, 15)),
     key: "Id",
   },
   fields: {

@@ -23,7 +23,7 @@ export default new Mapper<
   SalesforceOpportunity
 >({
   id: {
-    read: (from) => from("Id"),
+    read: (from) => from("Id", (id) => id.substring(0, 15)),
     key: "Id",
   },
   fields: {
@@ -49,9 +49,9 @@ export default new Mapper<
         from("stageId", (stageId) =>
           stageId
             ? {
-                id: stageId,
+                id: stageId.substring(0, 15),
               }
-            : undefined,
+            : undefined
         ),
       write: (to) => to("stageId", (stage) => stage.id),
       key: "StageName",
@@ -61,9 +61,9 @@ export default new Mapper<
         from("OwnerId", (OwnerId) =>
           OwnerId
             ? {
-                id: OwnerId,
+                id: OwnerId.substring(0, 15),
               }
-            : undefined,
+            : undefined
         ),
       write: (to) => to("OwnerId", (owner) => owner.id),
       key: "OwnerId",
@@ -71,22 +71,22 @@ export default new Mapper<
     contacts: {
       read: (from) =>
         from("ContactId", (ContactId) =>
-          ContactId ? [{ id: ContactId }] : undefined,
+          ContactId ? [{ id: ContactId.substring(0, 15) }] : undefined
         ),
       write: (to) =>
         to("ContactId", (companies) =>
-          companies[0] ? companies[0].id : undefined,
+          companies[0] ? companies[0].id.substring(0, 15) : undefined
         ),
       key: "ContactId",
     },
     companies: {
       read: (from) =>
         from("AccountId", (AccountId) =>
-          AccountId ? [{ id: AccountId }] : undefined,
+          AccountId ? [{ id: AccountId.substring(0, 15) }] : undefined
         ),
       write: (to) =>
         to("AccountId", (companies) =>
-          companies[0] ? companies[0].id : undefined,
+          companies[0] ? companies[0].id.substring(0, 15) : undefined
         ),
       key: "AccountId",
     },

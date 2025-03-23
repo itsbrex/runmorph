@@ -13,7 +13,7 @@ export type SalesforceContact = {
 
 export default new Mapper<ResourceModels["genericContact"], SalesforceContact>({
   id: {
-    read: (from) => from("Id"),
+    read: (from) => from("Id", (id) => id.substring(0, 15)),
     key: "Id",
   },
   fields: {

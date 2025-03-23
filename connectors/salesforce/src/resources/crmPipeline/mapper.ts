@@ -13,7 +13,7 @@ export default new Mapper<
   SalesforceOpportunityPipeline
 >({
   id: {
-    read: (from) => from("Id"),
+    read: (from) => from("Id", (id) => id.substring(0, 15)),
   },
   fields: {
     name: {
@@ -22,7 +22,9 @@ export default new Mapper<
     },
     stages: {
       read: (from) =>
-        from("stages", (stages) => stages.map((stage) => ({ id: stage.Id }))),
+        from("stages", (stages) =>
+          stages.map((stage) => ({ id: stage.Id.substring(0, 15) }))
+        ),
     },
   },
   createdAt: {
@@ -32,9 +34,9 @@ export default new Mapper<
         (stages) =>
           new Date(
             Math.min(
-              ...stages.map((stage) => new Date(stage.CreatedDate).getTime()),
-            ),
-          ),
+              ...stages.map((stage) => new Date(stage.CreatedDate).getTime())
+            )
+          )
       ),
   },
   updatedAt: {
@@ -45,10 +47,10 @@ export default new Mapper<
           new Date(
             Math.max(
               ...stages.map((stage) =>
-                new Date(stage.LastModifiedDate).getTime(),
-              ),
-            ),
-          ),
+                new Date(stage.LastModifiedDate).getTime()
+              )
+            )
+          )
       ),
   },
 });
