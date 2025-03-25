@@ -9,8 +9,7 @@ import hubspotFieldMapper, { HubSpotProperty } from "./mapper";
 const HUBSPOT_OBJECT_TYPES: Record<string, string> = {
   genericContact: "contact",
   genericCompany: "company",
-  genericDeal: "deal",
-  genericTicket: "ticket",
+  crmOpportunity: "deal",
   genericUser: "owner", // HubSpot API handles users as owners
 };
 
@@ -34,7 +33,16 @@ export const hubspotListField = new ListField({
    */
   handler: async (connection, { model, limit, cursor, filters }) => {
     // Map the Morph model ID to HubSpot object type
-    const objectType = HUBSPOT_OBJECT_TYPES[model] || "contact";
+    const objectType = HUBSPOT_OBJECT_TYPES[model];
+
+    if (!objectType) {
+      return {
+        error: {
+          code: "CONNECTOR::OPERATION::BAD_REQUEST",
+          message: `Unsupported model type (${model}) for field listing.`,
+        },
+      };
+    }
 
     // Make the API request to HubSpot
     const response = await connection.proxy<{
@@ -54,7 +62,7 @@ export const hubspotListField = new ListField({
       return {
         error: {
           code: "CONNECTOR::UNKNOWN_ERROR", // Using a standard error code
-          message: `Failed to fetch properties for ${objectType}`,
+          message: `Failed to fetch feilds for ${objectType}`,
         },
       };
     }
