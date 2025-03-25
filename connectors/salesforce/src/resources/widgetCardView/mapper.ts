@@ -49,7 +49,7 @@ export default new Mapper<
         from(
           "*",
           (sf) =>
-            `${sf.organizationDomain}-${sf.userId}-${sf.recordType}-${sf.recordId}-${Date.now()}`
+            `${sf.organizationDomain}-${sf.userId}-${sf.recordType}-${sf.recordId}`
         ),
     },
     fields: {

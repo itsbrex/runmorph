@@ -39,7 +39,11 @@ export default new Mapper<
   {
     id: {
       read: (from) =>
-        from("companyId", (v) => `${v?.toString() || ""}-${Date.now()}`),
+        from(
+          "*",
+          (event) =>
+            `${event.companyId?.toString() || ""}-${event.userId}-${event.resource}-${event.selectedIds}`
+        ),
     },
     fields: {
       triggeredBy: {
@@ -48,19 +52,19 @@ export default new Mapper<
       crmOpportunity: {
         read: (from) =>
           from("*", (v) =>
-            v.resource === "deal" ? { id: v.selectedIds } : undefined,
+            v.resource === "deal" ? { id: v.selectedIds } : undefined
           ),
       },
       genericCompany: {
         read: (from) =>
           from("*", (v) =>
-            v.resource === "company" ? { id: v.selectedIds } : undefined,
+            v.resource === "company" ? { id: v.selectedIds } : undefined
           ),
       },
       genericContact: {
         read: (from) =>
           from("*", (v) =>
-            v.resource === "contact" ? { id: v.selectedIds } : undefined,
+            v.resource === "contact" ? { id: v.selectedIds } : undefined
           ),
       },
     },
@@ -129,5 +133,5 @@ export default new Mapper<
           };
         }),
     },
-  },
+  }
 );

@@ -62,7 +62,12 @@ export default new Mapper<
 >(
   {
     id: {
-      read: (from) => from("portalId", (v) => `${v.toString()}-${Date.now()}`),
+      read: (from) =>
+        from(
+          "*",
+          (event) =>
+            `${event.portalId.toString()}-${event.userId}-${event.associatedObjectType}-${event.hs_object_id}`
+        ),
     },
     fields: {
       triggeredBy: {
