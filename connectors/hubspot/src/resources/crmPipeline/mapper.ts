@@ -32,7 +32,7 @@ export default new Mapper<ResourceModels["crmPipeline"], HubSpotPipeline>({
               id: `${d.id}::${stage.id}`,
               rawResource: stage,
             };
-          }),
+          })
         ),
       key: "stages",
     },

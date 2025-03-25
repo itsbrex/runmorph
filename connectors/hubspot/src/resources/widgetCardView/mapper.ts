@@ -73,7 +73,7 @@ export default new Mapper<
           from("*", (v) =>
             v.associatedObjectType === "DEAL"
               ? { id: v.hs_object_id }
-              : undefined,
+              : undefined
           ),
       },
       genericCompany: {
@@ -81,7 +81,7 @@ export default new Mapper<
           from("*", (v) =>
             v.associatedObjectType === "COMPANY"
               ? { id: v.hs_object_id }
-              : undefined,
+              : undefined
           ),
       },
       genericContact: {
@@ -89,7 +89,7 @@ export default new Mapper<
           from("*", (v) =>
             v.associatedObjectType === "CONTACT"
               ? { id: v.hs_object_id }
-              : undefined,
+              : undefined
           ),
       },
     },
@@ -142,7 +142,7 @@ export default new Mapper<
                 value: content.value,
               };
             }),
-          })),
+          }))
         ),
     },
     root: {
@@ -183,5 +183,5 @@ export default new Mapper<
           return result;
         }),
     },
-  },
+  }
 );

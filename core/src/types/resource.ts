@@ -4,4 +4,5 @@ export type ListParams = {
   filters?: Record<string, string>;
   sort?: string;
   iterator?: boolean;
+  fields?: string[];
 };

@@ -65,7 +65,7 @@ export class ResourceClient<
   constructor(
     morph: MorphClient<CA>,
     connection: ConnectionClient<C, CA>,
-    entityId: RTI
+    modelId: RTI
   ) {
     this.morph = morph;
     const { data: ids, error } = connection.getConnectionIds();
@@ -76,13 +76,13 @@ export class ResourceClient<
           error,
         }
       );
-      throw "WebhookClient : Failed to get connection ids";
+      throw "ResourceClient : Failed to get connection ids";
     }
     this.m_ = {
       logger: this.morph.m_.logger,
       connection: connection,
       connector: this.morph.m_.connectors[ids.connectorId] as C,
-      resourceModelId: entityId,
+      resourceModelId: modelId,
     };
   }
 
@@ -97,6 +97,7 @@ export class ResourceClient<
       resourceModelId: this.m_.resourceModelId,
       params: options,
     });
+    const fieldMapper = this.m_.connector.fieldOperations?.mapper;
 
     const entityRecord =
       this.m_.connector.resourceModelOperations[
@@ -107,7 +108,8 @@ export class ResourceClient<
       if (entityRecord.list) {
         const { data, next, error } = await entityRecord.list.run(
           this.m_.connection,
-          options
+          options,
+          fieldMapper
         );
 
         if (error) {
@@ -188,12 +190,15 @@ export class ResourceClient<
         this.m_.resourceModelId as RTI extends ResourceModelId ? RTI : never
       ];
 
+    const fieldMapper = this.m_.connector.fieldOperations?.mapper;
+
     if (resourceModelRecord) {
       if (resourceModelRecord.retrieve) {
         const { data, error } = await resourceModelRecord.retrieve.run(
           this.m_.connection,
           id,
-          options
+          options,
+          fieldMapper
         );
 
         if (error) {
@@ -264,6 +269,8 @@ export class ResourceClient<
       options,
     });
 
+    const fieldMapper = this.m_.connector.fieldOperations?.mapper;
+
     const resourceModelRecord =
       this.m_.connector.resourceModelOperations[
         this.m_.resourceModelId as RTI extends ResourceModelId ? RTI : never
@@ -273,7 +280,8 @@ export class ResourceClient<
       if (resourceModelRecord.create) {
         const { data, error } = await resourceModelRecord.create.run(
           this.m_.connection,
-          fields
+          fields,
+          fieldMapper
         );
 
         if (error) {
@@ -348,6 +356,8 @@ export class ResourceClient<
           >
     >
   > {
+    const fieldMapper = this.m_.connector.fieldOperations?.mapper;
+
     const resourceModelRecord =
       this.m_.connector.resourceModelOperations[
         this.m_.resourceModelId as RTI extends ResourceModelId ? RTI : never
@@ -358,7 +368,8 @@ export class ResourceClient<
         const { data, error } = await resourceModelRecord.update.run(
           this.m_.connection,
           id,
-          fields
+          fields,
+          fieldMapper
         );
 
         if (error) {

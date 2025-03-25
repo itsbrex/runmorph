@@ -34,7 +34,7 @@ function decryptValue(encryptedValue: string): string {
     const decipher = crypto.createDecipheriv(
       "aes-256-gcm",
       getEncryptionKey(),
-      iv,
+      iv
     );
     decipher.setAuthTag(authTag);
 
@@ -51,7 +51,7 @@ function decryptValue(encryptedValue: string): string {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function encryptJson<T extends Record<string, any>>(
   data: T,
-  encryptAll = false,
+  encryptAll = false
 ): T {
   const encryptedData = { ...data };
 
@@ -68,12 +68,18 @@ export function encryptJson<T extends Record<string, any>>(
 
   return encryptedData;
 }
-
 // Function to decrypt JSON data
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function decryptJson<T extends Record<string, any>>(
+  /**
+   * The JSON data object to decrypt
+   */
   data: T,
-  decryptAll = false,
+  /**
+   * Whether to decrypt all string values or only those starting with "_"
+   * @default false
+   */
+  decryptAll = false
 ): T {
   const decryptedData = { ...data };
 

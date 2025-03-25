@@ -37,6 +37,7 @@ import {
   getAuthorizationHeader,
 } from "./utils/oauth";
 import { WebhookClient } from "./Webhook";
+import { ModelClient } from "./Models";
 
 type ConnectorResourceModelId<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1049,6 +1050,12 @@ export class ConnectionClient<
     resourceModelId: LocalResourceModelId
   ): ResourceClient<C, CA, LocalResourceModelId> {
     return new ResourceClient(this.morph, this, resourceModelId);
+  }
+
+  models<LocalResourceModelId extends ConnectorResourceModelId<C>>(
+    resourceModelId: LocalResourceModelId
+  ): ModelClient<C, CA, LocalResourceModelId> {
+    return new ModelClient(this.morph, this, resourceModelId);
   }
 
   isConnector<TConnectorIds extends CA[number]["id"]>(
