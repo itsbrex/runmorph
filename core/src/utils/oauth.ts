@@ -302,9 +302,8 @@ export async function oautCallback<
       }
 
       newAuthorizationStoredData.oauth = authorizationOAuthData;
-
       const stringEncryptedAuthorizationStoredData = JSON.stringify(
-        newAuthorizationStoredData
+        encryptJson(newAuthorizationStoredData)
       );
 
       await morph.m_.database.adapter.updateConnection(
@@ -551,7 +550,7 @@ export async function refreshAccessToken<
     newAuthorizationStoredData.oauth = newAuthorizationOAuthData;
 
     const stringEncryptedAuthorizationStoredData = JSON.stringify(
-      newAuthorizationStoredData
+      encryptJson(newAuthorizationStoredData)
     );
 
     const updatedConnection = await morph.m_.database.adapter.updateConnection(
