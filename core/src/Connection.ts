@@ -28,6 +28,7 @@ import type {
 } from "@runmorph/cdk";
 import axios, { AxiosRequestConfig } from "axios";
 
+import { ModelClient } from "./Models";
 import { MorphClient } from "./Morph";
 import { ResourceClient } from "./Resource";
 import type { AdapterConnection, CreateAuthorizationParams } from "./types";
@@ -37,7 +38,6 @@ import {
   getAuthorizationHeader,
 } from "./utils/oauth";
 import { WebhookClient } from "./Webhook";
-import { ModelClient } from "./Models";
 
 type ConnectorResourceModelId<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -563,10 +563,6 @@ export class ConnectionClient<
     this.morph.m_.logger?.debug("Starting authorization process", {
       connectorId,
       ownerId,
-      params,
-    });
-
-    console.log("core.authorize", {
       params,
     });
 
