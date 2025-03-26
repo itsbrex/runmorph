@@ -22,11 +22,6 @@ async function isPackageVersionInstalled(
   connection: RuntimeConnection<any, any, any>,
   packageVersionId: string
 ): Promise<boolean> {
-  console.log(
-    "[isPackageVersionInstalled] Checking package:",
-    packageVersionId
-  );
-
   const { data, error } =
     await connection.proxy<InstalledSubscriberPackageQueryResponse>({
       path: "/tooling/query",
@@ -39,7 +34,6 @@ async function isPackageVersionInstalled(
   if (error || !data.done) {
     return false;
   }
-  console.log("[isPackageVersionInstalled] Response:", { data, error });
   return data.records.length > 0;
 }
 

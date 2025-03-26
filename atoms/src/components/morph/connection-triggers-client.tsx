@@ -183,7 +183,7 @@ function BaseTriggerClient<T = HTMLElement>({
         });
       }
     } catch (error) {
-      console.log(error);
+      console.error(error);
       connectionCallbacks?.onError?.(error);
     }
   };

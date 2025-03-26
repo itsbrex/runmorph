@@ -1,6 +1,8 @@
+import crypto from "crypto";
+
 import { GlobalEventMapper } from "@runmorph/cdk";
 import { verify } from "jsonwebtoken";
-import crypto from "crypto";
+
 import GongCallMapper from "../../resources/telephonyCall/mapper";
 
 type GongCallMetadata = {
@@ -122,11 +124,6 @@ ${webhookPublicKey}
       request.headers["x-traceid"] ||
       `${body.callData.metaData.id}-${Date.now()}`
     ).toString();
-
-    console.log("Handling Gong webhook event:", {
-      callId: body.callData.metaData.id,
-      idempotencyKey,
-    });
 
     return {
       idempotencyKey,

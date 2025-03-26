@@ -18,7 +18,6 @@ export function ConnectionProviderClient({
   t,
 }: ConnectionProviderClientProps) {
   const [settings, setSettings] = React.useState<Record<string, any>>({});
-  console.log("ConnectionProviderClient : sessionToken", sessionToken);
   // Create the context value
   const contextValue = React.useMemo(
     () => ({

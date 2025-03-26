@@ -206,7 +206,6 @@ export class WebhookClient<
             url,
           });
 
-        console.log({ data });
         if (error) {
           this.logger?.error(
             "Failed to create webhook with subscription method. Checking global webhook.",
@@ -263,8 +262,6 @@ export class WebhookClient<
         };
       }
 
-      console.log({ webhookResponse });
-
       const webhook: AdapterWebhook = {
         connectorId: ids.connectorId,
         ownerId: ids.ownerId,
@@ -278,8 +275,6 @@ export class WebhookClient<
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-
-      console.log("[AdapterWebhook]", webhook);
 
       try {
         const createdWebhook =

@@ -108,7 +108,6 @@ export function ConnectionButton({
       const height = 900;
       const left = window.screenX + (window.outerWidth - width) / 2;
       const top = window.screenY + (window.outerHeight - height) / 2;
-      console.log("authorizationUrl", data.authorizationUrl);
       const popup = window.open(
         data.authorizationUrl,
         "ConnectWithMorph",

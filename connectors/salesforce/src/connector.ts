@@ -39,7 +39,6 @@ const connector = new Connector({
     type: "oauth2::authorizationCode",
     authorizeUrl: async ({ connection }) => {
       const env = await connection.getSetting("env");
-      console.log("Salesforce Env", env);
       return `https://${env === "sandbox" ? "test" : "login"}.salesforce.com/services/oauth2/authorize`;
     },
     accessTokenUrl: async ({ connection }) =>

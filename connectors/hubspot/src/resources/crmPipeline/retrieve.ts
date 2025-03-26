@@ -20,8 +20,6 @@ export default new Retrieve({
       query,
     });
 
-    console.log("pipeliene data", data);
-
     if (error) {
       return { error };
     }

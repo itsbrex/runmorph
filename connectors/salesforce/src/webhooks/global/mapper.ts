@@ -97,7 +97,6 @@ export default new GlobalEventMapper({
     const computedSignatureBase64 = btoa(
       String.fromCharCode(...new Uint8Array(computedSignature))
     );
-    console.log("computedSignatureBase64", computedSignatureBase64);
     if (computedSignatureBase64 !== signature) {
       return {
         error: {

@@ -71,7 +71,7 @@ export class SessionClient<
         },
       };
     }
-    console.log({ params });
+
     const { expiresIn, ...createSessionParams } = params;
 
     const expiresAt = new Date(
@@ -134,10 +134,7 @@ export class SessionClient<
 
       const { connectorId, ownerId, ...connectionUpdateParams } =
         decodedSessionData.connection;
-      console.log(
-        "decodedSessionData.connection",
-        decodedSessionData.connection
-      );
+
       const promise = this.morph
         .connections({ connectorId: connectorId as I, ownerId })
         .updateOrCreate({ ...connectionUpdateParams });

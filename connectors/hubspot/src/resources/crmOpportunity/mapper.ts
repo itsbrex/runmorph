@@ -92,7 +92,7 @@ export default new Mapper<ResourceModels["crmOpportunity"], HubSpotDeal>({
     contacts: {
       read: (from) =>
         from("associations.contacts.results", (v) => {
-          return v
+          return (v || [])
             .filter((c) => c.type === "deal_to_contact")
             .map(function (hsContact) {
               return {
@@ -105,7 +105,7 @@ export default new Mapper<ResourceModels["crmOpportunity"], HubSpotDeal>({
     companies: {
       read: (from) =>
         from("associations.companies.results", (v) => {
-          return v
+          return (v || [])
             .filter((c) => c.type === "deal_to_company")
             .map(function (hsContact) {
               return {
@@ -118,7 +118,7 @@ export default new Mapper<ResourceModels["crmOpportunity"], HubSpotDeal>({
     engagements: {
       read: (from) =>
         from("associations.engagements.results", (v) => {
-          return v
+          return (v || [])
             .filter((e) => e.type === "deal_to_engagement")
             .map(function (hsEngagement) {
               return {

@@ -364,7 +364,6 @@ export class ConnectionClient<
   async update(
     params?: ConnectionUpdateParams<[C]>
   ): Promise<EitherDataOrError<ConnectionData>> {
-    console.log({ params });
     const { data: connectionids, error } = this.getConnectionIds();
     if (error) return { error };
     const { ownerId, connectorId } = connectionids;
