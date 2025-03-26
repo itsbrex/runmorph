@@ -183,8 +183,6 @@ export default new Mapper<
               };
             });
           }
-
-          console.log("MAPPER HUBSPOT result", result);
           return result;
         }),
     },
