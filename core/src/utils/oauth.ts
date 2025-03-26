@@ -385,15 +385,28 @@ export async function getAuthorizationHeader<
   logger?: Logger;
   refreshToken?: boolean;
 }): Promise<string | null> {
+  logger?.info("Starting getAuthorizationHeader", {
+    connectorId,
+    ownerId,
+    refreshToken,
+  });
+
   const { data: connectorData, error: connectorError } = await morph
     .connectors()
     .retrieve(connectorId);
   if (connectorError) {
+    logger?.error("Failed to retrieve connector data", {
+      connectorId,
+      error: connectorError,
+    });
     throw connectorError;
   }
 
   if (!connectorData.connector.auth.type.startsWith("oauth2")) {
-    return null; // No authorization needed for non-OAuth2 connectors
+    logger?.info("No authorization needed for non-OAuth2 connector", {
+      connectorId,
+    });
+    return null;
   }
 
   const connectionAdapter = await morph.m_.database.adapter.retrieveConnection({
@@ -402,6 +415,7 @@ export async function getAuthorizationHeader<
   });
 
   if (!connectionAdapter) {
+    logger?.error("Connection not found in database", { connectorId, ownerId });
     throw {
       code: "MORPH::ADAPTER::CONNECTION_NOT_FOUND",
       message: "Connection couldn't be found from the database.",
@@ -413,7 +427,25 @@ export async function getAuthorizationHeader<
     authorizationData = decryptJson(
       JSON.parse(connectionAdapter.authorizationData!)
     ) as ConnectionAuthorizationStoredData;
+    logger?.info("Successfully decrypted authorization data", {
+      connectorId,
+      hasAccessToken: !!authorizationData.oauth?._accessToken,
+      hasRefreshToken: !!authorizationData.oauth?._refreshToken,
+      expiresAt: authorizationData.oauth?.expiresAt,
+    });
+
+    logger?.debug("Successfully decrypted authorization data", {
+      connectorId,
+      hasAccessToken: authorizationData.oauth?._accessToken,
+      hasRefreshToken: authorizationData.oauth?._refreshToken,
+      expiresAt: authorizationData.oauth?.expiresAt,
+    });
   } catch (e) {
+    logger?.error("Failed to decrypt authorization data", {
+      connectorId,
+      error: e,
+      rawData: connectionAdapter.authorizationData,
+    });
     throw {
       code: "MORPH::ADAPTER::AUTHORIZATION_DATA_INVALID",
       message:
@@ -423,27 +455,42 @@ export async function getAuthorizationHeader<
     };
   }
 
-  if (
-    (authorizationData.oauth?.expiresAt &&
-      isTokenExpired(new Date(authorizationData.oauth.expiresAt))) ||
-    refreshToken
-  ) {
-    // logger?.trace("connection::auth_refresh");
+  const isExpired =
+    authorizationData.oauth?.expiresAt &&
+    isTokenExpired(new Date(authorizationData.oauth.expiresAt));
+
+  logger?.info("Checking token expiration", {
+    connectorId,
+    isExpired,
+    expiresAt: authorizationData.oauth?.expiresAt,
+    currentTime: new Date().toISOString(),
+    forceRefresh: refreshToken,
+  });
+
+  if (isExpired || refreshToken) {
+    logger?.info("Token needs refresh", {
+      connectorId,
+      reason: isExpired ? "expired" : "forced refresh",
+      expiresAt: authorizationData.oauth?.expiresAt,
+    });
     authorizationData = await refreshAccessToken(
       morph,
       connectorId,
       ownerId,
-      authorizationData
+      authorizationData,
+      logger
     );
   }
 
   if (!authorizationData.oauth?._accessToken) {
+    logger?.error("Access token missing after refresh", { connectorId });
     throw {
       code: "MORPH::CONNECTION::ACCESS_TOKEN_MISSIN",
       message: "Access token is missing from the authorization data.",
     };
   }
 
+  logger?.info("Successfully generated authorization header", { connectorId });
   return `Bearer ${authorizationData.oauth?._accessToken}`;
 }
 
@@ -468,17 +515,33 @@ export async function refreshAccessToken<
   morph: MorphClient<C>,
   connectorId: I,
   ownerId: string,
-  authorizationData: ConnectionAuthorizationStoredData
+  authorizationData: ConnectionAuthorizationStoredData,
+  logger?: Logger
 ): Promise<ConnectionAuthorizationStoredData> {
+  logger?.info("Starting refreshAccessToken", {
+    connectorId,
+    ownerId,
+    hasRefreshToken: !!authorizationData.oauth?._refreshToken,
+  });
+
   const { data: connectorData, error: connectorError } = await morph
     .connectors()
     .retrieve(connectorId);
 
   if (connectorError) {
+    logger?.error("Failed to retrieve connector data during refresh", {
+      connectorId,
+      error: connectorError,
+    });
     throw connectorError;
   }
 
   if (!authorizationData.oauth?._refreshToken) {
+    logger?.error("Refresh token missing", {
+      connectorId,
+      hasAccessToken: !!authorizationData.oauth?._accessToken,
+      expiresAt: authorizationData.oauth?.expiresAt,
+    });
     throw {
       code: "MORPH::CONNECTION::REFRESH_TOKEN_MISSIN",
       message: "Refresh token is missing and the access token has expired.",
@@ -489,16 +552,30 @@ export async function refreshAccessToken<
   const clientSecret = getConnectorClientSecret(connectorData);
 
   try {
+    logger?.info("Preparing refresh token request", {
+      connectorId,
+      hasClientId: !!clientId,
+      hasClientSecret: !!clientSecret,
+    });
+
+    logger?.debug("Preparing refresh token request", {
+      connectorId,
+      hasClientId: clientId,
+      hasClientSecret: clientSecret,
+    });
+
     const params = new URLSearchParams({
       grant_type: "refresh_token",
       refresh_token: authorizationData.oauth?._refreshToken || "",
       client_id: clientId,
       client_secret: clientSecret,
     });
+
     const connection = morph.connections({
       connectorId,
       ownerId,
     });
+
     const urlAndHeaders =
       await connectorData.connector.auth.generateAccessTokenUrl({
         connector: {
@@ -515,12 +592,27 @@ export async function refreshAccessToken<
         },
         connection,
       });
+
+    logger?.info("Making refresh token request", {
+      connectorId,
+      url: urlAndHeaders.url,
+      hasHeaders: !!urlAndHeaders.headers,
+    });
+
     const response = await axios.post(urlAndHeaders.url, params.toString(), {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
         ...(urlAndHeaders.headers || {}),
       },
     });
+
+    logger?.info("Received refresh token response", {
+      connectorId,
+      hasAccessToken: !!response.data.access_token,
+      hasRefreshToken: !!response.data.refresh_token,
+      expiresIn: response.data.expires_in,
+    });
+
     const newAuthorizationOAuthData: ConnectionAuthorizationOAuthData = {
       _accessToken: response.data.access_token,
       _refreshToken:
@@ -528,7 +620,6 @@ export async function refreshAccessToken<
       expiresAt: response.data.expires_in
         ? calculateExpiresAt(response.data.expires_in)
         : null,
-      // new Date(Date.now() + 20 * 60 * 1000).toISOString(),
     };
 
     let newAuthorizationStoredData: ConnectionAuthorizationStoredData = {};
@@ -543,7 +634,6 @@ export async function refreshAccessToken<
       const currentAuthorizationStoredData = JSON.parse(
         currentConnectiondData.authorizationData
       );
-
       newAuthorizationStoredData = currentAuthorizationStoredData;
     }
 
@@ -553,6 +643,11 @@ export async function refreshAccessToken<
       encryptJson(newAuthorizationStoredData)
     );
 
+    logger?.info("Updating connection with new tokens", {
+      connectorId,
+      expiresAt: newAuthorizationOAuthData.expiresAt,
+    });
+
     const updatedConnection = await morph.m_.database.adapter.updateConnection(
       { connectorId, ownerId },
       {
@@ -561,8 +656,18 @@ export async function refreshAccessToken<
       }
     );
 
+    logger?.info("Successfully refreshed tokens", {
+      connectorId,
+      expiresAt: newAuthorizationOAuthData.expiresAt,
+    });
+
     return { ...authorizationData, oauth: newAuthorizationOAuthData };
   } catch (error) {
+    logger?.error("Failed to refresh access token", {
+      connectorId,
+      error: error instanceof Error ? error.message : JSON.stringify(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw {
       code: "MORPH::CONNECTION::REFRESHING_TOKEN_FAILED",
       message: `Failed to refresh access token. Details: ${JSON.stringify(
