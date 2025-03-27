@@ -8,6 +8,7 @@ import {
   DeepPartial,
 } from "@runmorph/cdk";
 
+import hubspotDefaultFields from "./default";
 /**
  * HubSpot property field type as returned by the HubSpot CRM API
  */
@@ -71,15 +72,6 @@ export interface HubSpotPropertyOption {
 }
 
 /**
- * Type guard to check if a field has a format property
- */
-function hasFormat(
-  field: UnifiedField
-): field is UnifiedField & { format: FieldTypeFormat<any> } {
-  return "format" in field && typeof field.format === "string";
-}
-
-/**
  * HubSpot property value as returned within contact objects
  */
 export type HubSpotPropertyValue = string | number | boolean | null;
@@ -97,6 +89,7 @@ export interface HubSpotObjectPropertyValue {
 }
 
 export type HubSpotPrpertyCompositeKeys = "propType";
+
 /**
  * Field mapper for HubSpot contact properties
  * Maps between HubSpot API property schema and unified field format
@@ -106,6 +99,7 @@ export const hubspotFieldMapper = new FieldMapper<
   HubSpotObjectPropertyValue,
   HubSpotPrpertyCompositeKeys
 >({
+  defaultFields: hubspotDefaultFields,
   field: {
     // Map the unique identifier
     key: {
@@ -140,11 +134,19 @@ export const hubspotFieldMapper = new FieldMapper<
     },
 
     // Map whether the field is read-only
-    isReadOnly: {
+    isValueReadOnly: {
       read: (from) =>
         from(
           "modificationMetadata.readOnlyValue",
           (readOnlyValue) => readOnlyValue
+        ),
+    },
+
+    isFieldReadOnly: {
+      read: (from) =>
+        from(
+          "modificationMetadata.readOnlyDefinition",
+          (readOnlyDefinition) => readOnlyDefinition
         ),
     },
 
@@ -315,11 +317,7 @@ export const hubspotFieldMapper = new FieldMapper<
         }),
       write: (to) =>
         to("showCurrencySymbol", (unit, { field }) => {
-          if (
-            field.type === "number" &&
-            hasFormat(field) &&
-            field.format === "currency"
-          ) {
+          if (field.type === "number" && field.format === "currency") {
             return true;
           }
           return false;

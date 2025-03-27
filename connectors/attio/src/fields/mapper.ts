@@ -176,7 +176,15 @@ export const attioFieldMapper = new FieldMapper<
     },
 
     // Map whether the field is read-only
-    isReadOnly: {
+    isFieldReadOnly: {
+      read: (from) =>
+        from("is_writable", (is_writable) =>
+          is_writable === undefined ? true : !is_writable
+        ),
+    },
+
+    // Map whether the field value is read-only
+    isValueReadOnly: {
       read: (from) =>
         from("is_writable", (is_writable) =>
           is_writable === undefined ? true : !is_writable

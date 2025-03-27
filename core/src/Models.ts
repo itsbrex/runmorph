@@ -6,11 +6,13 @@ import type {
   Settings,
   EitherTypeOrError,
   UnifiedField,
+  FieldType,
+  FieldFilters,
 } from "@runmorph/cdk";
+import { ResourceModelId } from "@runmorph/resource-models";
 
 import { ConnectionClient } from "./Connection";
 import { MorphClient } from "./Morph";
-import { ResourceModelId } from "@runmorph/resource-models";
 
 /**
  * `ModelClient` provides an interface for interacting with models in connectors.
@@ -88,9 +90,15 @@ export class ModelClient<
     };
   }
 
-  async listFields(options: {} = {}): Promise<
+  async listFields(
+    options: {
+      limit?: number;
+      cursor?: string;
+      filters?: FieldFilters;
+    } = {}
+  ): Promise<
     EitherTypeOrError<{
-      data: UnifiedField[];
+      data: UnifiedField<FieldType, string>[];
       next: string | null;
     }>
   > {

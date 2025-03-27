@@ -97,20 +97,22 @@ export class ResourceClient<
       resourceModelId: this.m_.resourceModelId,
       params: options,
     });
+
+    const model = this.m_.resourceModelId as RTI extends ResourceModelId
+      ? RTI
+      : never;
     const fieldMapper = this.m_.connector.fieldOperations?.mapper;
 
-    const entityRecord =
-      this.m_.connector.resourceModelOperations[
-        this.m_.resourceModelId as RTI & ResourceModelId
-      ];
+    const entityRecord = this.m_.connector.resourceModelOperations[model];
 
     if (entityRecord) {
       if (entityRecord.list) {
-        const { data, next, error } = await entityRecord.list.run(
-          this.m_.connection,
-          options,
-          fieldMapper
-        );
+        const { data, next, error } = await entityRecord.list.run({
+          connection: this.m_.connection,
+          model,
+          params: options,
+          fieldMapper,
+        });
 
         if (error) {
           this.m_.logger?.error("Failed to list resources", { error });
@@ -185,21 +187,23 @@ export class ResourceClient<
       options,
     });
 
+    const model = this.m_.resourceModelId as RTI extends ResourceModelId
+      ? RTI
+      : never;
     const resourceModelRecord =
-      this.m_.connector.resourceModelOperations[
-        this.m_.resourceModelId as RTI extends ResourceModelId ? RTI : never
-      ];
+      this.m_.connector.resourceModelOperations[model];
 
     const fieldMapper = this.m_.connector.fieldOperations?.mapper;
 
     if (resourceModelRecord) {
       if (resourceModelRecord.retrieve) {
-        const { data, error } = await resourceModelRecord.retrieve.run(
-          this.m_.connection,
+        const { data, error } = await resourceModelRecord.retrieve.run({
+          connection: this.m_.connection,
           id,
+          model,
           options,
-          fieldMapper
-        );
+          fieldMapper,
+        });
 
         if (error) {
           this.m_.logger?.error("Failed to retrieve resource", {
@@ -271,18 +275,20 @@ export class ResourceClient<
 
     const fieldMapper = this.m_.connector.fieldOperations?.mapper;
 
+    const model = this.m_.resourceModelId as RTI extends ResourceModelId
+      ? RTI
+      : never;
     const resourceModelRecord =
-      this.m_.connector.resourceModelOperations[
-        this.m_.resourceModelId as RTI extends ResourceModelId ? RTI : never
-      ];
+      this.m_.connector.resourceModelOperations[model];
 
     if (resourceModelRecord) {
       if (resourceModelRecord.create) {
-        const { data, error } = await resourceModelRecord.create.run(
-          this.m_.connection,
+        const { data, error } = await resourceModelRecord.create.run({
+          connection: this.m_.connection,
           fields,
-          fieldMapper
-        );
+          model,
+          fieldMapper,
+        });
 
         if (error) {
           this.m_.logger?.error("Failed to create resource", { error });
@@ -357,20 +363,21 @@ export class ResourceClient<
     >
   > {
     const fieldMapper = this.m_.connector.fieldOperations?.mapper;
-
+    const model = this.m_.resourceModelId as RTI extends ResourceModelId
+      ? RTI
+      : never;
     const resourceModelRecord =
-      this.m_.connector.resourceModelOperations[
-        this.m_.resourceModelId as RTI extends ResourceModelId ? RTI : never
-      ];
+      this.m_.connector.resourceModelOperations[model];
 
     if (resourceModelRecord) {
       if (resourceModelRecord.update) {
-        const { data, error } = await resourceModelRecord.update.run(
-          this.m_.connection,
+        const { data, error } = await resourceModelRecord.update.run({
+          connection: this.m_.connection,
           id,
+          model,
           fields,
-          fieldMapper
-        );
+          fieldMapper,
+        });
 
         if (error) {
           return { error };
