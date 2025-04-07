@@ -20,7 +20,7 @@ export default new List({
   handler: async (connection, { limit, cursor }) => {
     const { data, error } = await connection.proxy<PipedriveDealListResponse>({
       method: "GET",
-      path: "/deals",
+      path: "/v1/deals",
       query: { limit, start: cursor ? parseInt(cursor) : 0 },
     });
 

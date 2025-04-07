@@ -16,7 +16,7 @@ export default new Update({
       const { data: stageData, error: stageError } =
         await connection.proxy<SalesforceQueryStageResponse>({
           method: "GET",
-          path: `/query`,
+          path: `/services/data/v59.0/query`,
           query: {
             q: `SELECT MasterLabel FROM ${defaultOpportunityPipelineId}Stage WHERE Id = '${data.stageId}'`,
           },
@@ -33,7 +33,7 @@ export default new Update({
 
     const { error } = await connection.proxy({
       method: "PATCH",
-      path: `/sobjects/Opportunity/${id}`,
+      path: `/services/data/v59.0/sobjects/Opportunity/${id}`,
       data: updateData,
     });
 

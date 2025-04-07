@@ -13,7 +13,7 @@ export default new Retrieve({
         records: SalesforceOrganization[];
       }>({
         method: "GET",
-        path: `/query`,
+        path: `/services/data/v59.0/query`,
         query: {
           q: `SELECT ${fields.join(",")} FROM Organization`,
         },
@@ -37,7 +37,7 @@ export default new Retrieve({
 
     const { data, error } = await connection.proxy<SalesforceOrganization>({
       method: "GET",
-      path: `/sobjects/Organization/${id}`,
+      path: `/services/data/v59.0/sobjects/Organization/${id}`,
       query: {
         fields: fields.join(","),
       },

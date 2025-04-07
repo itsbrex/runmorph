@@ -8,7 +8,7 @@ export default new Retrieve({
   handler: async (connection, { id, fields }) => {
     const { data, error } = await connection.proxy<SalesforceAccount>({
       method: "GET",
-      path: `/sobjects/Account/${id}`,
+      path: `/services/data/v59.0/sobjects/Account/${id}`,
       query: {
         fields: fields.join(","),
       },

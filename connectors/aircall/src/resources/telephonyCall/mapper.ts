@@ -131,7 +131,7 @@ export default new Mapper<ResourceModels["telephonyCall"], AircallCall>({
     transcript: {
       read: (from) =>
         from("*", (call) => {
-          if (!call.id || (!call.recording && !call.voicemail)){
+          if (!call.id || (!call.recording && !call.voicemail)) {
             return undefined;
           }
           return {

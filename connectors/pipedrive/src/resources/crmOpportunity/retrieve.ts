@@ -9,7 +9,7 @@ export default new Retrieve({
     // Get the deal from Pipedrive API
     const { data, error } = await connection.proxy<{ data: PipedriveDeal }>({
       method: "GET",
-      path: `/deals/${id}`,
+      path: `/v1/deals/${id}`,
     });
 
     if (error) {

@@ -9,7 +9,7 @@ export default new Retrieve({
     // Get the workspace info from Pipedrive API
     const { data, error } = await connection.proxy<PipedriveWorkspace>({
       method: "GET",
-      path: "/users/me",
+      path: "/v1/users/me",
     });
 
     if (error) {

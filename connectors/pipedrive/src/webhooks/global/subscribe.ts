@@ -9,7 +9,7 @@ export default new SubscribeToGlobalEvent({
       data: { company_id: number };
     }>({
       method: "GET",
-      path: "/users/me",
+      path: "/v1/users/me",
     });
 
     if (error) {

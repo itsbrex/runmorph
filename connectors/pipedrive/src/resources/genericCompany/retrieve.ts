@@ -9,7 +9,7 @@ export default new Retrieve({
     // Get the organization from Pipedrive API
     const { data, error } = await connection.proxy<PipedriveCompany>({
       method: "GET",
-      path: `/organizations/${id}`,
+      path: `/v1/organizations/${id}`,
       query: {
         fields: fields,
       },

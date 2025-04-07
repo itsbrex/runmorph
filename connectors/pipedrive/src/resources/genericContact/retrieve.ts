@@ -9,7 +9,7 @@ export default new Retrieve({
     // Get the contact from HubSpot API
     const { data, error } = await connection.proxy<PipedriveContact>({
       method: "GET",
-      path: `/persons/${id}`,
+      path: `/v1/persons/${id}`,
       query: {
         fields: fields,
       },

@@ -11,7 +11,7 @@ export default new Update({
       data: PipedriveDeal;
     }>({
       method: "PUT",
-      path: `/deals/${id}`,
+      path: `/v1/deals/${id}`,
       data,
     });
 

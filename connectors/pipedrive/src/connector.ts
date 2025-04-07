@@ -9,7 +9,7 @@ const connector = new Connector({
     accessTokenUrl: "https://oauth.pipedrive.com/oauth/token",
   },
   proxy: {
-    baseUrl: "https://api.pipedrive.com/v1",
+    baseUrl: "https://api.pipedrive.com",
   },
 });
 

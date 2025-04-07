@@ -10,7 +10,7 @@ export default new Retrieve({
     const { data: pipelineResponse, error: pipelineError } =
       await connection.proxy<{ data: PipedrivePipeline }>({
         method: "GET",
-        path: `/pipelines/${id}`,
+        path: `/v1/pipelines/${id}`,
       });
 
     if (pipelineError) {
@@ -25,7 +25,7 @@ export default new Retrieve({
           data: PipedrivePipeline["_stages"];
         }>({
           method: "GET",
-          path: "/stages",
+          path: "/v1/stages",
           query: {
             pipeline_id: id,
           },

@@ -10,7 +10,7 @@ export default new List({
     const { data: pipelinesResponse, error: pipelinesError } =
       await connection.proxy<{ data: PipedrivePipeline[] }>({
         method: "GET",
-        path: "/pipelines",
+        path: "/v1/pipelines",
       });
 
     if (pipelinesError) {
@@ -23,7 +23,7 @@ export default new List({
         data: PipedrivePipeline["_stages"];
       }>({
         method: "GET",
-        path: "/stages",
+        path: "/v1/stages",
       });
 
     if (allStagesError) {

@@ -11,7 +11,7 @@ export default new Retrieve({
     const { data, error } =
       await connection.proxy<SalesforceQueryStageResponse>({
         method: "GET",
-        path: `/query`,
+        path: `/services/data/v59.0/query`,
         query: {
           q: `SELECT Id,CreatedDate,LastModifiedDate FROM ${id}Stage`,
         },

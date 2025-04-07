@@ -24,7 +24,7 @@ async function isPackageVersionInstalled(
 ): Promise<boolean> {
   const { data, error } =
     await connection.proxy<InstalledSubscriberPackageQueryResponse>({
-      path: "/tooling/query",
+      path: "/services/data/v59.0/tooling/query",
       method: "GET",
       query: {
         q: `SELECT Id,SubscriberPackageId,SubscriberPackageVersionId,MinPackageVersionId FROM InstalledSubscriberPackage WHERE SubscriberPackageVersionId = '${packageVersionId}'`,
@@ -56,7 +56,7 @@ async function installPackageVersion(
   if (!packageVersionIsinstalled) {
     const { data, error } =
       await connection.proxy<PackageInstallRequestResponse>({
-        path: "/tooling/sobjects/PackageInstallRequest/",
+        path: "/services/data/v59.0/tooling/sobjects/PackageInstallRequest/",
         method: "POST",
         data: {
           SubscriberPackageVersionKey: packageVersionId,
@@ -91,7 +91,7 @@ async function isRemoteSiteWhitelisted({
 }): Promise<boolean> {
   const { data, error } =
     await connection.proxy<RemoteSiteSettingQueryResponse>({
-      path: "/tooling/query",
+      path: "/services/data/v59.0/tooling/query",
       method: "GET",
       query: {
         q: `SELECT Id,EndpointUrl,IsActive FROM RemoteSiteSetting WHERE EndpointUrl = '${remoteSite.url}' AND IsActive = TRUE`,
@@ -127,7 +127,7 @@ async function whitelistRemoteSite({
   });
   if (!remoteSiteIsWhitelisted) {
     const { data, error } = await connection.proxy<WhitelistMorphAPIResponse>({
-      path: "/tooling/sobjects/RemoteSiteSetting",
+      path: "/services/data/v59.0/tooling/sobjects/RemoteSiteSetting",
       method: "POST",
       data: {
         FullName: addRandomKey(remoteSite.name),
@@ -180,7 +180,7 @@ async function isTrustedSiteWhitelisted({
   trustedSite: TrustedSiteParams;
 }): Promise<boolean> {
   const { data, error } = await connection.proxy<TrustedSiteQueryResponse>({
-    path: "/tooling/query",
+    path: "/services/data/v59.0/tooling/query",
     method: "GET",
     query: {
       q: `SELECT Id, EndpointUrl, IsActive, Context, 
@@ -246,7 +246,7 @@ async function whitelistTrustedSite({
   if (!trustedSiteIsWhitelisted) {
     const { data, error } =
       await connection.proxy<WhitelistTrustedSiteResponse>({
-        path: "/tooling/sobjects/CspTrustedSite",
+        path: "/services/data/v59.0/tooling/sobjects/CspTrustedSite",
         method: "POST",
         data: {
           DeveloperName: addRandomKey(trustedSite.name),

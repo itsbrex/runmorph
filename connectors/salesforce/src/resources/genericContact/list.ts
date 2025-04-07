@@ -30,7 +30,7 @@ export default new List({
 
     const { data, error } = await connection.proxy<SalesforceQueryResponse>({
       method: "GET",
-      path: "/query",
+      path: "/services/data/v59.0/query",
       query: {
         q,
       },

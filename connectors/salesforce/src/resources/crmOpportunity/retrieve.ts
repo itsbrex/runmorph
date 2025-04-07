@@ -18,7 +18,7 @@ export default new Retrieve({
   handler: async (connection, { id, fields }) => {
     const { data, error } = await connection.proxy<SalesforceOpportunity>({
       method: "GET",
-      path: `/sobjects/Opportunity/${id}`,
+      path: `/services/data/v59.0/sobjects/Opportunity/${id}`,
       query: {
         fields: fields.join(","),
       },
@@ -34,7 +34,7 @@ export default new Retrieve({
       const { data: stageData, error: satgeError } =
         await connection.proxy<SalesforceQueryStageResponse>({
           method: "GET",
-          path: `/query`,
+          path: `/services/data/v59.0/query`,
           query: {
             q: `SELECT Id FROM OpportunityStage WHERE MasterLabel = '${sfStageMasterLabel}'`,
           },

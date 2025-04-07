@@ -11,7 +11,7 @@ export default new Retrieve({
       data: PipedriveStage;
     }>({
       method: "GET",
-      path: `/stages/${id}`,
+      path: `/v1/stages/${id}`,
     });
 
     if (stageError) {
