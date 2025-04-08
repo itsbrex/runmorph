@@ -22,6 +22,7 @@ export interface ConnectionTriggerClientProps<T = HTMLElement> {
   connectionCallbacks?: ConnectionCallbacks;
   settings?: Record<string, any>;
   sessionToken?: string;
+  scopes?: string[];
 }
 
 function BaseTriggerClient<T = HTMLElement>({
@@ -33,6 +34,7 @@ function BaseTriggerClient<T = HTMLElement>({
   connectionCallbacks,
   settings: propSettings,
   sessionToken: propSessionToken,
+  scopes: propScopes,
 }: ConnectionTriggerClientProps<T> & {
   action: "authorize" | "delete";
 }): React.ReactElement {
@@ -42,6 +44,7 @@ function BaseTriggerClient<T = HTMLElement>({
   // Use context values if available, otherwise fall back to props
   const sessionToken = connectionContext?.sessionToken || propSessionToken;
   const settings = connectionContext?.settings || propSettings || {};
+  const scopes = connectionContext?.scopes || propScopes || [];
   const t = connectionContext?.t;
 
   // Helper function to get trigger-specific translated text
@@ -87,6 +90,7 @@ function BaseTriggerClient<T = HTMLElement>({
         const { data, error } = await connection.authorize({
           redirectUrl,
           mode,
+          scopes,
           settings,
         });
 

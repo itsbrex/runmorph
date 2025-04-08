@@ -18,6 +18,7 @@ export function ConnectionProviderClient({
   t,
 }: ConnectionProviderClientProps) {
   const [settings, setSettings] = React.useState<Record<string, any>>({});
+  const [scopes, setScopes] = React.useState<string[]>([]);
   // Create the context value
   const contextValue = React.useMemo(
     () => ({
@@ -25,8 +26,10 @@ export function ConnectionProviderClient({
       settings,
       setSettings,
       t,
+      scopes,
+      setScopes,
     }),
-    [sessionToken, settings, t]
+    [sessionToken, settings, t, scopes, setScopes]
   );
 
   return (

@@ -20,6 +20,8 @@ export interface ConnectionContextValue {
   settings: Record<string, any>;
   setSettings: (settings: Record<string, any>) => void;
   t?: TranslationFunction;
+  scopes: string[];
+  setScopes: (scopes: string[]) => void;
 }
 
 export const ConnectionContext = createContext<

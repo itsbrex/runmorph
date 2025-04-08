@@ -9,6 +9,7 @@ export * from "./components/morph/connection-settings";
 export * from "./components/morph/connection-context";
 export * from "./components/morph/connection-provider";
 export * from "./components/morph/connection-triggers";
+export * from "./components/morph/connection-scopes";
 
 // Export UI components that are used by our main components
 export * from "./components/ui/button";
@@ -23,3 +24,4 @@ export { Morph } from "./components/morph/morph";
 // Re-export types
 export type { ConnectionCallbacks } from "./components/morph/connection";
 export type { MorphConfig } from "./components/morph/morph";
+export type { ConnectionScopesProps } from "./components/morph/connection-scopes";
