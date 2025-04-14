@@ -568,34 +568,5 @@ export default new DefaultFields({
         },
       },
     },
-    crmEngagement: {
-      foo_bar: {
-        name: "Foo Bar",
-        description: "The foo bar of the contact",
-        type: "text",
-        isRequired: false,
-        isValueReadOnly: false,
-        metadata: {
-          foo: "foo",
-          bar: "bar",
-        },
-      },
-    },
-    genericCompany: {
-      name: {
-        name: "Name",
-        description: "The name of the company",
-        type: "select",
-        optionSource: "static",
-        options: [
-          { value: "1", name: "1" },
-          { value: "2", name: "2" },
-          { value: "3", name: "3" },
-        ],
-        isRequired: true,
-        isValueReadOnly: true,
-        metadata: {},
-      },
-    },
   },
 });

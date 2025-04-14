@@ -10,7 +10,6 @@ const HUBSPOT_OBJECT_TYPES: Record<string, string> = {
   genericContact: "contact",
   genericCompany: "company",
   crmOpportunity: "deal",
-  genericUser: "owner", // HubSpot API handles users as owners
 };
 
 /**
@@ -25,6 +24,12 @@ export const hubspotListField = new ListField({
   models: {
     genericContact: {
       scopes: ["crm.schemas.contacts.read"],
+    },
+    genericCompany: {
+      scopes: ["crm.schemas.companies.read"],
+    },
+    crmOpportunity: {
+      scopes: ["crm.schemas.deals.read"],
     },
   },
   /**
@@ -62,7 +67,7 @@ export const hubspotListField = new ListField({
       return {
         error: {
           code: "CONNECTOR::UNKNOWN_ERROR", // Using a standard error code
-          message: `Failed to fetch feilds for ${objectType}`,
+          message: `Failed to fetch fields for ${objectType}`,
         },
       };
     }

@@ -38,8 +38,16 @@ export const attioListField = new ListField({
    */
   handler: async (connection, { model, limit, cursor, filters }) => {
     // Map the Morph model ID to Attio object type
-    const objectType = ATTIO_OBJECT_TYPES[model] || "contacts";
+    const objectType = ATTIO_OBJECT_TYPES[model];
 
+    if (!objectType) {
+      return {
+        error: {
+          code: "CONNECTOR::OPERATION::RESOURCE_NOT_FOUND",
+          message: `Unsupported model type (${model}) for field listing.`,
+        },
+      };
+    }
     // Parse cursor if exists
     const offset = cursor ? parseInt(cursor) : 0;
 

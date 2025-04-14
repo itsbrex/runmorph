@@ -608,18 +608,35 @@ export class ConnectionClient<
       const operations = connection.operations || [];
       operations.forEach(function (operation) {
         const [resourceModelId, operationType] = operation.split("::");
-        const entityOperations =
-          connector.resourceModelOperations[
-            resourceModelId as "genericContact"
-          ];
-        if (entityOperations) {
-          const operationScopes =
-            entityOperations[operationType as "retrieve"]?.scopes || [];
+        if (operationType === "fieldRead") {
+          const modelFieldListOperation = connector.fieldOperations?.list;
+
+          const fieldListDefaultScopes = modelFieldListOperation?.scopes || [];
+          const fieldListModelScopes =
+            modelFieldListOperation?.models[resourceModelId as "genericContact"]
+              ?.scopes || [];
           scopes.push(
-            ...operationScopes.filter(
+            ...fieldListDefaultScopes.filter(
+              (scope: string) => !scopes.includes(scope)
+            ),
+            ...fieldListModelScopes.filter(
               (scope: string) => !scopes.includes(scope)
             )
           );
+        } else {
+          const entityOperations =
+            connector.resourceModelOperations[
+              resourceModelId as "genericContact"
+            ];
+          if (entityOperations) {
+            const operationScopes =
+              entityOperations[operationType as "retrieve"]?.scopes || [];
+            scopes.push(
+              ...operationScopes.filter(
+                (scope: string) => !scopes.includes(scope)
+              )
+            );
+          }
         }
       });
 
@@ -779,8 +796,8 @@ export class ConnectionClient<
       }
 
       const authorizationStoredData: ConnectionAuthorizationStoredData = {
-        scopes: scopes,
-        settings: settings,
+        scopes,
+        settings,
       };
 
       await this.morph.m_.database.adapter.updateConnection(

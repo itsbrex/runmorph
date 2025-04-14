@@ -40,7 +40,7 @@ export async function listSlots({
 }: {
   eventTypeId: string;
   eventTypeData: CalendlyEventType;
-  timezone: string;
+  timezone?: string;
   cursor?: string | null;
 }): Promise<
   EitherDataOrError<{
@@ -138,8 +138,7 @@ export default new List({
   mapper,
   scopes: [],
   handler: async (connection, { filters, cursor }) => {
-    const eventTypeId =
-      filters?.eventType || "969ac615-25f3-40d1-862e-f96e67cc9de4";
+    const eventTypeId = filters.event_type_id;
 
     if (!eventTypeId) {
       return {
@@ -165,7 +164,7 @@ export default new List({
     const { data, error } = await listSlots({
       eventTypeData: eventTypeDataResult.resource,
       eventTypeId,
-      timezone: filters.timezone,
+      timezone: filters.availability_timezone,
       cursor,
     });
 

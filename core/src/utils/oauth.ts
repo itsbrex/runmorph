@@ -343,8 +343,9 @@ export async function oautCallback<
     }
 
     return { connection: unauthorizedConnection, redirectUrl };
-  } catch (error) {
+  } catch (error: any) {
     morph.m_.logger?.error("Error authorizing connection", { error });
+
     return {
       error: {
         code: "MORPH::UNKNOWN_ERROR",

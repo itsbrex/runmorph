@@ -5,4 +5,5 @@ export type ListParams = {
   sort?: string;
   iterator?: boolean;
   fields?: string[];
+  q?: string;
 };

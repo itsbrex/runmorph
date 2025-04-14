@@ -100,6 +100,17 @@ export default new Mapper<ResourceModels["crmOpportunity"], HubSpotDeal>({
               };
             });
         }),
+      write: (to) =>
+        to("associations.contacts.results", (v) => {
+          return (v || []).map(function (contact) {
+            if (contact) {
+              return {
+                id: contact.id,
+                type: "deal_to_contact",
+              };
+            }
+          });
+        }),
       key: "association::contacts",
     },
     companies: {
@@ -112,6 +123,17 @@ export default new Mapper<ResourceModels["crmOpportunity"], HubSpotDeal>({
                 id: hsContact.id,
               };
             });
+        }),
+      write: (to) =>
+        to("associations.companies.results", (v) => {
+          return (v || []).map(function (company) {
+            if (company) {
+              return {
+                id: company.id,
+                type: "deal_to_company",
+              };
+            }
+          });
         }),
       key: "association::companies",
     },

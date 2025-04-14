@@ -1,5 +1,6 @@
 export * from "./ResourceModel";
 export * from "./ZodExtensions";
+export * from "./utils";
 
 import { ResourceModelMap } from "./ResourceModel";
 import { default as CrmEngagement } from "./ResourceModels/CrmEngagement";
@@ -16,7 +17,6 @@ import { default as SchedulingEventType } from "./ResourceModels/SchedulingEvent
 import { default as SchedulingSlot } from "./ResourceModels/SchedulingSlot";
 import { default as SchedulingEvent } from "./ResourceModels/SchedulingEvent";
 import { default as TelephonyCallTranscript } from "./ResourceModels/TelephonyCallTranscript";
-
 const resourceModelMap = new ResourceModelMap({})
   .addResourceModel(GenericCompany)
   .addResourceModel(GenericContact)

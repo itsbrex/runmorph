@@ -1,9 +1,9 @@
 import { List } from "@runmorph/cdk";
 
-import HubSpotContactMapper, { type HubSpotContact } from "./mapper";
+import HubSpotCompanyMapper, { type HubSpotCompany } from "./mapper";
 
-interface HubSpotContactListResponse {
-  results: HubSpotContact[];
+interface HubSpotCompanyListResponse {
+  results: HubSpotCompany[];
   paging?: {
     next?: {
       after?: string;
@@ -20,8 +20,8 @@ interface FilterGroups {
 }
 
 export default new List({
-  scopes: ["crm.objects.contacts.read"],
-  mapper: HubSpotContactMapper,
+  scopes: ["crm.objects.companies.read"],
+  mapper: HubSpotCompanyMapper,
   handler: async (connection, { limit, cursor, fields, q }) => {
     const body: {
       sorts: never[];
@@ -42,7 +42,7 @@ export default new List({
       // For non-text queries, use filters
       if (q.type === "phone") {
         // Create separate filter groups for each phone format and field
-        const phoneFields = ["phone", "mobilephone"];
+        const phoneFields = ["phone"];
         const phoneFormats = Array.from(
           new Set([q.e164, q.nationalNumber, q.internationalNumber])
         );
@@ -60,14 +60,30 @@ export default new List({
             }
           });
         });
+      } else if (
+        q.type === "domain" ||
+        q.type === "url" ||
+        q.type === "email"
+      ) {
+        // Use q.domain directly for domain search
+        const domainFields = ["domain", "website"];
+        domainFields.forEach((field) => {
+          const domainFilterGroup: FilterGroups = { filters: [] };
+          domainFilterGroup.filters.push({
+            propertyName: field,
+            operator: "CONTAINS_TOKEN",
+            value: q.domain,
+          });
+          body.filterGroups.push(domainFilterGroup);
+        });
       } else {
         body.query = q.raw;
       }
     }
 
-    const { data, error } = await connection.proxy<HubSpotContactListResponse>({
+    const { data, error } = await connection.proxy<HubSpotCompanyListResponse>({
       method: "POST",
-      path: "/crm/v3/objects/contacts/search",
+      path: "/crm/v3/objects/companies/search",
       data: body,
     });
 
