@@ -24,15 +24,15 @@
     "publish": "yarn run build && yarn publish --access public"
   },
   "dependencies": {
-    "@runmorph/cdk": "^0.0.26",
-    "@runmorph/resource-models": "^0.0.7",
-    "axios": "^0.21.1",
+    "@runmorph/cdk": "0.0.26",
+    "@runmorph/resource-models": "0.0.7",
+    "axios": "^1.7.2",
     "jsonwebtoken": "^9.0.2",
     "uuid": "^10.0.0"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.8",
     "@types/uuid": "^10.0.0",
-    "typescript": "^5.6.3"
+    "typescript": "^5.7.2"
   }
 }

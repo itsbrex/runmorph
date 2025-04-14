@@ -23,13 +23,13 @@
     "@airtop/sdk": "^0.1.33"
   },
   "devDependencies": {
-    "@runmorph/cli": "^0.0.3",
-    "@runmorph/cdk": "^0.0.26",
-    "@runmorph/resource-models": "^0.0.7"
+    "@runmorph/cli": "0.0.3",
+    "@runmorph/cdk": "0.0.26",
+    "@runmorph/resource-models": "0.0.7"
   },
   "peerDependencies": {
-    "@runmorph/cdk": "^0.0.26",
-    "@runmorph/resource-models": "^0.0.7"
+    "@runmorph/cdk": "0.0.26",
+    "@runmorph/resource-models": "0.0.7"
   },
   "publishConfig": {
     "access": "public"
