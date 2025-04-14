@@ -30,8 +30,6 @@ export default new List({
   scopes: ["crm.objects.deals.read"],
   mapper: HubSpotOpportunityMapper,
   handler: async (connection, { limit, cursor, fields, q, filters }) => {
-    console.log("filters", JSON.stringify(filters, null, 2));
-
     const body: {
       sorts: never[];
       filterGroups: FilterGroups[];
@@ -130,7 +128,6 @@ export default new List({
 
         filterGroups.push({ filters: filtersForGroup });
       }
-      console.log("filterGroups", JSON.stringify(filterGroups, null, 2));
       body.filterGroups = filterGroups;
     }
 
