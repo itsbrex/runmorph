@@ -3,7 +3,7 @@ import { List } from "@runmorph/cdk";
 import mapper, { type DialpadCall } from "./mapper";
 
 interface DialpadCallListResponse {
-  items: DialpadCall[];
+  items?: DialpadCall[];
   cursor?: string;
 }
 
@@ -24,7 +24,7 @@ export default new List({
     }
 
     return {
-      data: data.items,
+      data: data.items || [],
       next: data.cursor || null,
     };
   },
