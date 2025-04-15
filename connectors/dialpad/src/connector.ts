@@ -21,10 +21,13 @@ const connector = new Connector({
     accessTokenUrl: async ({ connector }) =>
       `https://${(await connector.getSetting("env")) === "sandbox" ? "sandbox.dialpad" : "dialpad"}.com/oauth2/token`,
 
-    defaultScopes: ["recordings_export", "calls:list", "offline_access"],
+    defaultScopes: ["offline_access"],
   },
   proxy: {
-    baseUrl: "https://dialpad.com/api",
+    baseUrl: async ({ connector }) => {
+      const env = await connector.getSetting("env");
+      return `https://${env === "sandbox" ? "sandbox.dialpad" : "dialpad"}.com/api`;
+    },
   },
 });
 
