@@ -26,10 +26,47 @@ interface HubSpotAssociationResponse {
   }>;
 }
 
+interface HubSpotBatchAssociationResponse {
+  results: Array<{
+    from: { id: string };
+    to: Array<{ id: string }>;
+  }>;
+}
+
+type AssociationType = "contacts" | "companies" | "engagements";
+type AssociationTypeMap = {
+  contacts: "deal_to_contact";
+  companies: "deal_to_company";
+  engagements: "deal_to_engagement";
+};
+
+interface DealAssociations {
+  contacts: {
+    results: Array<{ id: string; type: string }>;
+  };
+  companies: {
+    results: Array<{ id: string; type: string }>;
+  };
+  engagements: {
+    results: Array<{ id: string; type: string }>;
+  };
+}
+
 export default new List({
   scopes: ["crm.objects.deals.read"],
   mapper: HubSpotOpportunityMapper,
   handler: async (connection, { limit, cursor, fields, q, filters }) => {
+    // Separate properties and associations from fields
+    const associations: AssociationType[] = [];
+    const properties = fields.filter((field) => {
+      const isAssociation = field.startsWith("association::");
+      if (isAssociation) {
+        const assocType = field.replace("association::", "") as AssociationType;
+        associations.push(assocType);
+      }
+      return !isAssociation;
+    });
+
     const body: {
       sorts: never[];
       filterGroups: FilterGroups[];
@@ -41,7 +78,7 @@ export default new List({
       sorts: [],
       filterGroups: [] as FilterGroups[],
       limit: limit,
-      properties: fields,
+      properties: properties,
       after: cursor || null,
     };
 
@@ -51,11 +88,11 @@ export default new List({
 
     if (filters) {
       // 1. Fetch associated deal IDs
-      const associations = filters?.associations;
+      const filterAssociations = filters?.associations;
       const associatedDealIds = new Set<string>();
-      if (associations) {
+      if (filterAssociations) {
         await Promise.all(
-          Object.entries(associations).map(
+          Object.entries(filterAssociations).map(
             async ([objectType, association]) => {
               const objectId = association?.results?.[0]?.id;
               if (!objectId) {
@@ -142,6 +179,124 @@ export default new List({
       return { error };
     }
 
+    // Only fetch associations if they are requested in fields
+    if (associations.length > 0) {
+      const dealIds = data.results.map((deal) => deal.id);
+
+      const associationPromises: Promise<any>[] = [];
+      const associationMaps = new Map<
+        AssociationType,
+        Map<string, Array<{ id: string; type: string }>>
+      >();
+
+      // Setup association requests based on requested fields
+      if (associations.includes("contacts")) {
+        associationPromises.push(
+          connection
+            .proxy<HubSpotBatchAssociationResponse>({
+              method: "POST",
+              path: "/crm/v3/associations/deal/contact/batch/read",
+              data: {
+                inputs: dealIds.map((id) => ({ id })),
+              },
+            })
+            .then((res) => {
+              if (!res.error) {
+                const contactMap = new Map();
+                res.data.results.forEach(({ from, to }) => {
+                  contactMap.set(
+                    from.id,
+                    to.map((t) => ({ id: t.id, type: "deal_to_contact" }))
+                  );
+                });
+                associationMaps.set("contacts", contactMap);
+              }
+            })
+        );
+      }
+
+      if (associations.includes("companies")) {
+        associationPromises.push(
+          connection
+            .proxy<HubSpotBatchAssociationResponse>({
+              method: "POST",
+              path: "/crm/v3/associations/deal/company/batch/read",
+              data: {
+                inputs: dealIds.map((id) => ({ id })),
+              },
+            })
+            .then((res) => {
+              if (!res.error) {
+                const companyMap = new Map();
+                res.data.results.forEach(({ from, to }) => {
+                  companyMap.set(
+                    from.id,
+                    to.map((t) => ({ id: t.id, type: "deal_to_company" }))
+                  );
+                });
+                associationMaps.set("companies", companyMap);
+              }
+            })
+        );
+      }
+
+      if (associations.includes("engagements")) {
+        associationPromises.push(
+          connection
+            .proxy<HubSpotBatchAssociationResponse>({
+              method: "POST",
+              path: "/crm/v3/associations/deal/engagement/batch/read",
+              data: {
+                inputs: dealIds.map((id) => ({ id })),
+              },
+            })
+            .then((res) => {
+              if (!res.error) {
+                const engagementMap = new Map();
+                res.data.results.forEach(({ from, to }) => {
+                  engagementMap.set(
+                    from.id,
+                    to.map((t) => ({ id: t.id, type: "deal_to_engagement" }))
+                  );
+                });
+                associationMaps.set("engagements", engagementMap);
+              }
+            })
+        );
+      }
+
+      // Wait for all association requests to complete
+      await Promise.all(associationPromises);
+
+      // Enrich deals with requested associations
+      const enrichedDeals = data.results.map((deal) => {
+        const enrichedDeal = { ...deal };
+        const dealAssociations: DealAssociations = {
+          contacts: { results: [] },
+          companies: { results: [] },
+          engagements: { results: [] },
+        };
+
+        associations.forEach((assocType) => {
+          const assocMap = associationMaps.get(assocType);
+          if (assocMap) {
+            dealAssociations[assocType] = {
+              results: assocMap.get(deal.id) || [],
+            };
+          }
+        });
+
+        enrichedDeal.associations = dealAssociations;
+        return enrichedDeal;
+      });
+
+      return {
+        data: enrichedDeals,
+        next: data.paging?.next?.after || null,
+      };
+    }
+
+    // Return deals without associations if none were requested
     return {
       data: data.results,
       next: data.paging?.next?.after || null,

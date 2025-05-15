@@ -183,7 +183,7 @@ export const hubspotFieldMapper = new FieldMapper<
               // Enumeration type can be either select or multiselect depending on fieldType
               if (fieldTypeValue === "checkbox") {
                 // Checkbox fieldType for enumeration means multiple selections
-                return "multiselect";
+                return "list.select";
               } else if (
                 fieldTypeValue === "radio" ||
                 fieldTypeValue === "select"
@@ -211,7 +211,7 @@ export const hubspotFieldMapper = new FieldMapper<
                 case "date":
                   return "datetime";
                 case "checkbox":
-                  return "multiselect";
+                  return "list.select";
                 case "booleancheckbox":
                   return "boolean";
                 case "select":
@@ -236,7 +236,7 @@ export const hubspotFieldMapper = new FieldMapper<
             case "boolean":
               return "bool";
             case "select":
-            case "multiselect":
+            case "list.select":
               return "enumeration";
             default:
               return "string";
@@ -404,7 +404,7 @@ export const hubspotFieldMapper = new FieldMapper<
           }
           return undefined;
 
-        case "multiselect":
+        case "list.select":
           // HubSpot stores multiselect values as comma-separated strings
           if (typeof propertyValue === "string") {
             return propertyValue.split(";");
@@ -442,7 +442,7 @@ export const hubspotFieldMapper = new FieldMapper<
           }
           break;
 
-        case "multiselect":
+        case "list.select":
           if (Array.isArray(value)) {
             object.properties[key] = value.join(";");
           }

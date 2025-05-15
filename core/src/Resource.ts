@@ -126,8 +126,7 @@ export class ResourceClient<
 
         return {
           data: data.map((d) => {
-            delete d.rawResource;
-            return d;
+            return deepDeleteRawResource(d);
           }) as ResourceData<
             ResourceModels[RTI extends ResourceModelId ? RTI : never]
           >[],
@@ -217,14 +216,13 @@ export class ResourceClient<
           data.fields,
           (options?.expand || []) as string[]
         );
-        delete data.rawResource;
 
         this.m_.logger?.debug("Resource retrieved successfully", {
           resourceId: id,
           data,
         });
         return {
-          data: data as ResourceData<
+          data: deepDeleteRawResource(data) as ResourceData<
             ResourceModels[RTI extends ResourceModelId ? RTI : never]
           >,
         };
@@ -311,12 +309,11 @@ export class ResourceClient<
           return { data: createdResource as any };
         }
 
-        delete data.rawResource;
         this.m_.logger?.info("Resource created successfully", {
           resourceId: data.id,
         });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return { data: data as any };
+        return { data: deepDeleteRawResource(data) as any };
       } else {
         this.m_.logger?.error("Create operation not implemented", {
           resourceModelId: this.m_.resourceModelId,
@@ -393,9 +390,8 @@ export class ResourceClient<
           return { data: updatedResource as any };
         }
 
-        delete data.rawResource;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return { data: data as any };
+        return { data: deepDeleteRawResource(data) as any };
       } else {
         return {
           error: {
@@ -454,7 +450,6 @@ export class ResourceClient<
               ]?.mapper.read(obj.rawResource);
 
             if (mappedLocalResourceRef) {
-              delete mappedLocalResourceRef.rawResource;
               return mappedLocalResourceRef;
             }
           }
@@ -464,7 +459,6 @@ export class ResourceClient<
             .retrieve(obj.id)
             .then(({ data: refData }) => {
               if (refData && refData.object === "resource") {
-                delete refData.rawResource;
                 return refData;
               }
               return obj;
@@ -478,7 +472,6 @@ export class ResourceClient<
               return obj;
             });
         }
-        delete obj.rawResource;
         return obj;
       }
 
@@ -497,4 +490,47 @@ export class ResourceClient<
   };
 }
 
-//const { data, error } = await new Resource("ee").retrieve("ooo");
+// Utility type to remove rawResource from an object type
+type RemoveRawResource<T> =
+  T extends Array<infer U>
+    ? Array<RemoveRawResource<U>>
+    : T extends object
+      ? {
+          [K in keyof T as K extends "rawResource"
+            ? never
+            : K]: RemoveRawResource<T[K]>;
+        }
+      : T;
+
+export function deepDeleteRawResource<T>(obj: T): RemoveRawResource<T> {
+  // Handle null or undefined
+  if (obj == null) {
+    return obj as RemoveRawResource<T>;
+  }
+
+  // Handle arrays
+  if (Array.isArray(obj)) {
+    obj.forEach((item) => deepDeleteRawResource(item));
+    return obj as RemoveRawResource<T>;
+  }
+
+  // Handle objects
+  if (typeof obj === "object") {
+    // Delete rawResource if it exists
+    if ("rawResource" in obj) {
+      delete (obj as Record<string, unknown>).rawResource;
+    }
+
+    // Recursively process all object properties
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        deepDeleteRawResource((obj as Record<string, unknown>)[key]);
+      }
+    }
+
+    return obj as RemoveRawResource<T>;
+  }
+
+  // Return primitive values as is
+  return obj as RemoveRawResource<T>;
+}

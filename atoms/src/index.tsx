@@ -10,6 +10,7 @@ export * from "./components/morph/connection-context";
 export * from "./components/morph/connection-provider";
 export * from "./components/morph/connection-triggers";
 export * from "./components/morph/connection-scopes";
+export * from "./components/morph/connection-operations";
 
 // Export UI components that are used by our main components
 export * from "./components/ui/button";

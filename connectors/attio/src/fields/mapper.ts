@@ -221,7 +221,7 @@ export const attioFieldMapper = new FieldMapper<
             case "select":
             case "record-reference":
             case "actor-reference":
-              return remoteField.is_multiselect ? "multiselect" : "select";
+              return remoteField.is_multiselect ? "list.select" : "select";
             default:
               return "text";
           }
@@ -238,7 +238,7 @@ export const attioFieldMapper = new FieldMapper<
             case "datetime":
               return field.format === "date" ? "date" : "timestamp";
             case "select":
-            case "multiselect":
+            case "list.select":
               return "select";
             default:
               return "text";
@@ -323,7 +323,7 @@ export const attioFieldMapper = new FieldMapper<
             : undefined;
         case "select":
           return attributeValues[0]?.option?.id.option_id ?? undefined;
-        case "multiselect":
+        case "list.select":
           return attributeValues
             .map((v) => v.option?.id.option_id)
             .filter((v): v is string => !!v);
@@ -367,7 +367,7 @@ export const attioFieldMapper = new FieldMapper<
           });
           break;
 
-        case "multiselect":
+        case "list.select":
           if (Array.isArray(value)) {
             attributeValue.values[key] = value.map((v) => ({
               option: v,

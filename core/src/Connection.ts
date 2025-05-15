@@ -237,8 +237,8 @@ export class ConnectionClient<
         return undefined;
       }
 
-      const authorizationJson = JSON.parse(
-        connectionData.authorizationData
+      const authorizationJson = decryptJson(
+        JSON.parse(connectionData.authorizationData)
       ) as ConnectionAuthorizationStoredData;
 
       const value = authorizationJson.settings
@@ -676,27 +676,8 @@ export class ConnectionClient<
             existingSettings,
           });
 
-          // Check if we have a valid OAuth access token
-          const hasValidAccessToken =
-            existingAuthData.oauth?._accessToken != null;
-          if (!hasValidAccessToken) {
-            this.morph.m_.logger?.info(
-              "Reauthorizing connection - missing access token",
-              {
-                connectorId,
-                ownerId,
-                hasOauth: !!existingAuthData.oauth,
-                hasAccessToken: !!existingAuthData.oauth?._accessToken,
-              }
-            );
-            // Continue with new authorization by not returning here
-            // This will fall through to the new authorization code below
-          } else {
-            // Check if all required scopes are present in existing authorization
-            const hasAllRequiredScopes = scopes.every((scope) =>
-              existingScopes.includes(scope)
-            );
-
+          // For custom auth type, we only check settings
+          if (connector.connector.auth.type === "custom") {
             // Check if all required settings are present and unchanged
             const { settings: requiredSettings, error: settingsError } =
               validateAuthorizationSettings(connector, params?.settings || {});
@@ -706,16 +687,8 @@ export class ConnectionClient<
               requiredSettings
             ).every(([key, value]) => existingSettings[key] === value);
 
-            // If we have all required scopes and settings, preserve the existing authorization
-            if (hasAllRequiredScopes && hasAllRequiredSettings) {
-              const authorizationUrl = await generateAuthorizationUrl({
-                connector,
-                ownerId,
-                scopes: existingScopes,
-                settings: existingSettings,
-                redirectUrl,
-              });
-
+            // If we have all required settings, preserve the existing authorization
+            if (hasAllRequiredSettings) {
               const connectionAuthorizationData: ConnectionAuthorizationData = {
                 object: "connectionAuthorization",
                 connectorId: connectorId,
@@ -723,38 +696,87 @@ export class ConnectionClient<
                 status: "authorized",
                 scopes: existingScopes,
                 settings: existingSettings,
-                authorizationUrl,
               };
 
               this.morph.m_.logger?.info(
-                "Returning existing authorized connection - all required scopes and settings present",
+                "Returning existing authorized connection - all required settings present",
                 {
                   connectorId,
                   ownerId,
-                  existingScopes,
-                  requiredScopes: scopes,
                   existingSettings,
                   requiredSettings,
                 }
               );
               return { data: decryptJson(connectionAuthorizationData) };
-            } else {
+            }
+          } else {
+            // Check if we have a valid OAuth access token
+            const hasValidAccessToken =
+              existingAuthData.oauth?._accessToken != null;
+            if (!hasValidAccessToken) {
               this.morph.m_.logger?.info(
-                "Reauthorizing connection - new scopes or settings required",
+                "Reauthorizing connection - missing access token",
                 {
                   connectorId,
                   ownerId,
-                  existingScopes,
-                  requiredScopes: scopes,
-                  existingSettings,
-                  requiredSettings,
-                  missingScopes: scopes.filter(
-                    (scope) => !existingScopes.includes(scope)
-                  ),
-                  hasAllRequiredScopes,
-                  hasAllRequiredSettings,
+                  hasOauth: !!existingAuthData.oauth,
+                  hasAccessToken: !!existingAuthData.oauth?._accessToken,
                 }
               );
+              // Continue with new authorization by not returning here
+              // This will fall through to the new authorization code below
+            } else {
+              // Check if all required scopes are present in existing authorization
+              const hasAllRequiredScopes = scopes.every((scope) =>
+                existingScopes.includes(scope)
+              );
+
+              // Check if all required settings are present and unchanged
+              const { settings: requiredSettings, error: settingsError } =
+                validateAuthorizationSettings(
+                  connector,
+                  params?.settings || {}
+                );
+              if (settingsError) return { error: settingsError };
+
+              const hasAllRequiredSettings = Object.entries(
+                requiredSettings
+              ).every(([key, value]) => existingSettings[key] === value);
+
+              // If we have all required scopes and settings, preserve the existing authorization
+              if (hasAllRequiredScopes && hasAllRequiredSettings) {
+                const authorizationUrl = await generateAuthorizationUrl({
+                  connector,
+                  ownerId,
+                  scopes: existingScopes,
+                  settings: existingSettings,
+                  redirectUrl,
+                });
+
+                const connectionAuthorizationData: ConnectionAuthorizationData =
+                  {
+                    object: "connectionAuthorization",
+                    connectorId: connectorId,
+                    ownerId: ownerId,
+                    status: "authorized",
+                    scopes: existingScopes,
+                    settings: existingSettings,
+                    authorizationUrl,
+                  };
+
+                this.morph.m_.logger?.info(
+                  "Returning existing authorized connection - all required scopes and settings present",
+                  {
+                    connectorId,
+                    ownerId,
+                    existingScopes,
+                    requiredScopes: scopes,
+                    existingSettings,
+                    requiredSettings,
+                  }
+                );
+                return { data: decryptJson(connectionAuthorizationData) };
+              }
             }
           }
         } catch (error) {
@@ -786,11 +808,47 @@ export class ConnectionClient<
 
       if (settingsError) return { error: settingsError };
 
-      if (!connector.connector.auth.type.startsWith("oauth2")) {
+      if (connector.connector.auth.type === "custom") {
+        // For custom auth type, just save the settings and mark as authorized
+        const authorizationStoredData: ConnectionAuthorizationStoredData = {
+          scopes,
+          settings,
+        };
+
+        await this.morph.m_.database.adapter.updateConnection(
+          {
+            connectorId: connectorId,
+            ownerId: ownerId,
+          },
+          {
+            authorizationData: JSON.stringify(
+              encryptJson(authorizationStoredData)
+            ),
+            status: "authorized",
+            updatedAt: new Date(),
+          }
+        );
+
+        const connectionAuthorizationData: ConnectionAuthorizationData = {
+          object: "connectionAuthorization",
+          connectorId: connectorId,
+          ownerId: ownerId,
+          status: "authorized",
+          scopes: scopes,
+          settings: settings,
+        };
+
+        this.morph.m_.logger?.info("Custom authorization completed", {
+          connectorId,
+          ownerId,
+          settings,
+        });
+        return { data: decryptJson(connectionAuthorizationData) };
+      } else if (!connector.connector.auth.type.startsWith("oauth2")) {
         return {
           error: {
             code: "MORPH::CONNECTION::AUTH_TYPE_NOT_SUPPORTED",
-            message: "Only 'oauth2' type authorization supported.",
+            message: "Only 'oauth2' and 'custom' type authorization supported.",
           },
         };
       }
@@ -885,21 +943,22 @@ export class ConnectionClient<
         return { error: connectorError };
       }
 
-      const baseUrl = await connectorData.connector.generateProxyBaseUrl({
-        connection: this,
-        connector: {
-          getSetting: async (key) => {
-            const connectorOptions =
-              this.morph.m_.connectors[connectorId].connector.getOptions();
-            if (!connectorOptions) {
-              return undefined;
-            }
-            return connectorOptions[
-              key as keyof typeof connectorOptions
-            ] as any;
+      const { url: baseUrl, headers: baseHeaders } =
+        await connectorData.connector.generateProxyBaseUrl({
+          connection: this,
+          connector: {
+            getSetting: async (key) => {
+              const connectorOptions =
+                this.morph.m_.connectors[connectorId].connector.getOptions();
+              if (!connectorOptions) {
+                return undefined;
+              }
+              return connectorOptions[
+                key as keyof typeof connectorOptions
+              ] as any;
+            },
           },
-        },
-      });
+        });
       if (!baseUrl) {
         const errorBaseUrl = {
           code: "CONNECTOR::BAD_CONFIGURATION" as const,
@@ -944,6 +1003,7 @@ export class ConnectionClient<
         method,
         url: url.toString(),
         headers: {
+          ...baseHeaders,
           ...headers,
           ...(authHeader && { Authorization: authHeader }),
         },

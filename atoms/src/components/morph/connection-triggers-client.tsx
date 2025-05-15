@@ -170,13 +170,23 @@ function BaseTriggerClient<T = HTMLElement>({
             }
           }
         } else {
-          throw new Error(
-            getTriggerTranslatedText(
-              action,
-              "errors.noAuthUrl",
-              "No authorization URL received"
-            )
-          );
+          if (data.status === "authorized") {
+            const { data: connectionData, error: connectionError } =
+              await connection.retrieve();
+            if (!connectionError && connectionData) {
+              connectionCallbacks?.authorized?.(connectionData);
+            } else {
+              connectionCallbacks?.onError?.(connectionError);
+            }
+          } else {
+            throw new Error(
+              getTriggerTranslatedText(
+                action,
+                "errors.noAuthUrl",
+                "No authorization URL received"
+              )
+            );
+          }
         }
       } else if (action === "delete") {
         // Update parent component state to show unauthorized

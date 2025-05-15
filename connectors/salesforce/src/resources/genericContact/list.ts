@@ -11,7 +11,8 @@ interface SalesforceQueryResponse {
 export default new List({
   scopes: [],
   mapper: SalesforceContactMapper,
-  handler: async (connection, { limit, cursor, fields }) => {
+  handler: async (connection, { limit, cursor, fields, filters }) => {
+    console.log("filters", { filters });
     // Build SOQL query
     let q = "SELECT ";
 

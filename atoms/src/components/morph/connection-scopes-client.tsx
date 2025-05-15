@@ -16,16 +16,21 @@ export function ConnectionScopesClient({
 }: ConnectionScopesClientProps) {
   const { scopes, setScopes, t } = useConnection();
   const [inputValue, setInputValue] = React.useState<string>("");
+  const [isInitialized, setIsInitialized] = React.useState(false);
 
   // Initialize input value with current scopes or initial scopes if provided
+  // Only run once on component mount
   React.useEffect(() => {
-    if (initialScopes && initialScopes.length > 0) {
-      setInputValue(initialScopes.join(", "));
-      setScopes(initialScopes);
-    } else {
-      setInputValue(scopes.join(", "));
+    if (!isInitialized) {
+      if (initialScopes && initialScopes.length > 0) {
+        setInputValue(initialScopes.join(", "));
+        setScopes(initialScopes);
+      } else if (scopes.length > 0) {
+        setInputValue(scopes.join(", "));
+      }
+      setIsInitialized(true);
     }
-  }, [scopes, initialScopes, setScopes]);
+  }, [scopes, initialScopes, setScopes, isInitialized]);
 
   // If hidden is true, only set the scopes and don't render the UI
   if (hidden) {
@@ -39,6 +44,12 @@ export function ConnectionScopesClient({
 
   // Handle input blur to update scopes
   const handleInputBlur = () => {
+    // If input is empty or just whitespace, set empty array
+    if (!inputValue || inputValue.trim() === "") {
+      setScopes([]);
+      return;
+    }
+
     // Split by comma and trim whitespace
     const newScopes = inputValue
       .split(",")
@@ -57,9 +68,7 @@ export function ConnectionScopesClient({
 
   return (
     <div className="space-y-2">
-      <div className="text-sm font-medium">
-        {getTranslatedText("label", "Additional Scopes")}
-      </div>
+      <Label>{getTranslatedText("label", "Additional Scopes")}</Label>
       <Input
         id="scopes"
         value={inputValue}

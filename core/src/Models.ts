@@ -142,10 +142,44 @@ export class ModelClient<
           resourceModelId: this.m_.resourceModelId,
           connectorId: this.m_.connector.id,
         });*/
+
+        if (fieldOperations.mapper) {
+          const defaultFields =
+            fieldOperations.mapper.config.defaultFields?.listFields({
+              modelId: this.m_.resourceModelId,
+            });
+
+          if (defaultFields) {
+            // Apply filters to default fields if provided
+            if (options?.filters) {
+              defaultFields.data = defaultFields.data.filter((field) => {
+                // Check each filter condition
+                for (const [key, value] of Object.entries(
+                  options.filters || {}
+                )) {
+                  // Handle special case for isCustom which is always false for default fields
+                  if (key === "isCustom") {
+                    if (value === true) return false;
+                    continue;
+                  }
+
+                  // Skip if field doesn't have the property being filtered
+                  if (!(key in field)) continue;
+
+                  // Check if field value matches filter value
+                  if ((field as any)[key] !== value) return false;
+                }
+                return true;
+              });
+            }
+            return defaultFields;
+          }
+        }
+
         return {
           error: {
             code: "CONNECTOR::RESOURCE_MODEL::NOT_FOUND",
-            message: `Entity "${String(this.m_.resourceModelId)}" not implemented on the "${this.m_.connector.id}" connector.`,
+            message: `Field list operation on "${String(this.m_.resourceModelId)}" not implemented on the "${this.m_.connector.id}" connector.`,
           },
         };
       }

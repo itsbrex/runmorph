@@ -250,12 +250,13 @@ export async function oautCallback<
       try {
         const connector = morph.m_.connectors[connectorId as I];
         const onTokenExchanged =
+          // @ts-expect-error -- TODO: fix this; intriduced with "custom" auth type
           connector?.connector?.callbacks?.onTokenExchanged;
         if (onTokenExchanged) {
           await onTokenExchanged({
             connection,
             connector: {
-              getSetting: async (key) => {
+              getSetting: async (key: any) => {
                 const connectorOptions =
                   morph.m_.connectors[connectorId as I].connector.getOptions();
                 if (!connectorOptions) {
@@ -401,6 +402,13 @@ export async function getAuthorizationHeader<
       error: connectorError,
     });
     throw connectorError;
+  }
+
+  if (connectorData.connector.auth.type === "custom") {
+    logger?.info("No authorization header needed for custom auth type", {
+      connectorId,
+    });
+    return null;
   }
 
   if (!connectorData.connector.auth.type.startsWith("oauth2")) {
