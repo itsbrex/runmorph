@@ -23,7 +23,9 @@ export default new List({
     query.limit = pageSize.toString();
 
     if (cursor) {
-      query.offset = cursor;
+      // Decode base64 cursor
+      const decodedCursor = Buffer.from(cursor, "base64").toString();
+      query.offset = decodedCursor;
     }
 
     if (q) {
@@ -84,9 +86,14 @@ export default new List({
       _item: itemsById.get(price.item_price.item_id)!,
     }));
 
+    // Encode next_offset as base64
+    const nextCursor = priceData.next_offset
+      ? Buffer.from(priceData.next_offset).toString("base64")
+      : null;
+
     return {
       data: items,
-      next: priceData.next_offset || null,
+      next: nextCursor,
     };
   },
 });
