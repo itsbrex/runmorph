@@ -7,7 +7,9 @@ export default new Retrieve({
   mapper: PipedriveCompanyMapper,
   handler: async (connection, { id, fields }) => {
     // Get the organization from Pipedrive API
-    const { data, error } = await connection.proxy<PipedriveCompany>({
+    const { data, error } = await connection.proxy<{
+      data: PipedriveCompany;
+    }>({
       method: "GET",
       path: `/v1/organizations/${id}`,
       query: {
@@ -19,6 +21,6 @@ export default new Retrieve({
       return { error };
     }
 
-    return data;
+    return data.data;
   },
 });

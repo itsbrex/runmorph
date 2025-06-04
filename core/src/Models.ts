@@ -8,6 +8,11 @@ import type {
   UnifiedField,
   FieldType,
   FieldFilters,
+  FieldTypeFormat,
+  FieldTypeUnit,
+  FieldOptionType,
+  FieldOption,
+  EitherDataOrError,
 } from "@runmorph/cdk";
 import { ResourceModelId } from "@runmorph/resource-models";
 
@@ -116,82 +121,117 @@ export class ModelClient<
       };
     }
 
-    if (fieldOperations) {
-      if (fieldOperations.list) {
-        const { data, next, error } = await fieldOperations.list.run(
-          this.m_.connection,
-          { model: this.m_.resourceModelId, ...options }
-        );
+    if (fieldOperations?.list) {
+      const { data, next, error } = await fieldOperations.list.run(
+        this.m_.connection,
+        { model: this.m_.resourceModelId, ...options }
+      );
 
-        if (error) {
-          //  this.m_.logger?.error("Failed to list resources", { error });
-          return { error };
-        }
-
-        /* this.m_.logger?.debug("Resources listed successfully", {
-          count: data.length,
-          hasMore: !!next,
-        });*/
-
-        return {
-          data,
-          next,
-        };
-      } else {
-        /*  this.m_.logger?.error("List operation not implemented", {
-          resourceModelId: this.m_.resourceModelId,
-          connectorId: this.m_.connector.id,
-        });*/
-
-        if (fieldOperations.mapper) {
-          const defaultFields =
-            fieldOperations.mapper.config.defaultFields?.listFields({
-              modelId: this.m_.resourceModelId,
-            });
-
-          if (defaultFields) {
-            // Apply filters to default fields if provided
-            if (options?.filters) {
-              defaultFields.data = defaultFields.data.filter((field) => {
-                // Check each filter condition
-                for (const [key, value] of Object.entries(
-                  options.filters || {}
-                )) {
-                  // Handle special case for isCustom which is always false for default fields
-                  if (key === "isCustom") {
-                    if (value === true) return false;
-                    continue;
-                  }
-
-                  // Skip if field doesn't have the property being filtered
-                  if (!(key in field)) continue;
-
-                  // Check if field value matches filter value
-                  if ((field as any)[key] !== value) return false;
-                }
-                return true;
-              });
-            }
-            return defaultFields;
-          }
-        }
-
-        return {
-          error: {
-            code: "CONNECTOR::RESOURCE_MODEL::NOT_FOUND",
-            message: `Field list operation on "${String(this.m_.resourceModelId)}" not implemented on the "${this.m_.connector.id}" connector.`,
-          },
-        };
+      if (error) {
+        //  this.m_.logger?.error("Failed to list resources", { error });
+        return { error };
       }
+
+      /* this.m_.logger?.debug("Resources listed successfully", {
+        count: data.length,
+        hasMore: !!next,
+      });*/
+
+      return {
+        data,
+        next,
+      };
+    } else {
+      /*  this.m_.logger?.error("List operation not implemented", {
+        resourceModelId: this.m_.resourceModelId,
+        connectorId: this.m_.connector.id,
+      });*/
+
+      if (fieldOperations.mapper) {
+        const defaultFields =
+          fieldOperations.mapper.config.defaultFields?.listFields({
+            modelId: this.m_.resourceModelId,
+          });
+
+        if (defaultFields) {
+          // Apply filters to default fields if provided
+          if (options?.filters) {
+            defaultFields.data = defaultFields.data.filter((field) => {
+              // Check each filter condition
+              for (const [key, value] of Object.entries(
+                options.filters || {}
+              )) {
+                // Handle special case for isCustom which is always false for default fields
+                if (key === "isCustom") {
+                  if (value === true) return false;
+                  continue;
+                }
+
+                // Skip if field doesn't have the property being filtered
+                if (!(key in field)) continue;
+
+                // Check if field value matches filter value
+                if ((field as any)[key] !== value) return false;
+              }
+              return true;
+            });
+          }
+          return defaultFields;
+        }
+      }
+
+      return {
+        error: {
+          code: "CONNECTOR::RESOURCE_MODEL::NOT_FOUND",
+          message: `Field list operation on "${String(this.m_.resourceModelId)}" not implemented on the "${this.m_.connector.id}" connector.`,
+        },
+      };
+    }
+  }
+
+  /**
+   * Creates a new field in the model
+   * @param field - The field to create, containing only the essential properties
+   * @returns A promise that resolves to either the created field or an error
+   */
+  async createField(
+    field: Omit<
+      Partial<UnifiedField<FieldType, string>>,
+      "isCustom" | "isFieldReadOnly" | "isValueReadOnly" | "isRequired"
+    >
+  ): Promise<EitherDataOrError<UnifiedField<FieldType, string>>> {
+    const fieldOperations = this.m_.connector.fieldOperations;
+
+    if (!fieldOperations) {
+      this.morph.m_.logger?.error("Field operations not implemented", {
+        connectorId: this.m_.connector.id,
+      });
+      return {
+        error: {
+          code: "CONNECTOR::OPERATION::NOT_FOUND",
+          message: `Field operations not implemented on the "${this.m_.connector.id}" connector.`,
+        },
+      };
     }
 
-    // this.m_.logger?.error("Unknown error during list operation");
+    if (fieldOperations.create) {
+      const result = await fieldOperations.create.run(this.m_.connection, {
+        model: this.m_.resourceModelId,
+        field,
+      });
+
+      if (result.error) {
+        return { error: result.error };
+      }
+
+      return result;
+    }
+
     return {
       error: {
-        code: "CONNECTOR::UNKNOWN_ERROR",
-        message: "Unknown error",
+        code: "CONNECTOR::RESOURCE_MODEL::NOT_FOUND",
+        message: `Field create operation on "${String(this.m_.resourceModelId)}" not implemented on the "${this.m_.connector.id}" connector.`,
       },
     };
   }
-  // No methods implemented yet as per requirements
 }

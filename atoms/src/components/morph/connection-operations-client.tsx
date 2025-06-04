@@ -235,14 +235,14 @@ function ModelItem({
   return (
     <div className="mb-0">
       <div className="flex items-center justify-between py-1">
-        <div className="flex items-center space-x-3">
-          <Icon className="h-4 w-4 text-muted-foreground" />
+        <div className="flex items-center space-x-3 flex-1 min-w-0">
+          <Icon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           <span
-            className={`text-sm ${tabValue === "none" ? "text-muted-foreground" : "font-medium"}`}
+            className={`text-sm ${tabValue === "none" ? "text-muted-foreground" : "font-medium"} truncate`}
           >
             {resource.name}
           </span>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs text-muted-foreground truncate">
             {getOperationsText()}
           </span>
         </div>
@@ -251,7 +251,7 @@ function ModelItem({
           <Tabs
             value={tabValue}
             onValueChange={handleTabChange}
-            className="w-[160px]"
+            className="w-[160px] flex-shrink-0 ml-4"
           >
             <TabsList className="grid grid-cols-3 h-7">
               <TabsTrigger value="none" className="text-xs py-0.5">

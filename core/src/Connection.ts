@@ -623,6 +623,22 @@ export class ConnectionClient<
               (scope: string) => !scopes.includes(scope)
             )
           );
+        } else if (operationType === "fieldWrite") {
+          const modelFieldWriteOperation = connector.fieldOperations?.create;
+          const fieldWriteDefaultScopes =
+            modelFieldWriteOperation?.scopes || [];
+          const fieldWriteModelScopes =
+            modelFieldWriteOperation?.models[
+              resourceModelId as "genericContact"
+            ]?.scopes || [];
+          scopes.push(
+            ...fieldWriteDefaultScopes.filter(
+              (scope: string) => !scopes.includes(scope)
+            ),
+            ...fieldWriteModelScopes.filter(
+              (scope: string) => !scopes.includes(scope)
+            )
+          );
         } else {
           const entityOperations =
             connector.resourceModelOperations[

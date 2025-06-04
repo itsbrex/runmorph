@@ -16,7 +16,7 @@ export interface HubSpotProperty {
   name: string;
   label: string;
   description?: string;
-  groupName: string;
+  groupName: "contactinformation" | "companyinformation" | "dealinformation";
   type:
     | "string"
     | "number"
@@ -88,7 +88,7 @@ export interface HubSpotObjectPropertyValue {
   properties: Record<string, string>;
 }
 
-export type HubSpotPrpertyCompositeKeys = "propType";
+export type HubSpotPrpertyCompositeKeys = "propType" | "groupName";
 
 /**
  * Field mapper for HubSpot contact properties
@@ -223,23 +223,24 @@ export const hubspotFieldMapper = new FieldMapper<
           }
         }),
       write: (to) =>
-        to("type", (_, { field }): DeepPartial<HubSpotProperty["type"]> => {
+        to("*", (_, { field }): DeepPartial<HubSpotProperty> => {
           const { type } = field;
+
           // Map from unified field type to HubSpot type
           switch (type) {
             case "text":
-              return "string";
+              return { type: "string", fieldType: "text" };
             case "number":
-              return "number";
+              return { type: "number", fieldType: "number" };
             case "datetime":
-              return field.format === "date" ? "date" : "datetime";
+              return { type: "datetime", fieldType: "date" };
             case "boolean":
-              return "bool";
+              return { type: "bool", fieldType: "booleancheckbox" };
             case "select":
             case "list.select":
-              return "enumeration";
+              return { type: "enumeration", fieldType: "checkbox" };
             default:
-              return "string";
+              return { type: "string", fieldType: "text" };
           }
         }),
     },

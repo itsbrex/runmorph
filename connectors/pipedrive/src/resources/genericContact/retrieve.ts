@@ -7,7 +7,9 @@ export default new Retrieve({
   mapper: PipedriveContactMapper,
   handler: async (connection, { id, fields }) => {
     // Get the contact from HubSpot API
-    const { data, error } = await connection.proxy<PipedriveContact>({
+    const { data, error } = await connection.proxy<{
+      data: PipedriveContact;
+    }>({
       method: "GET",
       path: `/v1/persons/${id}`,
       query: {
@@ -19,6 +21,6 @@ export default new Retrieve({
       return { error };
     }
 
-    return data;
+    return data.data;
   },
 });
