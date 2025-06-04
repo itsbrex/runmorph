@@ -6,7 +6,7 @@
   "dependencies": {
     "@runmorph/core": "0.0.20",
     "@runmorph/adapter-memory": "0.0.1",
-    "@runmorph/connector-hubspot": "0.0.17",
+    "@runmorph/connector-hubspot": "0.0.19",
     "@runmorph/connector-salesforce": "0.0.11"
   }
 }

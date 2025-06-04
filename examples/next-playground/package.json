@@ -17,7 +17,7 @@
     "@radix-ui/react-slot": "^1.1.2",
     "@radix-ui/react-tooltip": "^1.1.8",
     "@runmorph/adapter-memory": "0.0.1",
-    "@runmorph/connector-hubspot": "0.0.17",
+    "@runmorph/connector-hubspot": "0.0.19",
     "@runmorph/connector-salesforce": "0.0.11",
     "@runmorph/framework-next": "^0.0.7",
     "class-variance-authority": "^0.7.1",

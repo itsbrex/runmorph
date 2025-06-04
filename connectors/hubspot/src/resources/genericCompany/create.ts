@@ -1,15 +1,15 @@
 import { Create } from "@runmorph/cdk";
 
-import HubSpotContactMapper, { type HubSpotContact } from "./mapper";
+import HubSpotCompanyMapper, { type HubSpotCompany } from "./mapper";
 
 export default new Create({
-  scopes: ["crm.objects.contacts.write"],
-  mapper: HubSpotContactMapper,
+  scopes: ["crm.objects.companies.write"],
+  mapper: HubSpotCompanyMapper,
   handler: async (connection, { data }) => {
-    // Create a new contact in HubSpot API
-    const { data: response, error } = await connection.proxy<HubSpotContact>({
+    // Create a new company in HubSpot API
+    const { data: response, error } = await connection.proxy<HubSpotCompany>({
       method: "POST",
-      path: "/crm/v3/objects/contacts",
+      path: "/crm/v3/objects/companies",
       data,
     });
 
